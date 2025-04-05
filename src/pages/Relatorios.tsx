@@ -287,6 +287,7 @@ const Relatorios: React.FC = () => {
                             { name: 'Adequado (70% a 85%)', value: 5 },
                             { name: 'Avançado (Acima de 85%)', value: 2 }
                           ]}
+                          dataKey="value"
                           cx="50%"
                           cy="50%"
                           labelLine={false}
@@ -318,6 +319,7 @@ const Relatorios: React.FC = () => {
                             { name: 'Adequado (70% a 85%)', value: 4 },
                             { name: 'Avançado (Acima de 85%)', value: 1 }
                           ]}
+                          dataKey="value"
                           cx="50%"
                           cy="50%"
                           labelLine={false}
