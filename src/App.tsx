@@ -13,6 +13,8 @@ import Gabaritos from "./pages/Gabaritos";
 import Respostas from "./pages/Respostas";
 import Descritores from "./pages/Descritores";
 import Relatorios from "./pages/Relatorios";
+import Escolas from "./pages/Escolas";
+import Usuarios from "./pages/Usuarios";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +34,8 @@ const App = () => (
             <Route path="/respostas" element={<Respostas />} />
             <Route path="/descritores" element={<Descritores />} />
             <Route path="/relatorios" element={<Relatorios />} />
+            <Route path="/escolas" element={<Escolas />} />
+            <Route path="/usuarios" element={<Usuarios />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
