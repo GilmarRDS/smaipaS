@@ -14,35 +14,35 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 195 99% 45%;
+    --primary: 142 76% 36%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 216 94% 95%;
-    --secondary-foreground: 200 50% 30%;
+    --secondary: 143 64% 95%;
+    --secondary-foreground: 142 76% 24%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 143 40% 94%;
+    --accent-foreground: 142 76% 24%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 195 99% 45%;
+    --ring: 142 76% 36%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 205 100% 25%;
+    --sidebar-background: 142 76% 24%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 195 99% 45%;
+    --sidebar-primary: 142 76% 36%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 195 100% 15%;
+    --sidebar-accent: 142 76% 12%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 195 100% 20%;
-    --sidebar-ring: 195 99% 45%;
+    --sidebar-border: 142 76% 18%;
+    --sidebar-ring: 142 76% 36%;
   }
 
   .dark {
@@ -55,16 +55,16 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 195 99% 45%;
+    --primary: 142 76% 36%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 143 30% 18%;
     --secondary-foreground: 210 40% 98%;
 
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 143 30% 18%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
@@ -72,16 +72,16 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 195 99% 45%;
+    --ring: 142 76% 36%;
     
-    --sidebar-background: 205 100% 12%;
+    --sidebar-background: 142 76% 12%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 195 99% 45%;
+    --sidebar-primary: 142 76% 36%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 195 100% 8%;
+    --sidebar-accent: 142 76% 8%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 195 100% 15%;
-    --sidebar-ring: 195 99% 45%;
+    --sidebar-border: 142 76% 15%;
+    --sidebar-ring: 142 76% 36%;
   }
 }
 
@@ -104,5 +104,14 @@
   
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  .login-gradient {
+    background: linear-gradient(135deg, hsl(142 76% 36% / 0.9), hsl(142 76% 24% / 0.95));
+  }
+
+  .login-card {
+    backdrop-filter: blur(8px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   }
 }
