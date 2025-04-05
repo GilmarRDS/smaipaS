@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { LockKeyhole, Mail, School } from 'lucide-react';
 
 const Login: React.FC = () => {
@@ -15,7 +15,6 @@ const Login: React.FC = () => {
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  // Redirecionar se já estiver autenticado
   React.useEffect(() => {
     if (isAuthenticated) {
       navigate('/dashboard');
@@ -38,8 +37,6 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center login-gradient p-4">
-      <div className="absolute inset-0 bg-patterns opacity-5"></div>
-      
       <div className="w-full max-w-md z-10">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
@@ -48,15 +45,11 @@ const Login: React.FC = () => {
             </div>
           </div>
           <h1 className="text-4xl font-bold text-white mb-2">SMAIPA</h1>
-          <p className="text-white/80">Sistema de Monitoramento e Avaliação do IPAAS</p>
         </div>
         
         <Card className="login-card border-none bg-white/80">
           <CardHeader>
             <CardTitle className="text-center text-smaipa-800">Acesso ao Sistema</CardTitle>
-            <CardDescription className="text-center">
-              Informe suas credenciais para acessar o sistema
-            </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
@@ -92,13 +85,6 @@ const Login: React.FC = () => {
                     required
                   />
                 </div>
-              </div>
-              
-              <div className="p-3 bg-smaipa-50 border border-smaipa-100 rounded-md text-sm text-smaipa-700">
-                <p className="font-medium mb-1">Demonstração:</p>
-                <p>• Secretaria: admin@secretaria.edu.br</p>
-                <p>• Escola: escola.a@escolas.edu.br</p>
-                <p>• Senha: 123456</p>
               </div>
             </CardContent>
             <CardFooter>
