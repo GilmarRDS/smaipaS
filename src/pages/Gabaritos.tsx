@@ -67,7 +67,6 @@ const Gabaritos: React.FC = () => {
         </Tabs>
       </div>
       
-      {/* Add Sonner Toaster to the page */}
       <Toaster position="top-right" richColors closeButton/>
     </MainLayout>
   );

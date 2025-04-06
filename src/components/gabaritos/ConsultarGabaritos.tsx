@@ -8,7 +8,9 @@ import { toast } from 'sonner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Trash, Eye, Pencil } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ConsultarGabaritosProps {
   gabaritos: GabaritoMock[];
@@ -19,6 +21,12 @@ const ConsultarGabaritos: React.FC<ConsultarGabaritosProps> = ({ gabaritos: init
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [currentGabarito, setCurrentGabarito] = useState<GabaritoMock | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editedGabarito, setEditedGabarito] = useState<{
+    id: string;
+    avaliacao: string;
+    questoes: number;
+  } | null>(null);
 
   const handleDelete = (gabarito: GabaritoMock) => {
     setCurrentGabarito(gabarito);
@@ -40,9 +48,37 @@ const ConsultarGabaritos: React.FC<ConsultarGabaritosProps> = ({ gabaritos: init
   };
 
   const handleEdit = (gabarito: GabaritoMock) => {
-    toast.info(`Editando gabarito: ${gabarito.avaliacao}`, {
-      description: "Funcionalidade em desenvolvimento"
+    setCurrentGabarito(gabarito);
+    setEditedGabarito({
+      id: gabarito.id,
+      avaliacao: gabarito.avaliacao,
+      questoes: gabarito.questoes
     });
+    setEditDialogOpen(true);
+  };
+
+  const saveEditedGabarito = () => {
+    if (editedGabarito && currentGabarito) {
+      // Update the gabarito with edited values
+      const updatedGabaritos = gabaritos.map(gabarito => 
+        gabarito.id === editedGabarito.id 
+          ? {
+              ...gabarito,
+              avaliacao: editedGabarito.avaliacao,
+              questoes: editedGabarito.questoes
+            } 
+          : gabarito
+      );
+      
+      setGabaritos(updatedGabaritos);
+      setEditDialogOpen(false);
+      setCurrentGabarito(null);
+      setEditedGabarito(null);
+      
+      toast.success("Gabarito atualizado com sucesso", {
+        description: `As alterações em "${editedGabarito.avaliacao}" foram salvas`
+      });
+    }
   };
 
   return (
@@ -168,6 +204,55 @@ const ConsultarGabaritos: React.FC<ConsultarGabaritosProps> = ({ gabaritos: init
           
           <DialogFooter>
             <Button onClick={() => setViewDialogOpen(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Gabarito Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Gabarito</DialogTitle>
+            <DialogDescription>
+              Modifique as informações do gabarito conforme necessário
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="avaliacao">Nome da Avaliação</Label>
+              <Input 
+                id="avaliacao" 
+                value={editedGabarito?.avaliacao || ''} 
+                onChange={(e) => setEditedGabarito(prev => prev ? {...prev, avaliacao: e.target.value} : null)}
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="questoes">Quantidade de Questões</Label>
+              <div className="flex items-center gap-2">
+                <Select 
+                  value={String(editedGabarito?.questoes || 20)}
+                  onValueChange={(value) => setEditedGabarito(prev => prev ? {...prev, questoes: Number(value)} : null)}
+                >
+                  <SelectTrigger id="questoes">
+                    <SelectValue placeholder="Quantidade de questões" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[5, 10, 15, 20, 25, 30, 35, 40, 45, 50].map((num) => (
+                      <SelectItem key={num} value={String(num)}>
+                        {num} questões
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={saveEditedGabarito}>Salvar Alterações</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
