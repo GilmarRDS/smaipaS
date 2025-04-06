@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MOCK_GABARITOS } from '@/types/gabaritos';
+import { Toaster } from 'sonner';
 
 // Components
 import ImportarGabarito from '@/components/gabaritos/ImportarGabarito';
@@ -65,6 +66,9 @@ const Gabaritos: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {/* Add Sonner Toaster to the page */}
+      <Toaster position="top-right" richColors closeButton/>
     </MainLayout>
   );
 };

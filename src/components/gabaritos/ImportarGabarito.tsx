@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { UploadCloud, FileType, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ImportarGabaritoProps {
   turma: string;
@@ -25,11 +27,26 @@ const ImportarGabarito: React.FC<ImportarGabaritoProps> = ({
   setAvaliacao,
 }) => {
   const [file, setFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-      toast.success('Arquivo selecionado com sucesso');
+      const selectedFile = e.target.files[0];
+      const validExtensions = ['.xlsx', '.xls', '.csv'];
+      const fileExtension = selectedFile.name.substring(selectedFile.name.lastIndexOf('.')).toLowerCase();
+      
+      if (!validExtensions.includes(fileExtension)) {
+        toast.error('Formato de arquivo inválido', {
+          description: 'Por favor, selecione um arquivo Excel (.xlsx, .xls) ou CSV (.csv)'
+        });
+        e.target.value = '';
+        return;
+      }
+      
+      setFile(selectedFile);
+      toast.success('Arquivo selecionado com sucesso', {
+        description: `${selectedFile.name} (${(selectedFile.size / 1024).toFixed(2)} KB)`
+      });
     }
   };
   
@@ -40,13 +57,36 @@ const ImportarGabarito: React.FC<ImportarGabaritoProps> = ({
     }
     
     if (!turma || !componente || !avaliacao) {
-      toast.error('Preencha todos os campos obrigatórios');
+      toast.error('Preencha todos os campos obrigatórios', {
+        description: 'Turma, componente curricular e avaliação são obrigatórios'
+      });
       return;
     }
     
-    // Simulação de importação bem-sucedida
-    toast.success('Gabarito importado com sucesso!');
-    setFile(null);
+    // Simulação de importação
+    setIsUploading(true);
+    
+    const promise = () => new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          success: true,
+          message: 'Gabarito importado com sucesso!'
+        });
+      }, 2000);
+    });
+    
+    toast.promise(promise, {
+      loading: 'Importando gabarito...',
+      success: (data) => {
+        setIsUploading(false);
+        setFile(null);
+        // Reset file input
+        const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+        if (fileInput) fileInput.value = '';
+        return 'Gabarito importado com sucesso!';
+      },
+      error: 'Erro ao importar gabarito',
+    });
   };
 
   return (
@@ -102,37 +142,51 @@ const ImportarGabarito: React.FC<ImportarGabaritoProps> = ({
         <div className="space-y-2">
           <Label htmlFor="file-upload">Arquivo do Gabarito (Excel)</Label>
           <div className="flex items-center gap-2">
-            <Input 
-              id="file-upload" 
-              type="file" 
-              accept=".xlsx,.xls,.csv" 
-              onChange={handleFileChange}
-            />
+            <div className="relative flex-1">
+              <Input 
+                id="file-upload" 
+                type="file" 
+                accept=".xlsx,.xls,.csv" 
+                onChange={handleFileChange}
+                className="cursor-pointer"
+              />
+            </div>
             <Button 
               onClick={handleImportar}
-              disabled={!file || !turma || !componente || !avaliacao}
+              disabled={!file || !turma || !componente || !avaliacao || isUploading}
               className="whitespace-nowrap"
             >
-              Importar Gabarito
+              {isUploading ? (
+                <>Importando...</>
+              ) : (
+                <>
+                  <UploadCloud className="mr-2 h-4 w-4" />
+                  Importar Gabarito
+                </>
+              )}
             </Button>
           </div>
           {file && (
-            <p className="text-sm text-muted-foreground">
-              Arquivo selecionado: {file.name}
+            <p className="text-sm text-muted-foreground flex items-center">
+              <FileType className="h-4 w-4 mr-1" />
+              Arquivo selecionado: {file.name} ({(file.size / 1024).toFixed(2)} KB)
             </p>
           )}
         </div>
         
-        <div className="bg-blue-50 p-4 rounded-md border border-blue-100">
-          <h3 className="text-sm font-medium text-blue-800 mb-2">Instruções para importação:</h3>
-          <ul className="list-disc list-inside text-sm text-blue-700 space-y-1">
-            <li>O arquivo deve estar no formato Excel (.xlsx, .xls) ou CSV (.csv)</li>
-            <li>A primeira coluna deve conter o número da questão</li>
-            <li>A segunda coluna deve conter a alternativa correta (A, B, C, D ou E)</li>
-            <li>Caso a questão tenha descritor, inclua na terceira coluna</li>
-            <li>Utilize a planilha modelo disponível para <a href="#" className="text-blue-600 underline">download</a></li>
-          </ul>
-        </div>
+        <Alert variant="default" className="bg-blue-50 text-blue-800 border-blue-200">
+          <AlertCircle className="h-4 w-4 text-blue-800" />
+          <AlertDescription className="text-blue-800">
+            <h3 className="text-sm font-medium mb-2">Instruções para importação:</h3>
+            <ul className="list-disc list-inside text-sm space-y-1">
+              <li>O arquivo deve estar no formato Excel (.xlsx, .xls) ou CSV (.csv)</li>
+              <li>A primeira coluna deve conter o número da questão</li>
+              <li>A segunda coluna deve conter a alternativa correta (A, B, C, D ou E)</li>
+              <li>Caso a questão tenha descritor, inclua na terceira coluna</li>
+              <li>Utilize a planilha modelo disponível para <Button variant="link" className="p-0 h-auto text-blue-600 font-medium">download</Button></li>
+            </ul>
+          </AlertDescription>
+        </Alert>
       </CardContent>
     </Card>
   );
