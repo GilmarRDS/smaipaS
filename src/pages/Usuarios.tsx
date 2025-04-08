@@ -173,21 +173,23 @@ const Usuarios = () => {
     }
 
     // Substituir confirm por toast
-    toast({
-      title: "Confirmar exclusão",
-      description: "Tem certeza que deseja excluir este usuário?",
-      action: {
-        label: "Excluir",
-        onClick: () => {
-          setUsuarios(usuarios.filter(user => user.id !== id));
-          toast.success('Usuário excluído com sucesso!');
+    toast(
+      "Confirmar exclusão",
+      {
+        description: "Tem certeza que deseja excluir este usuário?",
+        action: {
+          label: "Excluir",
+          onClick: () => {
+            setUsuarios(usuarios.filter(user => user.id !== id));
+            toast.success('Usuário excluído com sucesso!');
+          }
+        },
+        cancel: {
+          label: "Cancelar",
+          onClick: () => {}
         }
-      },
-      cancel: {
-        label: "Cancelar",
-        onClick: () => {}
       }
-    });
+    );
   };
 
   return (

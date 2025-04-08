@@ -131,21 +131,23 @@ const Escolas = () => {
 
   const handleDelete = (id: string) => {
     // Usar toast para confirmação em vez de confirm
-    toast({
-      title: "Confirmar exclusão",
-      description: "Tem certeza que deseja excluir esta escola?",
-      action: {
-        label: "Excluir",
-        onClick: () => {
-          setEscolas(escolas.filter(escola => escola.id !== id));
-          toast.success('Escola excluída com sucesso!');
+    toast(
+      "Confirmar exclusão",
+      {
+        description: "Tem certeza que deseja excluir esta escola?",
+        action: {
+          label: "Excluir",
+          onClick: () => {
+            setEscolas(escolas.filter(escola => escola.id !== id));
+            toast.success('Escola excluída com sucesso!');
+          }
+        },
+        cancel: {
+          label: "Cancelar",
+          onClick: () => {}
         }
-      },
-      cancel: {
-        label: "Cancelar",
-        onClick: () => {}
       }
-    });
+    );
   };
 
   return (
