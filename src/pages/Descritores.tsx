@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +12,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { PenSquare, Trash2 } from 'lucide-react';
 
-// Mock de descritores para demonstração
 const MOCK_DESCRITORES = [
   { id: 'd1', codigo: 'D01', componente: 'Língua Portuguesa', descritor: 'Localizar informações explícitas em um texto', habilidade: 'Localizar informações explícitas em diferentes gêneros textuais' },
   { id: 'd2', codigo: 'D02', componente: 'Língua Portuguesa', descritor: 'Inferir o sentido de uma palavra ou expressão', habilidade: 'Identificar o sentido de palavras ou expressões a partir do contexto em que são utilizadas' },
@@ -42,7 +40,6 @@ const Descritores: React.FC = () => {
     }
     
     if (editingDescritor) {
-      // Editar descritor existente
       const updatedDescritores = descritores.map(d => 
         d.id === editingDescritor.id ? 
         { ...d, codigo, componente, descritor, habilidade } : 
@@ -51,7 +48,6 @@ const Descritores: React.FC = () => {
       setDescritores(updatedDescritores);
       toast.success('Descritor atualizado com sucesso!');
     } else {
-      // Adicionar novo descritor
       const newDescritor = {
         id: `d${Date.now()}`,
         codigo,
@@ -77,8 +73,20 @@ const Descritores: React.FC = () => {
   };
   
   const handleDeleteDescritor = (id: string) => {
-    setDescritores(descritores.filter(d => d.id !== id));
-    toast.success('Descritor excluído com sucesso!');
+    toast("Confirmar exclusão", {
+      description: "Tem certeza que deseja excluir este descritor?",
+      action: {
+        label: "Excluir",
+        onClick: () => {
+          setDescritores(descritores.filter(d => d.id !== id));
+          toast.success('Descritor excluído com sucesso!');
+        }
+      },
+      cancel: {
+        label: "Cancelar",
+        onClick: () => {}
+      }
+    });
   };
   
   const resetForm = () => {
@@ -94,7 +102,6 @@ const Descritores: React.FC = () => {
     setDialogOpen(true);
   };
   
-  // Filtrando descritores com base no componente e na busca
   const filteredDescritores = descritores.filter(d => {
     const matchesComponente = filtroComponente === 'todos' || d.componente.toLowerCase().includes(filtroComponente.toLowerCase());
     const matchesSearch = 

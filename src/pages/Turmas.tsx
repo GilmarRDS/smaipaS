@@ -83,24 +83,21 @@ const Turmas = () => {
   };
 
   const handleDelete = (id: string) => {
-    // Remover o confirm e usar toast para confirmação
-    toast(
-      "Confirmar exclusão",
-      {
-        description: "Tem certeza que deseja excluir esta turma?",
-        action: {
-          label: "Excluir",
-          onClick: () => {
-            setTurmas(turmas.filter(turma => turma.id !== id));
-            toast.success('Turma excluída com sucesso!');
-          }
-        },
-        cancel: {
-          label: "Cancelar",
-          onClick: () => {}
+    // Corrigir a sintaxe do toast
+    toast("Confirmar exclusão", {
+      description: "Tem certeza que deseja excluir esta turma?",
+      action: {
+        label: "Excluir",
+        onClick: () => {
+          setTurmas(turmas.filter(turma => turma.id !== id));
+          toast.success('Turma excluída com sucesso!');
         }
+      },
+      cancel: {
+        label: "Cancelar",
+        onClick: () => {}
       }
-    );
+    });
   };
 
   return (

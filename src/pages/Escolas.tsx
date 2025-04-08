@@ -130,24 +130,21 @@ const Escolas = () => {
   };
 
   const handleDelete = (id: string) => {
-    // Usar toast para confirmação em vez de confirm
-    toast(
-      "Confirmar exclusão",
-      {
-        description: "Tem certeza que deseja excluir esta escola?",
-        action: {
-          label: "Excluir",
-          onClick: () => {
-            setEscolas(escolas.filter(escola => escola.id !== id));
-            toast.success('Escola excluída com sucesso!');
-          }
-        },
-        cancel: {
-          label: "Cancelar",
-          onClick: () => {}
+    // Usar toast para confirmação com a sintaxe correta do Sonner
+    toast("Confirmar exclusão", {
+      description: "Tem certeza que deseja excluir esta escola?",
+      action: {
+        label: "Excluir",
+        onClick: () => {
+          setEscolas(escolas.filter(escola => escola.id !== id));
+          toast.success('Escola excluída com sucesso!');
         }
+      },
+      cancel: {
+        label: "Cancelar",
+        onClick: () => {}
       }
-    );
+    });
   };
 
   return (

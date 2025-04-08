@@ -34,12 +34,10 @@ import { Users, UserPlus, PenSquare, Trash2 } from 'lucide-react';
 import { User, UserRole } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-// Tipos
 interface ExtendedUser extends User {
   password?: string;
 }
 
-// Mock de usuários iniciais
 const USUARIOS_MOCK: ExtendedUser[] = [
   {
     id: '1',
@@ -65,13 +63,6 @@ const USUARIOS_MOCK: ExtendedUser[] = [
   }
 ];
 
-// Mock de escolas
-interface Escola {
-  id: string;
-  nome: string;
-  inep: string;
-}
-
 const ESCOLAS_MOCK: Escola[] = [
   { id: 'escola-1', nome: 'Escola Municipal A', inep: '12345678' },
   { id: 'escola-2', nome: 'Escola Municipal B', inep: '87654321' },
@@ -83,14 +74,12 @@ const Usuarios = () => {
   const [open, setOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<ExtendedUser | null>(null);
   
-  // Form state
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('escola');
   const [schoolId, setSchoolId] = useState('');
 
-  // Se não for da secretaria, redirecionar
   if (!isSecretaria) {
     toast.error('Acesso restrito à Secretaria de Educação');
     return <Navigate to="/dashboard" replace />;
@@ -108,7 +97,7 @@ const Usuarios = () => {
       setEditingUser(null);
       setName('');
       setEmail('');
-      setPassword('123456'); // Senha padrão para novos usuários
+      setPassword('123456');
       setRole('escola');
       setSchoolId('');
     }
@@ -118,7 +107,6 @@ const Usuarios = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validações básicas
     if (!name || !email) {
       toast.error('Nome e e-mail são obrigatórios');
       return;
@@ -129,11 +117,9 @@ const Usuarios = () => {
       return;
     }
 
-    // Encontrar o nome da escola
     const selectedSchool = ESCOLAS_MOCK.find(escola => escola.id === schoolId);
     const schoolName = selectedSchool?.nome;
 
-    // Se estiver editando
     if (editingUser) {
       const updatedUsuarios = usuarios.map(user => 
         user.id === editingUser.id 
@@ -149,9 +135,8 @@ const Usuarios = () => {
       setUsuarios(updatedUsuarios);
       toast.success('Usuário atualizado com sucesso!');
     } else {
-      // Adicionando novo usuário
       const newUser: ExtendedUser = {
-        id: `user-${Date.now()}`, // Gera ID único
+        id: `user-${Date.now()}`,
         name,
         email,
         role,
@@ -166,30 +151,25 @@ const Usuarios = () => {
   };
 
   const handleDelete = (id: string) => {
-    // Não permitir exclusão do próprio usuário admin
     if (id === '1') {
       toast.error('Não é possível excluir o usuário administrador principal');
       return;
     }
 
-    // Substituir confirm por toast
-    toast(
-      "Confirmar exclusão",
-      {
-        description: "Tem certeza que deseja excluir este usuário?",
-        action: {
-          label: "Excluir",
-          onClick: () => {
-            setUsuarios(usuarios.filter(user => user.id !== id));
-            toast.success('Usuário excluído com sucesso!');
-          }
-        },
-        cancel: {
-          label: "Cancelar",
-          onClick: () => {}
+    toast("Confirmar exclusão", {
+      description: "Tem certeza que deseja excluir este usuário?",
+      action: {
+        label: "Excluir",
+        onClick: () => {
+          setUsuarios(usuarios.filter(user => user.id !== id));
+          toast.success('Usuário excluído com sucesso!');
         }
+      },
+      cancel: {
+        label: "Cancelar",
+        onClick: () => {}
       }
-    );
+    });
   };
 
   return (
@@ -355,7 +335,7 @@ const Usuarios = () => {
                           size="icon"
                           className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
                           onClick={() => handleDelete(usuario.id)}
-                          disabled={usuario.id === '1'} // Desabilita para o admin principal
+                          disabled={usuario.id === '1'}
                         >
                           <Trash2 className="h-4 w-4" />
                           <span className="sr-only">Excluir</span>
