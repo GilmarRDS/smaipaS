@@ -66,6 +66,7 @@ const Escolas = () => {
       },
       cancel: {
         label: "Cancelar",
+        onClick: () => {} // Adding the required onClick handler
       }
     });
   };

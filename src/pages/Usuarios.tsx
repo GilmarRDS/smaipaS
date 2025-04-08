@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -33,6 +34,7 @@ import {
 import { Users, UserPlus, PenSquare, Trash2 } from 'lucide-react';
 import { User, UserRole } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { Escola } from '@/types/escolas';
 
 interface ExtendedUser extends User {
   password?: string;
@@ -64,8 +66,8 @@ const USUARIOS_MOCK: ExtendedUser[] = [
 ];
 
 const ESCOLAS_MOCK: Escola[] = [
-  { id: 'escola-1', nome: 'Escola Municipal A', inep: '12345678' },
-  { id: 'escola-2', nome: 'Escola Municipal B', inep: '87654321' },
+  { id: 'escola-1', nome: 'Escola Municipal A', inep: '12345678', endereco: '', telefone: '', diretor: '' },
+  { id: 'escola-2', nome: 'Escola Municipal B', inep: '87654321', endereco: '', telefone: '', diretor: '' },
 ];
 
 const Usuarios = () => {
