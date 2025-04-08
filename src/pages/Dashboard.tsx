@@ -1,9 +1,36 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import MainLayout from '@/components/layout/MainLayout';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import FilterControls from '@/components/dashboard/FilterControls';
+import { Filter } from 'lucide-react';
+
+// Filter-related mock data
+const generateFilteredData = (filters: any) => {
+  // This would normally adjust data based on filters
+  // For demo purposes, we'll just return the original data with slight variations
+  
+  // Apply some simple modifications based on filters
+  let modifier = 1.0;
+  if (filters.escola) modifier *= 0.9;
+  if (filters.turma) modifier *= 0.95;
+  if (filters.componente) modifier *= 1.1;
+  
+  return {
+    performanceData: performanceData.map(item => ({
+      ...item,
+      portugues: Math.round(item.portugues * (filters.componente === 'matematica' ? 1 : modifier)),
+      matematica: Math.round(item.matematica * (filters.componente === 'portugues' ? 1 : modifier))
+    })),
+    presencaData: presencaData.map(item => ({
+      ...item,
+      presentes: Math.min(100, Math.round(item.presentes * modifier)),
+      ausentes: Math.max(0, 100 - Math.round(item.presentes * modifier))
+    }))
+  };
+};
 
 // Dados simulados para os gráficos
 const performanceData = [
@@ -25,6 +52,31 @@ const presencaData = [
 
 const Dashboard: React.FC = () => {
   const { user, isSecretaria } = useAuth();
+  const [selectedFilters, setSelectedFilters] = useState({
+    escola: '',
+    turma: '',
+    turno: '',
+    componente: '',
+    avaliacao: ''
+  });
+  
+  const handleFilterChange = (filterType: string, value: string) => {
+    setSelectedFilters(prev => ({
+      ...prev,
+      [filterType]: value
+    }));
+    
+    // Reset turma if escola changes and turma doesn't belong to that school
+    if (filterType === 'escola' && selectedFilters.turma) {
+      setSelectedFilters(prev => ({
+        ...prev,
+        turma: ''
+      }));
+    }
+  };
+  
+  const { performanceData: filteredPerformanceData, presencaData: filteredPresencaData } = 
+    generateFilteredData(selectedFilters);
   
   return (
     <MainLayout>
@@ -36,6 +88,17 @@ const Dashboard: React.FC = () => {
               ? 'Visão geral do desempenho de todas as escolas' 
               : `Visão geral do desempenho da ${user?.schoolName || 'sua escola'}`}
           </p>
+        </div>
+
+        <div className="border p-4 rounded-md bg-muted/20">
+          <div className="flex items-center gap-2 mb-4">
+            <Filter className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-lg font-medium">Filtros</h2>
+          </div>
+          <FilterControls 
+            onFilterChange={handleFilterChange}
+            selectedFilters={selectedFilters}
+          />
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -118,7 +181,7 @@ const Dashboard: React.FC = () => {
             </CardHeader>
             <CardContent className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={performanceData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <LineChart data={filteredPerformanceData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="mes" />
                   <YAxis />
@@ -140,7 +203,7 @@ const Dashboard: React.FC = () => {
             </CardHeader>
             <CardContent className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={presencaData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <BarChart data={filteredPresencaData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="turma" />
                   <YAxis />
