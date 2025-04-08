@@ -1,6 +1,7 @@
 
 import { Turma } from '@/types/turmas';
 import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/components/ui/action-button';
 import {
   Card,
   CardContent,
@@ -15,7 +16,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { PenSquare, Trash2 } from 'lucide-react';
 
 interface TurmasListProps {
   turmas: Turma[];
@@ -78,23 +78,16 @@ const TurmasList = ({ turmas, onEdit, onDelete }: TurmasListProps) => {
                   <TableCell>{turma.escola}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
+                      <ActionButton 
+                        action="edit" 
+                        iconOnly 
                         onClick={() => onEdit(turma)}
-                      >
-                        <PenSquare className="h-4 w-4" />
-                        <span className="sr-only">Editar</span>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                      />
+                      <ActionButton 
+                        action="delete" 
+                        iconOnly 
                         onClick={() => onDelete(turma.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Excluir</span>
-                      </Button>
+                      />
                     </div>
                   </TableCell>
                 </TableRow>

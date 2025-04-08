@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { PenSquare, Trash2 } from 'lucide-react';
 
 // Mock de descritores para demonstração
 const MOCK_DESCRITORES = [
@@ -24,6 +25,7 @@ const MOCK_DESCRITORES = [
 
 const Descritores: React.FC = () => {
   const { isSecretaria } = useAuth();
+  const [descritores, setDescritores] = useState(MOCK_DESCRITORES);
   const [filtroComponente, setFiltroComponente] = useState('todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [codigo, setCodigo] = useState('');
@@ -31,6 +33,7 @@ const Descritores: React.FC = () => {
   const [habilidade, setHabilidade] = useState('');
   const [componente, setComponente] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingDescritor, setEditingDescritor] = useState<any>(null);
   
   const handleAddDescritor = () => {
     if (!codigo || !descritor || !habilidade || !componente) {
@@ -38,17 +41,61 @@ const Descritores: React.FC = () => {
       return;
     }
     
-    // Simulação de adição bem-sucedida
-    toast.success('Descritor cadastrado com sucesso!');
+    if (editingDescritor) {
+      // Editar descritor existente
+      const updatedDescritores = descritores.map(d => 
+        d.id === editingDescritor.id ? 
+        { ...d, codigo, componente, descritor, habilidade } : 
+        d
+      );
+      setDescritores(updatedDescritores);
+      toast.success('Descritor atualizado com sucesso!');
+    } else {
+      // Adicionar novo descritor
+      const newDescritor = {
+        id: `d${Date.now()}`,
+        codigo,
+        componente,
+        descritor,
+        habilidade
+      };
+      setDescritores([...descritores, newDescritor]);
+      toast.success('Descritor cadastrado com sucesso!');
+    }
+    
     setDialogOpen(false);
+    resetForm();
+  };
+  
+  const handleEditDescritor = (descritor: any) => {
+    setEditingDescritor(descritor);
+    setCodigo(descritor.codigo);
+    setDescritor(descritor.descritor);
+    setHabilidade(descritor.habilidade);
+    setComponente(descritor.componente.toLowerCase());
+    setDialogOpen(true);
+  };
+  
+  const handleDeleteDescritor = (id: string) => {
+    setDescritores(descritores.filter(d => d.id !== id));
+    toast.success('Descritor excluído com sucesso!');
+  };
+  
+  const resetForm = () => {
     setCodigo('');
     setDescritor('');
     setHabilidade('');
     setComponente('');
+    setEditingDescritor(null);
+  };
+  
+  const handleOpenDialog = () => {
+    resetForm();
+    setDialogOpen(true);
   };
   
   // Filtrando descritores com base no componente e na busca
-  const filteredDescritores = MOCK_DESCRITORES.filter(d => {
+  const filteredDescritores = descritores.filter(d => {
     const matchesComponente = filtroComponente === 'todos' || d.componente.toLowerCase().includes(filtroComponente.toLowerCase());
     const matchesSearch = 
       d.codigo.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -72,13 +119,13 @@ const Descritores: React.FC = () => {
           {isSecretaria && (
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button>Adicionar Descritor</Button>
+                <Button onClick={handleOpenDialog}>Adicionar Descritor</Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
-                  <DialogTitle>Adicionar Novo Descritor</DialogTitle>
+                  <DialogTitle>{editingDescritor ? 'Editar Descritor' : 'Adicionar Novo Descritor'}</DialogTitle>
                   <DialogDescription>
-                    Preencha os dados do novo descritor e clique em salvar.
+                    Preencha os dados do descritor e clique em salvar.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
@@ -127,7 +174,7 @@ const Descritores: React.FC = () => {
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-                  <Button onClick={handleAddDescritor}>Salvar</Button>
+                  <Button onClick={handleAddDescritor}>{editingDescritor ? 'Salvar Alterações' : 'Salvar'}</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -186,8 +233,23 @@ const Descritores: React.FC = () => {
                         {isSecretaria && (
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
-                              <Button variant="outline" size="sm">Editar</Button>
-                              <Button variant="destructive" size="sm">Excluir</Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEditDescritor(descritor)}
+                              >
+                                <PenSquare className="h-4 w-4" />
+                                <span className="sr-only">Editar</span>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                                onClick={() => handleDeleteDescritor(descritor.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                <span className="sr-only">Excluir</span>
+                              </Button>
                             </div>
                           </TableCell>
                         )}

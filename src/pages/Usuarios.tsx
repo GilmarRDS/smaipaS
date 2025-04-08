@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,7 +30,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Users, UserPlus, PenSquare, Trash2, Plus } from 'lucide-react';
+import { Users, UserPlus, PenSquare, Trash2 } from 'lucide-react';
 import { User, UserRole } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -173,10 +172,22 @@ const Usuarios = () => {
       return;
     }
 
-    if (confirm('Tem certeza que deseja excluir este usuário?')) {
-      setUsuarios(usuarios.filter(user => user.id !== id));
-      toast.success('Usuário excluído com sucesso!');
-    }
+    // Substituir confirm por toast
+    toast({
+      title: "Confirmar exclusão",
+      description: "Tem certeza que deseja excluir este usuário?",
+      action: {
+        label: "Excluir",
+        onClick: () => {
+          setUsuarios(usuarios.filter(user => user.id !== id));
+          toast.success('Usuário excluído com sucesso!');
+        }
+      },
+      cancel: {
+        label: "Cancelar",
+        onClick: () => {}
+      }
+    });
   };
 
   return (
