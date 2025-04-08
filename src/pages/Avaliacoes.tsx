@@ -11,19 +11,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, CheckCircle2, ClipboardList, PlusCircle } from 'lucide-react';
+import { CalendarIcon, CheckCircle2, ClipboardList, PlusCircle, ListFilter, FileText, Users } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { AVALIACOES_MOCK, Avaliacao, getStatusColor, formatStatus } from '@/types/avaliacoes';
 import { useAuth } from '@/contexts/AuthContext';
 import { ANOS_ESCOLARES } from '@/types/turmas';
 import { cn } from '@/lib/utils';
+import { ActionButton } from '@/components/ui/action-button';
 
 const Avaliacoes: React.FC = () => {
   const { isSecretaria } = useAuth();
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>(AVALIACOES_MOCK);
   const [activeTab, setActiveTab] = useState<string>('todas');
   const [open, setOpen] = useState<boolean>(false);
+  const [detailsOpen, setDetailsOpen] = useState<boolean>(false);
+  const [selectedAvaliacao, setSelectedAvaliacao] = useState<Avaliacao | null>(null);
 
   // Form states
   const [nome, setNome] = useState<string>('');
@@ -32,6 +35,11 @@ const Avaliacoes: React.FC = () => {
   const [dataInicio, setDataInicio] = useState<Date | undefined>(undefined);
   const [dataFim, setDataFim] = useState<Date | undefined>(undefined);
   const [numQuestoes, setNumQuestoes] = useState<string>('20');
+
+  const handleViewDetails = (avaliacao: Avaliacao) => {
+    setSelectedAvaliacao(avaliacao);
+    setDetailsOpen(true);
+  };
 
   const handleAddAvaliacao = () => {
     if (!nome || !componente || !ano || !dataInicio || !dataFim || !numQuestoes) {
@@ -297,7 +305,10 @@ const Avaliacoes: React.FC = () => {
                                     Finalizar
                                   </Button>
                                 )}
-                                <Button variant="outline" size="sm">Ver Detalhes</Button>
+                                <ActionButton 
+                                  action="view" 
+                                  onClick={() => handleViewDetails(avaliacao)}
+                                />
                                 {isSecretaria && avaliacao.status !== 'concluida' && (
                                   <Button 
                                     variant="destructive" 
@@ -326,6 +337,98 @@ const Avaliacoes: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Modal de Detalhes da Avaliação */}
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Detalhes da Avaliação</DialogTitle>
+            <DialogDescription>
+              Informações detalhadas sobre a avaliação selecionada
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedAvaliacao && (
+            <div className="space-y-4 py-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Nome</h3>
+                  <p className="text-base font-semibold">{selectedAvaliacao.nome}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Status</h3>
+                  <span className={`mt-1 inline-flex px-2 py-1 rounded-full text-xs ${getStatusColor(selectedAvaliacao.status)}`}>
+                    {formatStatus(selectedAvaliacao.status)}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Componente</h3>
+                  <p className="text-base">{selectedAvaliacao.componente === 'portugues' ? 'Língua Portuguesa' : 'Matemática'}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Ano Escolar</h3>
+                  <p className="text-base">{selectedAvaliacao.ano}º Ano</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Questões</h3>
+                  <p className="text-base">{selectedAvaliacao.numQuestoes}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Data de Início</h3>
+                  <p className="text-base">{format(new Date(selectedAvaliacao.dataInicio), 'dd/MM/yyyy')}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Data de Término</h3>
+                  <p className="text-base">{format(new Date(selectedAvaliacao.dataFim), 'dd/MM/yyyy')}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-2 pt-2">
+                <h3 className="text-sm font-medium">Informações Adicionais</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="flex flex-col items-center justify-center p-3 bg-muted rounded-md">
+                    <FileText className="h-5 w-5 text-primary mb-1" />
+                    <span className="text-xs font-medium">Gabaritos</span>
+                    <span className="text-lg font-bold">1</span>
+                  </div>
+                  <div className="flex flex-col items-center justify-center p-3 bg-muted rounded-md">
+                    <Users className="h-5 w-5 text-primary mb-1" />
+                    <span className="text-xs font-medium">Alunos</span>
+                    <span className="text-lg font-bold">32</span>
+                  </div>
+                  <div className="flex flex-col items-center justify-center p-3 bg-muted rounded-md">
+                    <ListFilter className="h-5 w-5 text-primary mb-1" />
+                    <span className="text-xs font-medium">Descritores</span>
+                    <span className="text-lg font-bold">8</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetailsOpen(false)}>Fechar</Button>
+            {isSecretaria && selectedAvaliacao && (
+              <Button
+                onClick={() => {
+                  setDetailsOpen(false);
+                  toast.success('Redirecionando para relatórios', {
+                    description: 'Relatórios da avaliação estão sendo carregados'
+                  });
+                }}
+              >
+                Ver Relatórios
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };
