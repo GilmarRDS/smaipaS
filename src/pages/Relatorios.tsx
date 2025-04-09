@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +10,6 @@ import FilterControls from '@/components/dashboard/FilterControls';
 import { TURMAS_MOCK } from '@/types/turmas';
 import { ESCOLAS_MOCK } from '@/types/escolas';
 
-// Dados simulados para os gráficos
 const originalDesempenhoTurmas = [
   { turma: '5º Ano A', portugues: 72, matematica: 68 },
   { turma: '5º Ano B', portugues: 76, matematica: 65 },
@@ -51,7 +49,6 @@ const originalHabilidades = [
   { nome: 'Resolução de Problemas', percentual: 62 },
 ];
 
-// Função para filtrar os dados baseados nos filtros selecionados
 const filterData = (filters) => {
   let desempenhoTurmas = [...originalDesempenhoTurmas];
   let evolucaoDesempenho = [...originalEvolucaoDesempenho];
@@ -60,10 +57,8 @@ const filterData = (filters) => {
     ? [...matDescritores] 
     : [...portDescritores];
   
-  // Apply escola filter
   if (filters.escola !== 'all_escolas') {
-    // Simulate filtering by escola
-    const randomModifier = 0.9 + Math.random() * 0.2; // Random between 0.9 and 1.1
+    const randomModifier = 0.9 + Math.random() * 0.2;
     
     desempenhoTurmas = desempenhoTurmas.map(item => ({
       ...item,
@@ -88,24 +83,19 @@ const filterData = (filters) => {
     }));
   }
   
-  // Apply turma filter
   if (filters.turma !== 'all_turmas') {
     const selectedTurma = TURMAS_MOCK.find(turma => turma.id === filters.turma);
     
     if (selectedTurma) {
-      // Filter to show only matching turmas
       desempenhoTurmas = desempenhoTurmas.filter(item => 
         item.turma.includes(selectedTurma.ano.toString()) || 
         item.turma.includes(selectedTurma.nome)
       );
       
-      // If no matching turmas, keep at least one for display
       if (desempenhoTurmas.length === 0) {
         desempenhoTurmas = [originalDesempenhoTurmas[0]];
       }
       
-      // Adjust other data based on the selected turma's school year
-      // Convert ano to number before comparison
       const yearModifier = parseInt(selectedTurma.ano) <= 5 ? 0.9 : 1.1;
       
       evolucaoDesempenho = evolucaoDesempenho.map(item => ({
@@ -121,23 +111,20 @@ const filterData = (filters) => {
     }
   }
   
-  // Apply componente filter
   if (filters.componente !== 'all_componentes') {
     if (filters.componente === 'portugues') {
-      // For Portuguese, highlight Portuguese-related metrics
       desempenhoTurmas = desempenhoTurmas.map(item => ({
         ...item,
         portugues: item.portugues,
-        matematica: item.matematica * 0.7 // De-emphasize math
+        matematica: item.matematica * 0.7
       }));
       
       evolucaoDesempenho = evolucaoDesempenho.map(item => ({
         ...item,
         portugues: item.portugues,
-        matematica: item.matematica * 0.7 // De-emphasize math
+        matematica: item.matematica * 0.7
       }));
       
-      // Focus on Portuguese-related skills
       desempenhoHabilidades = desempenhoHabilidades.map(item => {
         if (['Leitura', 'Escrita', 'Interpretação'].includes(item.nome)) {
           return { ...item, percentual: Math.min(100, item.percentual + 5) };
@@ -145,20 +132,18 @@ const filterData = (filters) => {
         return item;
       });
     } else if (filters.componente === 'matematica') {
-      // For Mathematics, highlight Math-related metrics
       desempenhoTurmas = desempenhoTurmas.map(item => ({
         ...item,
-        portugues: item.portugues * 0.7, // De-emphasize Portuguese
+        portugues: item.portugues * 0.7,
         matematica: item.matematica
       }));
       
       evolucaoDesempenho = evolucaoDesempenho.map(item => ({
         ...item,
-        portugues: item.portugues * 0.7, // De-emphasize Portuguese
+        portugues: item.portugues * 0.7,
         matematica: item.matematica
       }));
       
-      // Focus on Math-related skills
       desempenhoHabilidades = desempenhoHabilidades.map(item => {
         if (['Cálculo', 'Raciocínio Lógico', 'Resolução de Problemas'].includes(item.nome)) {
           return { ...item, percentual: Math.min(100, item.percentual + 5) };
@@ -168,9 +153,7 @@ const filterData = (filters) => {
     }
   }
   
-  // Apply turno filter
   if (filters.turno !== 'all_turnos') {
-    // Simulate different performance for different turnos
     const turnoModifier = filters.turno === 'matutino' ? 1.05 : 0.95;
     
     desempenhoTurmas = desempenhoTurmas.map(item => ({
@@ -186,10 +169,8 @@ const filterData = (filters) => {
     }));
   }
   
-  // Apply avaliacao filter
   if (filters.avaliacao !== 'all_avaliacoes') {
-    // Different assessments might focus on different areas
-    const randomOffset = Math.random() * 10 - 5; // Random offset between -5 and 5
+    const randomOffset = Math.random() * 10 - 5;
     
     desempenhoTurmas = desempenhoTurmas.map(item => ({
       ...item,
@@ -229,12 +210,11 @@ const Relatorios: React.FC = () => {
   
   const handleFilterChange = (filterType: string, value: string) => {
     setSelectedFilters(prev => {
-      // If turma filter changes, reset avaliacao filter
       if (filterType === 'turma') {
         return {
           ...prev,
           [filterType]: value,
-          avaliacao: 'all_avaliacoes' // Reset avaliação when turma changes
+          avaliacao: 'all_avaliacoes'
         };
       }
       
@@ -245,7 +225,6 @@ const Relatorios: React.FC = () => {
     });
   };
   
-  // Apply filters to data
   const { 
     desempenhoTurmas: filteredDesempenhoTurmas, 
     evolucaoDesempenho: filteredEvolucaoDesempenho,
@@ -633,4 +612,3 @@ const Relatorios: React.FC = () => {
 };
 
 export default Relatorios;
-
