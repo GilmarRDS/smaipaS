@@ -37,7 +37,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({ onFilterChange, selecte
             <SelectValue placeholder="Todas as escolas" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todas as escolas</SelectItem>
+            <SelectItem value="all_escolas">Todas as escolas</SelectItem>
             {ESCOLAS_MOCK.map((escola) => (
               <SelectItem key={escola.id} value={escola.id}>
                 {escola.nome}
@@ -57,7 +57,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({ onFilterChange, selecte
             <SelectValue placeholder="Todas as turmas" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todas as turmas</SelectItem>
+            <SelectItem value="all_turmas">Todas as turmas</SelectItem>
             {filteredTurmas.map((turma) => (
               <SelectItem key={turma.id} value={turma.id}>
                 {turma.nome}
@@ -77,7 +77,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({ onFilterChange, selecte
             <SelectValue placeholder="Todos os turnos" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos os turnos</SelectItem>
+            <SelectItem value="all_turnos">Todos os turnos</SelectItem>
             {turnos.map((turno) => (
               <SelectItem key={turno} value={turno}>
                 {turno.charAt(0).toUpperCase() + turno.slice(1)}
@@ -97,7 +97,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({ onFilterChange, selecte
             <SelectValue placeholder="Todos os componentes" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos os componentes</SelectItem>
+            <SelectItem value="all_componentes">Todos os componentes</SelectItem>
             <SelectItem value="portugues">Língua Portuguesa</SelectItem>
             <SelectItem value="matematica">Matemática</SelectItem>
           </SelectContent>
@@ -114,7 +114,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({ onFilterChange, selecte
             <SelectValue placeholder="Todas as avaliações" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todas as avaliações</SelectItem>
+            <SelectItem value="all_avaliacoes">Todas as avaliações</SelectItem>
             {AVALIACOES_MOCK.map((avaliacao) => (
               <SelectItem key={avaliacao.id} value={avaliacao.id}>
                 {avaliacao.nome}
