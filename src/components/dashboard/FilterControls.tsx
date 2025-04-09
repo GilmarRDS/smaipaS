@@ -3,7 +3,7 @@ import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { ESCOLAS_MOCK } from "@/types/escolas";
-import { TURMAS_MOCK, ANOS_ESCOLARES } from "@/types/turmas";
+import { TURMAS_MOCK } from "@/types/turmas";
 import { AVALIACOES_MOCK } from "@/types/avaliacoes";
 
 interface FilterControlsProps {
@@ -35,13 +35,19 @@ const FilterControls: React.FC<FilterControlsProps> = ({ onFilterChange, selecte
     ? AVALIACOES_MOCK.filter(avaliacao => avaliacao.ano === selectedAnoEscolar)
     : AVALIACOES_MOCK;
 
+  const handleSelectChange = (filterType: string, value: string) => {
+    // Debug to console for troubleshooting
+    console.log(`Filter changed: ${filterType} = ${value}`);
+    onFilterChange(filterType, value);
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
       <div className="space-y-2">
         <Label htmlFor="escola-filter">Escola</Label>
         <Select 
           value={selectedFilters.escola}
-          onValueChange={(value) => onFilterChange('escola', value)}
+          onValueChange={(value) => handleSelectChange('escola', value)}
         >
           <SelectTrigger id="escola-filter">
             <SelectValue placeholder="Todas as escolas" />
@@ -61,7 +67,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({ onFilterChange, selecte
         <Label htmlFor="turma-filter">Turma</Label>
         <Select 
           value={selectedFilters.turma}
-          onValueChange={(value) => onFilterChange('turma', value)}
+          onValueChange={(value) => handleSelectChange('turma', value)}
         >
           <SelectTrigger id="turma-filter">
             <SelectValue placeholder="Todas as turmas" />
@@ -81,7 +87,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({ onFilterChange, selecte
         <Label htmlFor="turno-filter">Turno</Label>
         <Select 
           value={selectedFilters.turno}
-          onValueChange={(value) => onFilterChange('turno', value)}
+          onValueChange={(value) => handleSelectChange('turno', value)}
         >
           <SelectTrigger id="turno-filter">
             <SelectValue placeholder="Todos os turnos" />
@@ -101,7 +107,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({ onFilterChange, selecte
         <Label htmlFor="componente-filter">Componente</Label>
         <Select 
           value={selectedFilters.componente}
-          onValueChange={(value) => onFilterChange('componente', value)}
+          onValueChange={(value) => handleSelectChange('componente', value)}
         >
           <SelectTrigger id="componente-filter">
             <SelectValue placeholder="Todos os componentes" />
@@ -118,7 +124,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({ onFilterChange, selecte
         <Label htmlFor="avaliacao-filter">Avaliação</Label>
         <Select 
           value={selectedFilters.avaliacao}
-          onValueChange={(value) => onFilterChange('avaliacao', value)}
+          onValueChange={(value) => handleSelectChange('avaliacao', value)}
         >
           <SelectTrigger id="avaliacao-filter">
             <SelectValue placeholder="Todas as avaliações" />

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,34 +5,11 @@ import MainLayout from '@/components/layout/MainLayout';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import FilterControls from '@/components/dashboard/FilterControls';
 import { Filter } from 'lucide-react';
-
-// Filter-related mock data
-const generateFilteredData = (filters: any) => {
-  // This would normally adjust data based on filters
-  // For demo purposes, we'll just return the original data with slight variations
-  
-  // Apply some simple modifications based on filters
-  let modifier = 1.0;
-  if (filters.escola) modifier *= 0.9;
-  if (filters.turma) modifier *= 0.95;
-  if (filters.componente) modifier *= 1.1;
-  
-  return {
-    performanceData: performanceData.map(item => ({
-      ...item,
-      portugues: Math.round(item.portugues * (filters.componente === 'matematica' ? 1 : modifier)),
-      matematica: Math.round(item.matematica * (filters.componente === 'portugues' ? 1 : modifier))
-    })),
-    presencaData: presencaData.map(item => ({
-      ...item,
-      presentes: Math.min(100, Math.round(item.presentes * modifier)),
-      ausentes: Math.max(0, 100 - Math.round(item.presentes * modifier))
-    }))
-  };
-};
+import { TURMAS_MOCK } from '@/types/turmas';
+import { ESCOLAS_MOCK } from '@/types/escolas';
 
 // Dados simulados para os gráficos
-const performanceData = [
+const originalPerformanceData = [
   { mes: 'Jan', portugues: 65, matematica: 60 },
   { mes: 'Fev', portugues: 68, matematica: 62 },
   { mes: 'Mar', portugues: 72, matematica: 65 },
@@ -42,13 +18,111 @@ const performanceData = [
   { mes: 'Jun', portugues: 78, matematica: 75 },
 ];
 
-const presencaData = [
+const originalPresencaData = [
   { turma: '1º Ano', presentes: 92, ausentes: 8 },
   { turma: '2º Ano', presentes: 88, ausentes: 12 },
   { turma: '3º Ano', presentes: 90, ausentes: 10 },
   { turma: '4º Ano', presentes: 95, ausentes: 5 },
   { turma: '5º Ano', presentes: 91, ausentes: 9 },
 ];
+
+// Filter-related data function
+const generateFilteredData = (filters) => {
+  let filteredPerformanceData = [...originalPerformanceData];
+  let filteredPresencaData = [...originalPresencaData];
+  
+  // Apply escola filter
+  if (filters.escola !== 'all_escolas') {
+    // Simulate filtering performance data by escola
+    filteredPerformanceData = filteredPerformanceData.map(item => ({
+      ...item,
+      portugues: Math.round(item.portugues * 0.9 + Math.random() * 10),
+      matematica: Math.round(item.matematica * 0.9 + Math.random() * 10)
+    }));
+    
+    // Get escola name for more realistic filtering
+    const escolaName = ESCOLAS_MOCK.find(escola => escola.id === filters.escola)?.nome || '';
+    if (escolaName.includes('Municipal')) {
+      // Municipal schools might have different stats
+      filteredPresencaData = filteredPresencaData.map(item => ({
+        ...item,
+        presentes: Math.min(100, Math.round(item.presentes * 0.95)),
+        ausentes: Math.max(0, 100 - Math.round(item.presentes * 0.95))
+      }));
+    }
+  }
+  
+  // Apply turma filter
+  if (filters.turma !== 'all_turmas') {
+    const selectedTurma = TURMAS_MOCK.find(turma => turma.id === filters.turma);
+    
+    if (selectedTurma) {
+      // Filter presence data to show only selected turma or similar turmas
+      filteredPresencaData = originalPresencaData.filter(item => 
+        item.turma.includes(selectedTurma.ano.toString())
+      );
+      
+      // If no matching turmas, keep at least one for display
+      if (filteredPresencaData.length === 0) {
+        filteredPresencaData = [originalPresencaData[0]];
+      }
+    }
+  }
+  
+  // Apply componente filter
+  if (filters.componente !== 'all_componentes') {
+    if (filters.componente === 'portugues') {
+      // Emphasize Portuguese data
+      filteredPerformanceData = filteredPerformanceData.map(item => ({
+        ...item,
+        portugues: item.portugues,
+        matematica: item.matematica * 0.85 // De-emphasize math scores
+      }));
+    } else if (filters.componente === 'matematica') {
+      // Emphasize Math data
+      filteredPerformanceData = filteredPerformanceData.map(item => ({
+        ...item,
+        portugues: item.portugues * 0.85, // De-emphasize Portuguese scores
+        matematica: item.matematica
+      }));
+    }
+  }
+  
+  // Apply turno filter
+  if (filters.turno !== 'all_turnos') {
+    // Simulate different performance for different turnos
+    const turnoModifier = filters.turno === 'matutino' ? 1.05 : 0.95;
+    
+    filteredPerformanceData = filteredPerformanceData.map(item => ({
+      ...item,
+      portugues: Math.min(100, Math.round(item.portugues * turnoModifier)),
+      matematica: Math.min(100, Math.round(item.matematica * turnoModifier))
+    }));
+    
+    filteredPresencaData = filteredPresencaData.map(item => ({
+      ...item,
+      presentes: Math.min(100, Math.round(item.presentes * turnoModifier)),
+      ausentes: Math.max(0, 100 - Math.round(item.presentes * turnoModifier))
+    }));
+  }
+  
+  // Apply avaliacao filter
+  if (filters.avaliacao !== 'all_avaliacoes') {
+    // Different assessments might show different performance profiles
+    const randomOffset = Math.random() * 10 - 5; // Random offset between -5 and 5
+    
+    filteredPerformanceData = filteredPerformanceData.map(item => ({
+      ...item,
+      portugues: Math.min(100, Math.max(0, Math.round(item.portugues + randomOffset))),
+      matematica: Math.min(100, Math.max(0, Math.round(item.matematica + randomOffset)))
+    }));
+  }
+  
+  return {
+    performanceData: filteredPerformanceData, 
+    presencaData: filteredPresencaData
+  };
+};
 
 const Dashboard: React.FC = () => {
   const { user, isSecretaria } = useAuth();
@@ -111,7 +185,7 @@ const Dashboard: React.FC = () => {
                 Total de Alunos
               </CardTitle>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0m-3 7h3m-3 4h3m-6-4h.01M9 16h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
             </CardHeader>
             <CardContent>
@@ -128,7 +202,7 @@ const Dashboard: React.FC = () => {
                 Média em Português
               </CardTitle>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
             </CardHeader>
             <CardContent>

@@ -7,9 +7,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import RadarChartComponent from '@/components/charts/RadarChart';
 import FilterControls from '@/components/dashboard/FilterControls';
+import { TURMAS_MOCK } from '@/types/turmas';
+import { ESCOLAS_MOCK } from '@/types/escolas';
 
 // Dados simulados para os gráficos
-const desempenhoTurmas = [
+const originalDesempenhoTurmas = [
   { turma: '5º Ano A', portugues: 72, matematica: 68 },
   { turma: '5º Ano B', portugues: 76, matematica: 65 },
   { turma: '5º Ano C', portugues: 68, matematica: 71 },
@@ -17,7 +19,7 @@ const desempenhoTurmas = [
   { turma: '9º Ano B', portugues: 70, matematica: 66 },
 ];
 
-const desempenhoDescritores = [
+const portDescritores = [
   { descritor: 'D01', nome: 'Localizar informações', percentual: 78 },
   { descritor: 'D02', nome: 'Inferir sentido', percentual: 65 },
   { descritor: 'D03', nome: 'Inferir informação', percentual: 58 },
@@ -25,7 +27,7 @@ const desempenhoDescritores = [
   { descritor: 'D05', nome: 'Distinguir fato', percentual: 63 },
 ];
 
-const desempenhoMatematicaDescritores = [
+const matDescritores = [
   { descritor: 'D16', nome: 'Operações básicas', percentual: 76 },
   { descritor: 'D17', nome: 'Frações', percentual: 55 },
   { descritor: 'D18', nome: 'Geometria', percentual: 60 },
@@ -33,13 +35,13 @@ const desempenhoMatematicaDescritores = [
   { descritor: 'D20', nome: 'Estatística', percentual: 71 },
 ];
 
-const evolucaoDesempenho = [
+const originalEvolucaoDesempenho = [
   { avaliacao: 'Diagnóstica 1/2023', portugues: 62, matematica: 58 },
   { avaliacao: 'Diagnóstica 2/2023', portugues: 65, matematica: 61 },
   { avaliacao: 'Diagnóstica 1/2024', portugues: 70, matematica: 65 },
 ];
 
-const desempenhoHabilidades = [
+const originalHabilidades = [
   { nome: 'Leitura', percentual: 72 },
   { nome: 'Escrita', percentual: 68 },
   { nome: 'Interpretação', percentual: 66 },
@@ -49,25 +51,168 @@ const desempenhoHabilidades = [
 ];
 
 // Função para filtrar os dados baseados nos filtros selecionados
-const filterData = (data: any[], filters: any) => {
-  let filteredData = [...data];
+const filterData = (filters) => {
+  let desempenhoTurmas = [...originalDesempenhoTurmas];
+  let evolucaoDesempenho = [...originalEvolucaoDesempenho];
+  let desempenhoHabilidades = [...originalHabilidades];
+  let desempenhoDescritores = filters.componente === 'matematica' 
+    ? [...matDescritores] 
+    : [...portDescritores];
   
-  // Aplicar filtros conforme necessário
-  // Este é um exemplo simples, você deve adaptar de acordo com seus dados
-  if (filters.turma !== 'todas' && 'turma' in filteredData[0]) {
-    filteredData = filteredData.filter(item => item.turma.includes(filters.turma.split('-')[0]));
+  // Apply escola filter
+  if (filters.escola !== 'all_escolas') {
+    // Simulate filtering by escola
+    const randomModifier = 0.9 + Math.random() * 0.2; // Random between 0.9 and 1.1
+    
+    desempenhoTurmas = desempenhoTurmas.map(item => ({
+      ...item,
+      portugues: Math.min(100, Math.round(item.portugues * randomModifier)),
+      matematica: Math.min(100, Math.round(item.matematica * randomModifier))
+    }));
+    
+    evolucaoDesempenho = evolucaoDesempenho.map(item => ({
+      ...item,
+      portugues: Math.min(100, Math.round(item.portugues * randomModifier)),
+      matematica: Math.min(100, Math.round(item.matematica * randomModifier))
+    }));
+    
+    desempenhoHabilidades = desempenhoHabilidades.map(item => ({
+      ...item,
+      percentual: Math.min(100, Math.round(item.percentual * randomModifier))
+    }));
+    
+    desempenhoDescritores = desempenhoDescritores.map(item => ({
+      ...item,
+      percentual: Math.min(100, Math.round(item.percentual * randomModifier))
+    }));
   }
   
-  if (filters.componente !== 'todos') {
-    // Ajustar visualização baseada no componente selecionado
-    // Por exemplo, enfatizar dados de português ou matemática
+  // Apply turma filter
+  if (filters.turma !== 'all_turmas') {
+    const selectedTurma = TURMAS_MOCK.find(turma => turma.id === filters.turma);
+    
+    if (selectedTurma) {
+      // Filter to show only matching turmas
+      desempenhoTurmas = desempenhoTurmas.filter(item => 
+        item.turma.includes(selectedTurma.ano.toString()) || 
+        item.turma.includes(selectedTurma.nome)
+      );
+      
+      // If no matching turmas, keep at least one for display
+      if (desempenhoTurmas.length === 0) {
+        desempenhoTurmas = [originalDesempenhoTurmas[0]];
+      }
+      
+      // Adjust other data based on the selected turma's school year
+      const yearModifier = selectedTurma.ano <= 5 ? 0.9 : 1.1;
+      
+      evolucaoDesempenho = evolucaoDesempenho.map(item => ({
+        ...item,
+        portugues: Math.min(100, Math.round(item.portugues * yearModifier)),
+        matematica: Math.min(100, Math.round(item.matematica * yearModifier))
+      }));
+      
+      desempenhoHabilidades = desempenhoHabilidades.map(item => ({
+        ...item,
+        percentual: Math.min(100, Math.round(item.percentual * yearModifier))
+      }));
+    }
   }
   
-  if (filters.avaliacao !== 'diagnostica-1-2024') {
-    // Ajustar dados baseados na avaliação selecionada
+  // Apply componente filter
+  if (filters.componente !== 'all_componentes') {
+    if (filters.componente === 'portugues') {
+      // For Portuguese, highlight Portuguese-related metrics
+      desempenhoTurmas = desempenhoTurmas.map(item => ({
+        ...item,
+        portugues: item.portugues,
+        matematica: item.matematica * 0.7 // De-emphasize math
+      }));
+      
+      evolucaoDesempenho = evolucaoDesempenho.map(item => ({
+        ...item,
+        portugues: item.portugues,
+        matematica: item.matematica * 0.7 // De-emphasize math
+      }));
+      
+      // Focus on Portuguese-related skills
+      desempenhoHabilidades = desempenhoHabilidades.map(item => {
+        if (['Leitura', 'Escrita', 'Interpretação'].includes(item.nome)) {
+          return { ...item, percentual: Math.min(100, item.percentual + 5) };
+        }
+        return item;
+      });
+    } else if (filters.componente === 'matematica') {
+      // For Mathematics, highlight Math-related metrics
+      desempenhoTurmas = desempenhoTurmas.map(item => ({
+        ...item,
+        portugues: item.portugues * 0.7, // De-emphasize Portuguese
+        matematica: item.matematica
+      }));
+      
+      evolucaoDesempenho = evolucaoDesempenho.map(item => ({
+        ...item,
+        portugues: item.portugues * 0.7, // De-emphasize Portuguese
+        matematica: item.matematica
+      }));
+      
+      // Focus on Math-related skills
+      desempenhoHabilidades = desempenhoHabilidades.map(item => {
+        if (['Cálculo', 'Raciocínio Lógico', 'Resolução de Problemas'].includes(item.nome)) {
+          return { ...item, percentual: Math.min(100, item.percentual + 5) };
+        }
+        return item;
+      });
+    }
   }
   
-  return filteredData;
+  // Apply turno filter
+  if (filters.turno !== 'all_turnos') {
+    // Simulate different performance for different turnos
+    const turnoModifier = filters.turno === 'matutino' ? 1.05 : 0.95;
+    
+    desempenhoTurmas = desempenhoTurmas.map(item => ({
+      ...item,
+      portugues: Math.min(100, Math.round(item.portugues * turnoModifier)),
+      matematica: Math.min(100, Math.round(item.matematica * turnoModifier))
+    }));
+    
+    evolucaoDesempenho = evolucaoDesempenho.map(item => ({
+      ...item,
+      portugues: Math.min(100, Math.round(item.portugues * turnoModifier)),
+      matematica: Math.min(100, Math.round(item.matematica * turnoModifier))
+    }));
+  }
+  
+  // Apply avaliacao filter
+  if (filters.avaliacao !== 'all_avaliacoes') {
+    // Different assessments might focus on different areas
+    const randomOffset = Math.random() * 10 - 5; // Random offset between -5 and 5
+    
+    desempenhoTurmas = desempenhoTurmas.map(item => ({
+      ...item,
+      portugues: Math.min(100, Math.max(0, Math.round(item.portugues + randomOffset))),
+      matematica: Math.min(100, Math.max(0, Math.round(item.matematica + randomOffset)))
+    }));
+    
+    evolucaoDesempenho = evolucaoDesempenho.map(item => ({
+      ...item,
+      portugues: Math.min(100, Math.max(0, Math.round(item.portugues + randomOffset))),
+      matematica: Math.min(100, Math.max(0, Math.round(item.matematica + randomOffset)))
+    }));
+    
+    desempenhoDescritores = desempenhoDescritores.map(item => ({
+      ...item,
+      percentual: Math.min(100, Math.max(0, Math.round(item.percentual + randomOffset)))
+    }));
+  }
+  
+  return {
+    desempenhoTurmas,
+    evolucaoDesempenho,
+    desempenhoHabilidades,
+    desempenhoDescritores
+  };
 };
 
 const Relatorios: React.FC = () => {
@@ -98,20 +243,13 @@ const Relatorios: React.FC = () => {
     });
   };
   
-  // Aplicar filtros aos dados
-  const filteredDesempenhoTurmas = filterData(desempenhoTurmas, {
-    turma: selectedFilters.turma,
-    componente: selectedFilters.componente,
-    avaliacao: selectedFilters.avaliacao
-  });
-  
-  const filteredEvolucaoDesempenho = filterData(evolucaoDesempenho, {
-    componente: selectedFilters.componente
-  });
-  
-  const filteredDesempenhoDescritores = selectedFilters.componente === 'matematica' 
-    ? desempenhoMatematicaDescritores 
-    : desempenhoDescritores;
+  // Apply filters to data
+  const { 
+    desempenhoTurmas: filteredDesempenhoTurmas, 
+    evolucaoDesempenho: filteredEvolucaoDesempenho,
+    desempenhoHabilidades: filteredDesempenhoHabilidades,
+    desempenhoDescritores: filteredDesempenhoDescritores
+  } = filterData(selectedFilters);
   
   return (
     <MainLayout>
@@ -195,7 +333,7 @@ const Relatorios: React.FC = () => {
               </CardHeader>
               <CardContent className="h-80">
                 <RadarChartComponent 
-                  data={desempenhoHabilidades} 
+                  data={filteredDesempenhoHabilidades} 
                   dataKey="percentual" 
                   nameKey="nome" 
                 />
