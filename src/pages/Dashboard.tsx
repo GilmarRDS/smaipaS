@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import MainLayout from '@/components/layout/MainLayout';
@@ -53,26 +53,29 @@ const presencaData = [
 const Dashboard: React.FC = () => {
   const { user, isSecretaria } = useAuth();
   const [selectedFilters, setSelectedFilters] = useState({
-    escola: '',
-    turma: '',
-    turno: '',
-    componente: '',
-    avaliacao: ''
+    escola: 'all_escolas',
+    turma: 'all_turmas',
+    turno: 'all_turnos',
+    componente: 'all_componentes',
+    avaliacao: 'all_avaliacoes'
   });
   
   const handleFilterChange = (filterType: string, value: string) => {
-    setSelectedFilters(prev => ({
-      ...prev,
-      [filterType]: value
-    }));
-    
-    // Reset turma if escola changes and turma doesn't belong to that school
-    if (filterType === 'escola' && selectedFilters.turma) {
-      setSelectedFilters(prev => ({
+    setSelectedFilters(prev => {
+      // If turma filter changes, reset avaliacao filter
+      if (filterType === 'turma') {
+        return {
+          ...prev,
+          [filterType]: value,
+          avaliacao: 'all_avaliacoes' // Reset avaliação when turma changes
+        };
+      }
+      
+      return {
         ...prev,
-        turma: ''
-      }));
-    }
+        [filterType]: value
+      };
+    });
   };
   
   const { performanceData: filteredPerformanceData, presencaData: filteredPresencaData } = 

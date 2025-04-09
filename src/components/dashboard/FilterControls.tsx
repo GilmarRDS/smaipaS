@@ -20,10 +20,20 @@ interface FilterControlsProps {
 const FilterControls: React.FC<FilterControlsProps> = ({ onFilterChange, selectedFilters }) => {
   // Get unique turnos from turmas
   const turnos = [...new Set(TURMAS_MOCK.map(turma => turma.turno))];
+  
   // Get filtered turmas based on selected escola
-  const filteredTurmas = selectedFilters.escola 
+  const filteredTurmas = selectedFilters.escola !== "all_escolas" 
     ? TURMAS_MOCK.filter(turma => turma.escolaId === selectedFilters.escola)
     : TURMAS_MOCK;
+
+  // Get selected turma details
+  const selectedTurma = TURMAS_MOCK.find(turma => turma.id === selectedFilters.turma);
+  const selectedAnoEscolar = selectedTurma?.anoEscolar || '';
+  
+  // Filter avaliacoes based on selected ano escolar
+  const filteredAvaliacoes = selectedAnoEscolar 
+    ? AVALIACOES_MOCK.filter(avaliacao => avaliacao.ano === selectedAnoEscolar)
+    : AVALIACOES_MOCK;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
@@ -115,7 +125,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({ onFilterChange, selecte
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all_avaliacoes">Todas as avaliações</SelectItem>
-            {AVALIACOES_MOCK.map((avaliacao) => (
+            {filteredAvaliacoes.map((avaliacao) => (
               <SelectItem key={avaliacao.id} value={avaliacao.id}>
                 {avaliacao.nome}
               </SelectItem>
