@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,15 +8,13 @@ import FilterControls from '@/components/dashboard/FilterControls';
 import { Filter } from 'lucide-react';
 import { TURMAS_MOCK } from '@/types/turmas';
 import { ESCOLAS_MOCK } from '@/types/escolas';
+import RadarChartComponent from '@/components/charts/RadarChart';
+import { AVALIACOES_MOCK } from '@/types/avaliacoes';
 
-// Dados simulados para os gráficos
+// Dados simulados para os gráficos - agora baseados em avaliações e não em meses
 const originalPerformanceData = [
-  { mes: 'Jan', portugues: 65, matematica: 60 },
-  { mes: 'Fev', portugues: 68, matematica: 62 },
-  { mes: 'Mar', portugues: 72, matematica: 65 },
-  { mes: 'Abr', portugues: 70, matematica: 68 },
-  { mes: 'Mai', portugues: 74, matematica: 72 },
-  { mes: 'Jun', portugues: 78, matematica: 75 },
+  { avaliacao: 'Diagnóstica 1', portugues: 65, matematica: 60 },
+  { avaliacao: 'Diagnóstica 2', portugues: 72, matematica: 68 },
 ];
 
 const originalPresencaData = [
@@ -26,10 +25,46 @@ const originalPresencaData = [
   { turma: '5º Ano', presentes: 91, ausentes: 9 },
 ];
 
+// Dados simulados para descritores problemáticos por aluno
+const originalDescritoresProblematicosPorAluno = [
+  { aluno: 'Ana Silva', descritores: [
+    { codigo: 'D15', componente: 'Português', acertos: 30 },
+    { codigo: 'D23', componente: 'Matemática', acertos: 25 },
+    { codigo: 'D08', componente: 'Português', acertos: 40 }
+  ]},
+  { aluno: 'Bruno Santos', descritores: [
+    { codigo: 'D04', componente: 'Matemática', acertos: 20 },
+    { codigo: 'D15', componente: 'Português', acertos: 35 },
+    { codigo: 'D30', componente: 'Matemática', acertos: 30 }
+  ]},
+  { aluno: 'Carla Mendes', descritores: [
+    { codigo: 'D08', componente: 'Português', acertos: 25 },
+    { codigo: 'D23', componente: 'Matemática', acertos: 30 },
+    { codigo: 'D03', componente: 'Português', acertos: 40 }
+  ]},
+  { aluno: 'Daniel Costa', descritores: [
+    { codigo: 'D30', componente: 'Matemática', acertos: 15 },
+    { codigo: 'D15', componente: 'Português', acertos: 20 },
+    { codigo: 'D04', componente: 'Matemática', acertos: 25 }
+  ]},
+];
+
+// Dados para o radar chart - habilidades do aluno selecionado
+const getHabilidadesAluno = (alunoNome) => {
+  const aluno = originalDescritoresProblematicosPorAluno.find(a => a.aluno === alunoNome);
+  if (!aluno) return [];
+  
+  return aluno.descritores.map(d => ({
+    descritor: d.codigo,
+    percentual: d.acertos
+  }));
+};
+
 // Filter-related data function
 const generateFilteredData = (filters) => {
   let filteredPerformanceData = [...originalPerformanceData];
   let filteredPresencaData = [...originalPresencaData];
+  let filteredDescritoresPorAluno = [...originalDescritoresProblematicosPorAluno];
   
   // Apply escola filter
   if (filters.escola !== 'all_escolas') {
@@ -49,6 +84,9 @@ const generateFilteredData = (filters) => {
         presentes: Math.min(100, Math.round(item.presentes * 0.95)),
         ausentes: Math.max(0, 100 - Math.round(item.presentes * 0.95))
       }));
+      
+      // Filter alunos by escola
+      filteredDescritoresPorAluno = filteredDescritoresPorAluno.slice(0, 2);
     }
   }
   
@@ -66,6 +104,9 @@ const generateFilteredData = (filters) => {
       if (filteredPresencaData.length === 0) {
         filteredPresencaData = [originalPresencaData[0]];
       }
+      
+      // Filter alunos by turma
+      filteredDescritoresPorAluno = filteredDescritoresPorAluno.slice(0, 3);
     }
   }
   
@@ -78,12 +119,24 @@ const generateFilteredData = (filters) => {
         portugues: item.portugues,
         matematica: item.matematica * 0.85 // De-emphasize math scores
       }));
+      
+      // Filter descritores by componente
+      filteredDescritoresPorAluno = filteredDescritoresPorAluno.map(aluno => ({
+        ...aluno,
+        descritores: aluno.descritores.filter(d => d.componente === 'Português')
+      }));
     } else if (filters.componente === 'matematica') {
       // Emphasize Math data
       filteredPerformanceData = filteredPerformanceData.map(item => ({
         ...item,
         portugues: item.portugues * 0.85, // De-emphasize Portuguese scores
         matematica: item.matematica
+      }));
+      
+      // Filter descritores by componente
+      filteredDescritoresPorAluno = filteredDescritoresPorAluno.map(aluno => ({
+        ...aluno,
+        descritores: aluno.descritores.filter(d => d.componente === 'Matemática')
       }));
     }
   }
@@ -108,19 +161,23 @@ const generateFilteredData = (filters) => {
   
   // Apply avaliacao filter
   if (filters.avaliacao !== 'all_avaliacoes') {
-    // Different assessments might show different performance profiles
-    const randomOffset = Math.random() * 10 - 5; // Random offset between -5 and 5
+    // Get avaliação info
+    const avaliacaoInfo = AVALIACOES_MOCK.find(a => a.id === filters.avaliacao);
     
-    filteredPerformanceData = filteredPerformanceData.map(item => ({
-      ...item,
-      portugues: Math.min(100, Math.max(0, Math.round(item.portugues + randomOffset))),
-      matematica: Math.min(100, Math.max(0, Math.round(item.matematica + randomOffset)))
-    }));
+    if (avaliacaoInfo) {
+      // Filter performance data to show only the selected avaliação
+      if (avaliacaoInfo.nome.includes('Diagnóstica 1')) {
+        filteredPerformanceData = [filteredPerformanceData[0]];
+      } else if (avaliacaoInfo.nome.includes('Diagnóstica 2')) {
+        filteredPerformanceData = [filteredPerformanceData[1]];
+      }
+    }
   }
   
   return {
     performanceData: filteredPerformanceData, 
-    presencaData: filteredPresencaData
+    presencaData: filteredPresencaData,
+    descritoresPorAluno: filteredDescritoresPorAluno
   };
 };
 
@@ -133,6 +190,7 @@ const Dashboard: React.FC = () => {
     componente: 'all_componentes',
     avaliacao: 'all_avaliacoes'
   });
+  const [selectedAluno, setSelectedAluno] = useState('');
   
   const handleFilterChange = (filterType: string, value: string) => {
     setSelectedFilters(prev => {
@@ -152,8 +210,21 @@ const Dashboard: React.FC = () => {
     });
   };
   
-  const { performanceData: filteredPerformanceData, presencaData: filteredPresencaData } = 
-    generateFilteredData(selectedFilters);
+  const { 
+    performanceData: filteredPerformanceData, 
+    presencaData: filteredPresencaData,
+    descritoresPorAluno: filteredDescritoresPorAluno
+  } = generateFilteredData(selectedFilters);
+  
+  // Reset selectedAluno when filtered students change
+  useEffect(() => {
+    if (filteredDescritoresPorAluno.length > 0 && 
+        (!selectedAluno || !filteredDescritoresPorAluno.some(a => a.aluno === selectedAluno))) {
+      setSelectedAluno(filteredDescritoresPorAluno[0].aluno);
+    }
+  }, [filteredDescritoresPorAluno, selectedAluno]);
+  
+  const alunoHabilidades = selectedAluno ? getHabilidadesAluno(selectedAluno) : [];
   
   return (
     <MainLayout>
@@ -253,14 +324,14 @@ const Dashboard: React.FC = () => {
             <CardHeader>
               <CardTitle>Evolução do Desempenho</CardTitle>
               <CardDescription>
-                Média de desempenho nas disciplinas ao longo do tempo
+                Média de desempenho nas disciplinas por avaliação
               </CardDescription>
             </CardHeader>
             <CardContent className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={filteredPerformanceData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="mes" />
+                  <XAxis dataKey="avaliacao" />
                   <YAxis />
                   <Tooltip />
                   <Legend />
@@ -294,7 +365,7 @@ const Dashboard: React.FC = () => {
           </Card>
         </div>
 
-        <div className="grid gap-4 grid-cols-1">
+        <div className="grid gap-4 md:grid-cols-2">
           <Card>
             <CardHeader>
               <CardTitle>Principais Dificuldades Identificadas</CardTitle>
@@ -368,6 +439,78 @@ const Dashboard: React.FC = () => {
                     <div className="bg-green-500 h-2.5 rounded-full" style={{ width: '61.8%' }}></div>
                   </div>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Descritores Problemáticos por Aluno</CardTitle>
+              <CardDescription>
+                Análise das dificuldades individuais dos alunos
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="aluno-select" className="text-sm font-medium">Selecione um aluno:</label>
+                  <select 
+                    id="aluno-select" 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    value={selectedAluno}
+                    onChange={(e) => setSelectedAluno(e.target.value)}
+                  >
+                    {filteredDescritoresPorAluno.map(aluno => (
+                      <option key={aluno.aluno} value={aluno.aluno}>{aluno.aluno}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                {selectedAluno && (
+                  <div className="pt-2">
+                    <h4 className="text-sm font-medium mb-2">Desempenho nos Descritores:</h4>
+                    
+                    {/* Radar Chart for student skills */}
+                    <div className="h-60">
+                      <RadarChartComponent 
+                        data={alunoHabilidades}
+                        dataKey="percentual"
+                        nameKey="descritor"
+                        colors={["#7C3AED", "#8B5CF6"]}
+                      />
+                    </div>
+                    
+                    {/* Table of descriptors */}
+                    <div className="mt-4">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left pb-2">Descritor</th>
+                            <th className="text-left pb-2">Componente</th>
+                            <th className="text-right pb-2">% Acertos</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredDescritoresPorAluno.find(a => a.aluno === selectedAluno)?.descritores.map(descritor => (
+                            <tr key={descritor.codigo} className="border-b">
+                              <td className="py-2">{descritor.codigo}</td>
+                              <td className="py-2">{descritor.componente}</td>
+                              <td className="py-2 text-right">
+                                <span className={`px-2 py-0.5 rounded-full ${
+                                  descritor.acertos < 30 ? 'bg-red-100 text-red-800' : 
+                                  descritor.acertos < 50 ? 'bg-orange-100 text-orange-800' : 
+                                  'bg-green-100 text-green-800'
+                                }`}>
+                                  {descritor.acertos}%
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
