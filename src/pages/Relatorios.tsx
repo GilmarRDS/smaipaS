@@ -1,13 +1,12 @@
-
 import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import RadarChartComponent from '@/components/charts/RadarChart';
+import FilterControls from '@/components/dashboard/FilterControls';
 
 // Dados simulados para os gráficos
 const desempenhoTurmas = [
@@ -49,15 +48,70 @@ const desempenhoHabilidades = [
   { nome: 'Resolução de Problemas', percentual: 62 },
 ];
 
+// Função para filtrar os dados baseados nos filtros selecionados
+const filterData = (data: any[], filters: any) => {
+  let filteredData = [...data];
+  
+  // Aplicar filtros conforme necessário
+  // Este é um exemplo simples, você deve adaptar de acordo com seus dados
+  if (filters.turma !== 'todas' && 'turma' in filteredData[0]) {
+    filteredData = filteredData.filter(item => item.turma.includes(filters.turma.split('-')[0]));
+  }
+  
+  if (filters.componente !== 'todos') {
+    // Ajustar visualização baseada no componente selecionado
+    // Por exemplo, enfatizar dados de português ou matemática
+  }
+  
+  if (filters.avaliacao !== 'diagnostica-1-2024') {
+    // Ajustar dados baseados na avaliação selecionada
+  }
+  
+  return filteredData;
+};
+
 const Relatorios: React.FC = () => {
   const { isSecretaria, user } = useAuth();
-  const [escola, setEscola] = useState('todas');
-  const [turma, setTurma] = useState('todas');
-  const [avaliacao, setAvaliacao] = useState('diagnostica-1-2024');
-  const [componente, setComponente] = useState('todos');
+  const [selectedFilters, setSelectedFilters] = useState({
+    escola: 'all_escolas',
+    turma: 'all_turmas',
+    turno: 'all_turnos',
+    componente: 'all_componentes',
+    avaliacao: 'all_avaliacoes'
+  });
   
-  // Cores para os gráficos
-  const COLORS = ['#1E88E5', '#26A69A', '#66BB6A', '#FFA726', '#EF5350'];
+  const handleFilterChange = (filterType: string, value: string) => {
+    setSelectedFilters(prev => {
+      // If turma filter changes, reset avaliacao filter
+      if (filterType === 'turma') {
+        return {
+          ...prev,
+          [filterType]: value,
+          avaliacao: 'all_avaliacoes' // Reset avaliação when turma changes
+        };
+      }
+      
+      return {
+        ...prev,
+        [filterType]: value
+      };
+    });
+  };
+  
+  // Aplicar filtros aos dados
+  const filteredDesempenhoTurmas = filterData(desempenhoTurmas, {
+    turma: selectedFilters.turma,
+    componente: selectedFilters.componente,
+    avaliacao: selectedFilters.avaliacao
+  });
+  
+  const filteredEvolucaoDesempenho = filterData(evolucaoDesempenho, {
+    componente: selectedFilters.componente
+  });
+  
+  const filteredDesempenhoDescritores = selectedFilters.componente === 'matematica' 
+    ? desempenhoMatematicaDescritores 
+    : desempenhoDescritores;
   
   return (
     <MainLayout>
@@ -71,63 +125,10 @@ const Relatorios: React.FC = () => {
         
         <Card className="bg-smaipa-50/50 border-smaipa-100">
           <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {isSecretaria && (
-                <div>
-                  <Select value={escola} onValueChange={setEscola}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Escola" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todas">Todas as Escolas</SelectItem>
-                      <SelectItem value="escola-1">Escola Municipal A</SelectItem>
-                      <SelectItem value="escola-2">Escola Municipal B</SelectItem>
-                      <SelectItem value="escola-3">Escola Municipal C</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              
-              <div>
-                <Select value={turma} onValueChange={setTurma}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Turma" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todas">Todas as Turmas</SelectItem>
-                    <SelectItem value="5-ano-a">5º Ano A</SelectItem>
-                    <SelectItem value="5-ano-b">5º Ano B</SelectItem>
-                    <SelectItem value="9-ano-a">9º Ano A</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Select value={avaliacao} onValueChange={setAvaliacao}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Avaliação" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="diagnostica-1-2024">Diagnóstica 1/2024</SelectItem>
-                    <SelectItem value="diagnostica-2-2023">Diagnóstica 2/2023</SelectItem>
-                    <SelectItem value="diagnostica-1-2023">Diagnóstica 1/2023</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Select value={componente} onValueChange={setComponente}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Componente Curricular" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    <SelectItem value="portugues">Língua Portuguesa</SelectItem>
-                    <SelectItem value="matematica">Matemática</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            <FilterControls 
+              onFilterChange={handleFilterChange}
+              selectedFilters={selectedFilters}
+            />
           </CardContent>
         </Card>
         
@@ -149,7 +150,7 @@ const Relatorios: React.FC = () => {
                 </CardHeader>
                 <CardContent className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={desempenhoTurmas} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <BarChart data={filteredDesempenhoTurmas} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis type="number" domain={[0, 100]} />
                       <YAxis dataKey="turma" type="category" />
@@ -171,7 +172,7 @@ const Relatorios: React.FC = () => {
                 </CardHeader>
                 <CardContent className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={evolucaoDesempenho} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <LineChart data={filteredEvolucaoDesempenho} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="avaliacao" />
                       <YAxis domain={[0, 100]} />
@@ -213,7 +214,7 @@ const Relatorios: React.FC = () => {
                 </CardHeader>
                 <CardContent className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={desempenhoDescritores} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <BarChart data={selectedFilters.componente !== 'matematica' ? filteredDesempenhoDescritores : []} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="descritor" />
                       <YAxis domain={[0, 100]} />
@@ -244,7 +245,7 @@ const Relatorios: React.FC = () => {
                 </CardHeader>
                 <CardContent className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={desempenhoMatematicaDescritores} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <BarChart data={selectedFilters.componente !== 'portugues' ? filteredDesempenhoDescritores : []} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="descritor" />
                       <YAxis domain={[0, 100]} />
@@ -354,7 +355,7 @@ const Relatorios: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {turma === 'todas' ? (
+                {selectedFilters.turma === 'all_turmas' ? (
                   <div className="flex items-center justify-center h-40">
                     <div className="text-center">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
