@@ -28,7 +28,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({ onFilterChange, selecte
 
   // Get selected turma details
   const selectedTurma = TURMAS_MOCK.find(turma => turma.id === selectedFilters.turma);
-  const selectedAnoEscolar = selectedTurma?.anoEscolar || '';
+  const selectedAnoEscolar = selectedTurma?.ano || '';
   
   // Filter avaliacoes based on selected ano escolar
   const filteredAvaliacoes = selectedAnoEscolar 
