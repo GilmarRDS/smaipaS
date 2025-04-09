@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -104,7 +105,8 @@ const filterData = (filters) => {
       }
       
       // Adjust other data based on the selected turma's school year
-      const yearModifier = selectedTurma.ano <= 5 ? 0.9 : 1.1;
+      // Convert ano to number before comparison
+      const yearModifier = parseInt(selectedTurma.ano) <= 5 ? 0.9 : 1.1;
       
       evolucaoDesempenho = evolucaoDesempenho.map(item => ({
         ...item,
@@ -362,7 +364,7 @@ const Relatorios: React.FC = () => {
                         }}
                       />
                       <Bar dataKey="percentual" name="Percentual de Acerto" fill="#1E88E5">
-                        {desempenhoDescritores.map((entry, index) => (
+                        {filteredDesempenhoDescritores.map((entry, index) => (
                           <Cell 
                             key={`cell-${index}`} 
                             fill={entry.percentual < 60 ? '#EF5350' : entry.percentual < 70 ? '#FFA726' : '#66BB6A'} 
@@ -393,7 +395,7 @@ const Relatorios: React.FC = () => {
                         }}
                       />
                       <Bar dataKey="percentual" name="Percentual de Acerto" fill="#26A69A">
-                        {desempenhoMatematicaDescritores.map((entry, index) => (
+                        {filteredDesempenhoDescritores.map((entry, index) => (
                           <Cell 
                             key={`cell-${index}`} 
                             fill={entry.percentual < 60 ? '#EF5350' : entry.percentual < 70 ? '#FFA726' : '#66BB6A'} 
@@ -631,3 +633,4 @@ const Relatorios: React.FC = () => {
 };
 
 export default Relatorios;
+
