@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import RadarChartComponent from '@/components/charts/RadarChart';
 import { Button } from '@/components/ui/button';
-import { FileText, FileSpreadsheet, FileCode } from 'lucide-react';
+import { FileText, FilePdf, FileSpreadsheet } from 'lucide-react';
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -43,7 +43,6 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student }) => {
     );
   }
 
-  // Prepare data for radar chart
   const radarData = [
     { name: 'Português', value: student.portugues || 0 },
     { name: 'Matemática', value: student.matematica || 0 }
@@ -52,40 +51,72 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student }) => {
   const handleExportStudentReport = (format: 'excel' | 'pdf') => {
     const fileName = `relatorio_${student.nome.toLowerCase().replace(/\s+/g, '_')}.${format === 'excel' ? 'xlsx' : 'pdf'}`;
     
-    // Create a blob with some content to represent the file
     let content = '';
-    let mimeType = '';
     
     if (format === 'excel') {
-      content = 'Dados do aluno ' + student.nome + '\n';
-      content += 'Português: ' + student.portugues + '%\n';
-      content += 'Matemática: ' + student.matematica + '%\n';
-      content += 'Média: ' + student.media + '%\n';
-      mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      content = 'Dados do aluno ' + student.nome + '\r\n\r\n';
+      content += 'Componente\tPercentual\tNível\r\n';
+      content += `Português\t${student.portugues}%\t${(student.portugues || 0) >= 70 ? 'Adequado' : (student.portugues || 0) >= 60 ? 'Básico' : 'Em desenvolvimento'}\r\n`;
+      content += `Matemática\t${student.matematica}%\t${(student.matematica || 0) >= 70 ? 'Adequado' : (student.matematica || 0) >= 60 ? 'Básico' : 'Em desenvolvimento'}\r\n`;
+      content += `Média\t${student.media}%\t${(student.media || 0) >= 70 ? 'Adequado' : (student.media || 0) >= 60 ? 'Básico' : 'Em desenvolvimento'}\r\n`;
+      
+      content += '\r\nDescritores de Português\r\n';
+      content += 'Código\tDescritor\tPercentual\r\n';
+      
+      if (student.descritores?.portugues) {
+        student.descritores.portugues.forEach(desc => {
+          content += `${desc.codigo}\t${desc.nome}\t${desc.percentual}%\r\n`;
+        });
+      }
+      
+      content += '\r\nDescritores de Matemática\r\n';
+      content += 'Código\tDescritor\tPercentual\r\n';
+      
+      if (student.descritores?.matematica) {
+        student.descritores.matematica.forEach(desc => {
+          content += `${desc.codigo}\t${desc.nome}\t${desc.percentual}%\r\n`;
+        });
+      }
     } else {
-      content = 'Relatório de desempenho - ' + student.nome + '\n\n';
-      content += 'Português: ' + student.portugues + '%\n';
-      content += 'Matemática: ' + student.matematica + '%\n';
-      content += 'Média: ' + student.media + '%\n';
-      mimeType = 'application/pdf';
+      content = 'Relatório de desempenho - ' + student.nome + '\r\n\r\n';
+      content += 'Português: ' + student.portugues + '% - ';
+      content += (student.portugues || 0) >= 70 ? 'Adequado\r\n' : (student.portugues || 0) >= 60 ? 'Básico\r\n' : 'Em desenvolvimento\r\n';
+      
+      content += 'Matemática: ' + student.matematica + '% - ';
+      content += (student.matematica || 0) >= 70 ? 'Adequado\r\n' : (student.matematica || 0) >= 60 ? 'Básico\r\n' : 'Em desenvolvimento\r\n';
+      
+      content += 'Média: ' + student.media + '% - ';
+      content += (student.media || 0) >= 70 ? 'Adequado\r\n\r\n' : (student.media || 0) >= 60 ? 'Básico\r\n\r\n' : 'Em desenvolvimento\r\n\r\n';
+      
+      content += 'DESCRITORES DE PORTUGUÊS:\r\n';
+      if (student.descritores?.portugues) {
+        student.descritores.portugues.forEach(desc => {
+          content += `${desc.codigo} - ${desc.nome}: ${desc.percentual}%\r\n`;
+        });
+      }
+      
+      content += '\r\nDESCRITORES DE MATEMÁTICA:\r\n';
+      if (student.descritores?.matematica) {
+        student.descritores.matematica.forEach(desc => {
+          content += `${desc.codigo} - ${desc.nome}: ${desc.percentual}%\r\n`;
+        });
+      }
     }
     
-    // Create a blob
+    const mimeType = format === 'excel' 
+      ? 'text/csv;charset=utf-8'
+      : 'application/pdf';
+    
     const blob = new Blob([content], { type: mimeType });
     
-    // Create an object URL from the blob
     const url = URL.createObjectURL(blob);
-    
-    // Create a download link
     const link = document.createElement('a');
     link.href = url;
     link.download = fileName;
     document.body.appendChild(link);
     
-    // Trigger download
     link.click();
     
-    // Clean up
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     
@@ -254,7 +285,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student }) => {
               <span>Baixar como Excel</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleExportStudentReport('pdf')}>
-              <FileCode className="h-4 w-4 mr-2" />
+              <FilePdf className="h-4 w-4 mr-2" />
               <span>Baixar como PDF</span>
             </DropdownMenuItem>
           </DropdownMenuContent>

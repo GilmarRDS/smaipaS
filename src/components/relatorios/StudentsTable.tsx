@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { ActionButton } from '@/components/ui/action-button';
 import { Button } from '@/components/ui/button';
-import { FileText, FileSpreadsheet, FileCode } from 'lucide-react';
+import { FileText, FilePdf, FileSpreadsheet } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 
@@ -52,35 +51,34 @@ const StudentsTable: React.FC<StudentsTableProps> = ({
     const fileName = `relatorio_turma_${selectedTurma?.nome?.toLowerCase().replace(/\s+/g, '_') || 'selecionada'}.${extension}`;
     
     let content = '';
-    let mimeType = '';
     
     if (format === 'excel') {
-      content = 'Relatório da Turma: ' + (selectedTurma?.nome || 'Selecionada') + '\n\n';
-      content += 'Aluno\tPortuguês\tMatemática\tMédia\n';
+      content = 'Relatório da Turma: ' + (selectedTurma?.nome || 'Selecionada') + '\r\n\r\n';
+      content += 'Aluno\tPortuguês\tMatemática\tMédia\r\n';
       
       students.forEach(student => {
         if (student.presente) {
-          content += `${student.nome}\t${student.portugues}%\t${student.matematica}%\t${student.media}%\n`;
+          content += `${student.nome}\t${student.portugues}%\t${student.matematica}%\t${student.media}%\r\n`;
         } else {
-          content += `${student.nome}\tAusente\tAusente\tAusente\n`;
+          content += `${student.nome}\tAusente\tAusente\tAusente\r\n`;
         }
       });
-      
-      mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
     } else {
-      content = 'Relatório de Desempenho - Turma: ' + (selectedTurma?.nome || 'Selecionada') + '\n\n';
-      content += 'Listagem de Alunos:\n\n';
+      content = 'Relatório de Desempenho - Turma: ' + (selectedTurma?.nome || 'Selecionada') + '\r\n\r\n';
+      content += 'Listagem de Alunos:\r\n\r\n';
       
       students.forEach(student => {
         if (student.presente) {
-          content += `${student.nome}: Português ${student.portugues}%, Matemática ${student.matematica}%, Média ${student.media}%\n`;
+          content += `${student.nome}: Português ${student.portugues}%, Matemática ${student.matematica}%, Média ${student.media}%\r\n`;
         } else {
-          content += `${student.nome}: Ausente\n`;
+          content += `${student.nome}: Ausente\r\n`;
         }
       });
-      
-      mimeType = 'application/pdf';
     }
+    
+    const mimeType = format === 'excel' 
+      ? 'text/csv;charset=utf-8'
+      : 'application/pdf';
     
     const blob = new Blob([content], { type: mimeType });
     
@@ -212,7 +210,7 @@ const StudentsTable: React.FC<StudentsTableProps> = ({
                     <span>Baixar como Excel</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleExportReport('pdf')}>
-                    <FileCode className="h-4 w-4 mr-2" />
+                    <FilePdf className="h-4 w-4 mr-2" />
                     <span>Baixar como PDF</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>

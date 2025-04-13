@@ -27,9 +27,9 @@ const matDescritores = [
 ];
 
 const originalEvolucaoDesempenho = [
-  { avaliacao: 'Diagnóstica 1/2023', portugues: 62, matematica: 58 },
-  { avaliacao: 'Diagnóstica 2/2023', portugues: 65, matematica: 61 },
-  { avaliacao: 'Diagnóstica 1/2024', portugues: 70, matematica: 65 },
+  { avaliacao: 'Diagnóstica Inicial 1/2023', portugues: 62, matematica: 58 },
+  { avaliacao: 'Diagnóstica Final 2/2023', portugues: 65, matematica: 61 },
+  { avaliacao: 'Diagnóstica Inicial 1/2024', portugues: 70, matematica: 65 },
 ];
 
 const originalHabilidades = [

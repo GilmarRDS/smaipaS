@@ -71,7 +71,7 @@ const PerformanceCharts: React.FC<PerformanceChartsProps> = ({
           <CardHeader>
             <CardTitle>Evolução do Desempenho</CardTitle>
             <CardDescription>
-              Comparativo de desempenho nas últimas avaliações
+              Comparativo de desempenho nas avaliações diagnósticas
             </CardDescription>
           </CardHeader>
           <CardContent className="h-80">
@@ -79,7 +79,14 @@ const PerformanceCharts: React.FC<PerformanceChartsProps> = ({
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={evolucaoDesempenho}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="avaliacao" className="text-xs" />
+                  <XAxis 
+                    dataKey="avaliacao" 
+                    className="text-xs"
+                    tick={{ fontSize: 10 }}
+                    angle={-15}
+                    textAnchor="end"
+                    height={60}
+                  />
                   <YAxis domain={[0, 100]} className="text-xs" />
                   <ChartTooltipContent />
                   <Line 
