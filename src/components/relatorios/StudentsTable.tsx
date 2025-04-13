@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { ActionButton } from '@/components/ui/action-button';
 import { Button } from '@/components/ui/button';
-import { FileText, FilePdf, FileSpreadsheet } from 'lucide-react';
+import { FileText, FileDown, FileSpreadsheet } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 
@@ -210,7 +211,7 @@ const StudentsTable: React.FC<StudentsTableProps> = ({
                     <span>Baixar como Excel</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleExportReport('pdf')}>
-                    <FilePdf className="h-4 w-4 mr-2" />
+                    <FileDown className="h-4 w-4 mr-2" />
                     <span>Baixar como PDF</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>

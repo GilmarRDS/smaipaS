@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import RadarChartComponent from '@/components/charts/RadarChart';
 import { Button } from '@/components/ui/button';
-import { FileText, FilePdf, FileSpreadsheet } from 'lucide-react';
+import { FileText, FileDown, FileSpreadsheet } from 'lucide-react';
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -285,7 +285,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student }) => {
               <span>Baixar como Excel</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleExportStudentReport('pdf')}>
-              <FilePdf className="h-4 w-4 mr-2" />
+              <FileDown className="h-4 w-4 mr-2" />
               <span>Baixar como PDF</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
