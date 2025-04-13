@@ -4,6 +4,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import RadarChartComponent from '@/components/charts/RadarChart';
+import { Button } from '@/components/ui/button';
+import { FileText } from 'lucide-react';
+import { toast } from "sonner";
 
 interface StudentDetailsViewProps {
   student: {
@@ -45,6 +48,12 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student }) => {
     { name: 'Português', value: student.portugues || 0 },
     { name: 'Matemática', value: student.matematica || 0 }
   ];
+
+  const handleExportStudentReport = () => {
+    toast.success(`Relatório de ${student.nome} exportado`, {
+      description: "O relatório foi enviado para o seu email"
+    });
+  };
 
   return (
     <div className="space-y-6 py-4">
@@ -191,6 +200,13 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student }) => {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      <div className="flex justify-end">
+        <Button onClick={handleExportStudentReport}>
+          <FileText className="h-5 w-5 mr-2" />
+          Exportar Relatório Individual
+        </Button>
+      </div>
     </div>
   );
 };

@@ -9,10 +9,11 @@ import RadarChartComponent from '@/components/charts/RadarChart';
 import FilterControls from '@/components/dashboard/FilterControls';
 import { TURMAS_MOCK } from '@/types/turmas';
 import { ESCOLAS_MOCK } from '@/types/escolas';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { FileText } from 'lucide-react';
 import StudentDetailsView from '@/components/relatorios/StudentDetailsView';
+import { ActionButton } from '@/components/ui/action-button';
 
 const originalDesempenhoTurmas = [
   { turma: '5º Ano A', portugues: 72, matematica: 68 },
@@ -327,7 +328,14 @@ const Relatorios: React.FC = () => {
   };
   
   const handleExportReport = () => {
-    toast.success("Relatório exportado com sucesso", {
+    if (selectedFilters.turma === 'all_turmas') {
+      toast.error("Selecione uma turma específica para exportar o relatório");
+      return;
+    }
+    
+    const selectedTurma = TURMAS_MOCK.find(turma => turma.id === selectedFilters.turma);
+    
+    toast.success(`Relatório da turma ${selectedTurma?.nome || ''} exportado com sucesso`, {
       description: "O relatório foi enviado para o seu email"
     });
   };
@@ -650,14 +658,11 @@ const Relatorios: React.FC = () => {
                                 )}
                               </td>
                               <td className="p-2 text-right">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
+                                <ActionButton 
+                                  action="view" 
                                   onClick={() => handleViewStudentDetails(student)}
                                   disabled={!student.presente}
-                                >
-                                  Ver detalhes
-                                </Button>
+                                />
                               </td>
                             </tr>
                           ))}
@@ -668,7 +673,7 @@ const Relatorios: React.FC = () => {
                     <div className="flex justify-end">
                       <Button onClick={handleExportReport}>
                         <FileText className="h-5 w-5 mr-2" />
-                        Exportar Relatório
+                        Exportar Relatório da Turma
                       </Button>
                     </div>
                   </div>
@@ -683,6 +688,9 @@ const Relatorios: React.FC = () => {
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Detalhes do Aluno: {selectedStudent?.nome}</DialogTitle>
+            <DialogDescription>
+              Desempenho detalhado nas avaliações
+            </DialogDescription>
           </DialogHeader>
           {selectedStudent && <StudentDetailsView student={selectedStudent} />}
         </DialogContent>
