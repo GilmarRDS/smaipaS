@@ -3,6 +3,8 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import RadarChartComponent from '@/components/charts/RadarChart';
+import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import { Book, Calculator } from 'lucide-react';
 
 interface PerformanceChartsProps {
   desempenhoTurmas: Array<{
@@ -26,6 +28,19 @@ const PerformanceCharts: React.FC<PerformanceChartsProps> = ({
   evolucaoDesempenho, 
   desempenhoHabilidades 
 }) => {
+  const chartConfig = {
+    portugues: {
+      label: 'Língua Portuguesa',
+      color: 'hsl(214, 89%, 52%)',
+      icon: Book
+    },
+    matematica: {
+      label: 'Matemática',
+      color: 'hsl(160, 84%, 39%)',
+      icon: Calculator
+    }
+  };
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -37,17 +52,18 @@ const PerformanceCharts: React.FC<PerformanceChartsProps> = ({
             </CardDescription>
           </CardHeader>
           <CardContent className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={desempenhoTurmas} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" domain={[0, 100]} />
-                <YAxis dataKey="turma" type="category" />
-                <Tooltip formatter={(value) => [`${value}%`, '']} />
-                <Legend />
-                <Bar dataKey="portugues" name="Língua Portuguesa" fill="#1E88E5" />
-                <Bar dataKey="matematica" name="Matemática" fill="#26A69A" />
-              </BarChart>
-            </ResponsiveContainer>
+            <ChartContainer config={chartConfig}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={desempenhoTurmas} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis type="number" domain={[0, 100]} className="text-xs" />
+                  <YAxis dataKey="turma" type="category" className="text-xs" />
+                  <ChartTooltipContent />
+                  <Bar dataKey="portugues" name="Língua Portuguesa" fill={chartConfig.portugues.color} radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="matematica" name="Matemática" fill={chartConfig.matematica.color} radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
           </CardContent>
         </Card>
         
@@ -59,17 +75,30 @@ const PerformanceCharts: React.FC<PerformanceChartsProps> = ({
             </CardDescription>
           </CardHeader>
           <CardContent className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={evolucaoDesempenho} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="avaliacao" />
-                <YAxis domain={[0, 100]} />
-                <Tooltip formatter={(value) => [`${value}%`, '']} />
-                <Legend />
-                <Line type="monotone" dataKey="portugues" name="Língua Portuguesa" stroke="#1E88E5" strokeWidth={2} />
-                <Line type="monotone" dataKey="matematica" name="Matemática" stroke="#26A69A" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
+            <ChartContainer config={chartConfig}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={evolucaoDesempenho}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="avaliacao" className="text-xs" />
+                  <YAxis domain={[0, 100]} className="text-xs" />
+                  <ChartTooltipContent />
+                  <Line 
+                    type="monotone" 
+                    dataKey="portugues" 
+                    stroke={chartConfig.portugues.color} 
+                    strokeWidth={3} 
+                    dot={{ r: 5 }} 
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="matematica" 
+                    stroke={chartConfig.matematica.color} 
+                    strokeWidth={3} 
+                    dot={{ r: 5 }} 
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartContainer>
           </CardContent>
         </Card>
       </div>
@@ -86,6 +115,7 @@ const PerformanceCharts: React.FC<PerformanceChartsProps> = ({
             data={desempenhoHabilidades} 
             dataKey="percentual" 
             nameKey="nome" 
+            colors={['#7C3AED', '#8B5CF6']}
           />
         </CardContent>
       </Card>
