@@ -1,12 +1,12 @@
-
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import RadarChartComponent from '@/components/charts/RadarChart';
 import { Button } from '@/components/ui/button';
-import { FileText } from 'lucide-react';
+import { FileText, FileSpreadsheet, FilePdf } from 'lucide-react';
 import { toast } from "sonner";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface StudentDetailsViewProps {
   student: {
@@ -49,9 +49,17 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student }) => {
     { name: 'Matemática', value: student.matematica || 0 }
   ];
 
-  const handleExportStudentReport = () => {
-    toast.success(`Relatório de ${student.nome} exportado`, {
-      description: "O relatório foi enviado para o seu email"
+  const handleExportStudentReport = (format: 'excel' | 'pdf') => {
+    const fileName = `relatorio_${student.nome.toLowerCase().replace(/\s+/g, '_')}.${format === 'excel' ? 'xlsx' : 'pdf'}`;
+    
+    // Simulate file download
+    const link = document.createElement('a');
+    link.download = fileName;
+    link.href = '#';
+    link.click();
+    
+    toast.success(`Relatório de ${student.nome} baixado como ${format.toUpperCase()}`, {
+      description: `Arquivo ${fileName} salvo na pasta de downloads`
     });
   };
 
@@ -202,10 +210,24 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student }) => {
       </Tabs>
       
       <div className="flex justify-end">
-        <Button onClick={handleExportStudentReport}>
-          <FileText className="h-5 w-5 mr-2" />
-          Exportar Relatório Individual
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button>
+              <FileText className="h-5 w-5 mr-2" />
+              Exportar Relatório Individual
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => handleExportStudentReport('excel')}>
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              <span>Baixar como Excel</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExportStudentReport('pdf')}>
+              <FilePdf className="h-4 w-4 mr-2" />
+              <span>Baixar como PDF</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );
