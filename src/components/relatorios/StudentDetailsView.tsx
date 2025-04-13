@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,11 +52,42 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student }) => {
   const handleExportStudentReport = (format: 'excel' | 'pdf') => {
     const fileName = `relatorio_${student.nome.toLowerCase().replace(/\s+/g, '_')}.${format === 'excel' ? 'xlsx' : 'pdf'}`;
     
-    // Simulate file download
+    // Create a blob with some content to represent the file
+    let content = '';
+    let mimeType = '';
+    
+    if (format === 'excel') {
+      content = 'Dados do aluno ' + student.nome + '\n';
+      content += 'Português: ' + student.portugues + '%\n';
+      content += 'Matemática: ' + student.matematica + '%\n';
+      content += 'Média: ' + student.media + '%\n';
+      mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    } else {
+      content = 'Relatório de desempenho - ' + student.nome + '\n\n';
+      content += 'Português: ' + student.portugues + '%\n';
+      content += 'Matemática: ' + student.matematica + '%\n';
+      content += 'Média: ' + student.media + '%\n';
+      mimeType = 'application/pdf';
+    }
+    
+    // Create a blob
+    const blob = new Blob([content], { type: mimeType });
+    
+    // Create an object URL from the blob
+    const url = URL.createObjectURL(blob);
+    
+    // Create a download link
     const link = document.createElement('a');
+    link.href = url;
     link.download = fileName;
-    link.href = '#';
+    document.body.appendChild(link);
+    
+    // Trigger download
     link.click();
+    
+    // Clean up
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
     
     toast.success(`Relatório de ${student.nome} baixado como ${format.toUpperCase()}`, {
       description: `Arquivo ${fileName} salvo na pasta de downloads`
