@@ -9,6 +9,10 @@ import RadarChartComponent from '@/components/charts/RadarChart';
 import FilterControls from '@/components/dashboard/FilterControls';
 import { TURMAS_MOCK } from '@/types/turmas';
 import { ESCOLAS_MOCK } from '@/types/escolas';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { FileText } from 'lucide-react';
+import StudentDetailsView from '@/components/relatorios/StudentDetailsView';
 
 const originalDesempenhoTurmas = [
   { turma: '5º Ano A', portugues: 72, matematica: 68 },
@@ -47,6 +51,88 @@ const originalHabilidades = [
   { nome: 'Cálculo', percentual: 70 },
   { nome: 'Raciocínio Lógico', percentual: 64 },
   { nome: 'Resolução de Problemas', percentual: 62 },
+];
+
+const mockStudentData = [
+  { 
+    id: '1', 
+    nome: 'Ana Silva', 
+    presente: true, 
+    portugues: 85, 
+    matematica: 78, 
+    media: 81.5,
+    descritores: {
+      portugues: [
+        { codigo: 'D01', nome: 'Localizar informações', percentual: 90 },
+        { codigo: 'D02', nome: 'Inferir sentido', percentual: 75 },
+        { codigo: 'D03', nome: 'Inferir informação', percentual: 85 }
+      ],
+      matematica: [
+        { codigo: 'D16', nome: 'Operações básicas', percentual: 80 },
+        { codigo: 'D17', nome: 'Frações', percentual: 65 },
+        { codigo: 'D18', nome: 'Geometria', percentual: 85 }
+      ]
+    }
+  },
+  { 
+    id: '2', 
+    nome: 'Bruno Oliveira', 
+    presente: true, 
+    portugues: 72, 
+    matematica: 65, 
+    media: 68.5,
+    descritores: {
+      portugues: [
+        { codigo: 'D01', nome: 'Localizar informações', percentual: 75 },
+        { codigo: 'D02', nome: 'Inferir sentido', percentual: 70 },
+        { codigo: 'D03', nome: 'Inferir informação', percentual: 65 }
+      ],
+      matematica: [
+        { codigo: 'D16', nome: 'Operações básicas', percentual: 70 },
+        { codigo: 'D17', nome: 'Frações', percentual: 55 },
+        { codigo: 'D18', nome: 'Geometria', percentual: 65 }
+      ]
+    }
+  },
+  { 
+    id: '3', 
+    nome: 'Carla Santos', 
+    presente: true, 
+    portugues: 68, 
+    matematica: 62, 
+    media: 65,
+    descritores: {
+      portugues: [
+        { codigo: 'D01', nome: 'Localizar informações', percentual: 70 },
+        { codigo: 'D02', nome: 'Inferir sentido', percentual: 65 },
+        { codigo: 'D03', nome: 'Inferir informação', percentual: 65 }
+      ],
+      matematica: [
+        { codigo: 'D16', nome: 'Operações básicas', percentual: 65 },
+        { codigo: 'D17', nome: 'Frações', percentual: 55 },
+        { codigo: 'D18', nome: 'Geometria', percentual: 60 }
+      ]
+    }
+  },
+  { 
+    id: '4', 
+    nome: 'Daniel Lima', 
+    presente: false, 
+    portugues: null, 
+    matematica: null, 
+    media: null,
+    descritores: null
+  },
+  { 
+    id: '5', 
+    nome: 'Eduarda Costa', 
+    presente: false, 
+    portugues: null, 
+    matematica: null, 
+    media: null,
+    transferida: true,
+    descritores: null
+  }
 ];
 
 const filterData = (filters) => {
@@ -208,6 +294,9 @@ const Relatorios: React.FC = () => {
     avaliacao: 'all_avaliacoes'
   });
   
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [showStudentDetails, setShowStudentDetails] = useState(false);
+  
   const handleFilterChange = (filterType: string, value: string) => {
     setSelectedFilters(prev => {
       if (filterType === 'turma') {
@@ -231,6 +320,17 @@ const Relatorios: React.FC = () => {
     desempenhoHabilidades: filteredDesempenhoHabilidades,
     desempenhoDescritores: filteredDesempenhoDescritores
   } = filterData(selectedFilters);
+  
+  const handleViewStudentDetails = (student: any) => {
+    setSelectedStudent(student);
+    setShowStudentDetails(true);
+  };
+  
+  const handleExportReport = () => {
+    toast.success("Relatório exportado com sucesso", {
+      description: "O relatório foi enviado para o seu email"
+    });
+  };
   
   return (
     <MainLayout>
@@ -498,105 +598,76 @@ const Relatorios: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          <tr className="border-b">
-                            <td className="p-2 font-medium">Ana Silva</td>
-                            <td className="p-2 text-center">
-                              <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">Presente</span>
-                            </td>
-                            <td className="p-2 text-center">
-                              <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">85%</span>
-                            </td>
-                            <td className="p-2 text-center">
-                              <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">78%</span>
-                            </td>
-                            <td className="p-2 text-center">
-                              <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">81.5%</span>
-                            </td>
-                            <td className="p-2 text-right">
-                              <Button variant="outline" size="sm">Ver detalhes</Button>
-                            </td>
-                          </tr>
-                          <tr className="border-b">
-                            <td className="p-2 font-medium">Bruno Oliveira</td>
-                            <td className="p-2 text-center">
-                              <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">Presente</span>
-                            </td>
-                            <td className="p-2 text-center">
-                              <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">72%</span>
-                            </td>
-                            <td className="p-2 text-center">
-                              <span className="px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800">65%</span>
-                            </td>
-                            <td className="p-2 text-center">
-                              <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">68.5%</span>
-                            </td>
-                            <td className="p-2 text-right">
-                              <Button variant="outline" size="sm">Ver detalhes</Button>
-                            </td>
-                          </tr>
-                          <tr className="border-b">
-                            <td className="p-2 font-medium">Carla Santos</td>
-                            <td className="p-2 text-center">
-                              <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">Presente</span>
-                            </td>
-                            <td className="p-2 text-center">
-                              <span className="px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800">68%</span>
-                            </td>
-                            <td className="p-2 text-center">
-                              <span className="px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800">62%</span>
-                            </td>
-                            <td className="p-2 text-center">
-                              <span className="px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800">65%</span>
-                            </td>
-                            <td className="p-2 text-right">
-                              <Button variant="outline" size="sm">Ver detalhes</Button>
-                            </td>
-                          </tr>
-                          <tr className="border-b">
-                            <td className="p-2 font-medium">Daniel Lima</td>
-                            <td className="p-2 text-center">
-                              <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">Ausente</span>
-                            </td>
-                            <td className="p-2 text-center">
-                              <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">-</span>
-                            </td>
-                            <td className="p-2 text-center">
-                              <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">-</span>
-                            </td>
-                            <td className="p-2 text-center">
-                              <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">-</span>
-                            </td>
-                            <td className="p-2 text-right">
-                              <Button variant="outline" size="sm">Ver detalhes</Button>
-                            </td>
-                          </tr>
-                          <tr className="border-b">
-                            <td className="p-2 font-medium">Eduarda Costa</td>
-                            <td className="p-2 text-center">
-                              <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">Transferida</span>
-                            </td>
-                            <td className="p-2 text-center">
-                              <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">-</span>
-                            </td>
-                            <td className="p-2 text-center">
-                              <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">-</span>
-                            </td>
-                            <td className="p-2 text-center">
-                              <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">-</span>
-                            </td>
-                            <td className="p-2 text-right">
-                              <Button variant="outline" size="sm">Ver detalhes</Button>
-                            </td>
-                          </tr>
+                          {mockStudentData.map((student) => (
+                            <tr key={student.id} className="border-b">
+                              <td className="p-2 font-medium">{student.nome}</td>
+                              <td className="p-2 text-center">
+                                {student.transferida ? (
+                                  <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">Transferida</span>
+                                ) : student.presente ? (
+                                  <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">Presente</span>
+                                ) : (
+                                  <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">Ausente</span>
+                                )}
+                              </td>
+                              <td className="p-2 text-center">
+                                {student.portugues ? (
+                                  <span className={`px-2 py-1 rounded-full text-xs ${
+                                    student.portugues >= 70 ? 'bg-green-100 text-green-800' : 
+                                    student.portugues >= 60 ? 'bg-blue-100 text-blue-800' : 
+                                    'bg-orange-100 text-orange-800'
+                                  }`}>
+                                    {student.portugues}%
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">-</span>
+                                )}
+                              </td>
+                              <td className="p-2 text-center">
+                                {student.matematica ? (
+                                  <span className={`px-2 py-1 rounded-full text-xs ${
+                                    student.matematica >= 70 ? 'bg-green-100 text-green-800' : 
+                                    student.matematica >= 60 ? 'bg-blue-100 text-blue-800' : 
+                                    'bg-orange-100 text-orange-800'
+                                  }`}>
+                                    {student.matematica}%
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">-</span>
+                                )}
+                              </td>
+                              <td className="p-2 text-center">
+                                {student.media ? (
+                                  <span className={`px-2 py-1 rounded-full text-xs ${
+                                    student.media >= 70 ? 'bg-green-100 text-green-800' : 
+                                    student.media >= 60 ? 'bg-blue-100 text-blue-800' : 
+                                    'bg-orange-100 text-orange-800'
+                                  }`}>
+                                    {student.media}%
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">-</span>
+                                )}
+                              </td>
+                              <td className="p-2 text-right">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  onClick={() => handleViewStudentDetails(student)}
+                                  disabled={!student.presente}
+                                >
+                                  Ver detalhes
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
                         </tbody>
                       </table>
                     </div>
                     
                     <div className="flex justify-end">
-                      <Button>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
+                      <Button onClick={handleExportReport}>
+                        <FileText className="h-5 w-5 mr-2" />
                         Exportar Relatório
                       </Button>
                     </div>
@@ -607,6 +678,15 @@ const Relatorios: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
+      
+      <Dialog open={showStudentDetails} onOpenChange={setShowStudentDetails}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Aluno: {selectedStudent?.nome}</DialogTitle>
+          </DialogHeader>
+          {selectedStudent && <StudentDetailsView student={selectedStudent} />}
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };
