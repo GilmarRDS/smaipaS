@@ -11,11 +11,10 @@ import { TURMAS_MOCK } from '@/types/turmas';
 import { ESCOLAS_MOCK } from '@/types/escolas';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { FileText } from 'lucide-react';
+import { FileText, FileSpreadsheet, FileCode } from 'lucide-react';
 import StudentDetailsView from '@/components/relatorios/StudentDetailsView';
 import { ActionButton } from '@/components/ui/action-button';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { FileSpreadsheet, FilePdf } from 'lucide-react';
 
 const originalDesempenhoTurmas = [
   { turma: '5º Ano A', portugues: 72, matematica: 68 },
@@ -329,21 +328,22 @@ const Relatorios: React.FC = () => {
     setShowStudentDetails(true);
   };
   
-  const handleExportReport = () => {
+  const handleExportReport = (format: 'excel' | 'pdf') => {
     if (selectedFilters.turma === 'all_turmas') {
       toast.error("Selecione uma turma específica para exportar o relatório");
       return;
     }
     
     const selectedTurma = TURMAS_MOCK.find(turma => turma.id === selectedFilters.turma);
-    const fileName = `relatorio_turma_${selectedTurma?.nome?.toLowerCase().replace(/\s+/g, '_') || 'selecionada'}.xlsx`;
+    const extension = format === 'excel' ? 'xlsx' : 'pdf';
+    const fileName = `relatorio_turma_${selectedTurma?.nome?.toLowerCase().replace(/\s+/g, '_') || 'selecionada'}.${extension}`;
     
     const link = document.createElement('a');
     link.download = fileName;
     link.href = '#';
     link.click();
     
-    toast.success(`Relatório da turma ${selectedTurma?.nome || ''} baixado como Excel`, {
+    toast.success(`Relatório da turma ${selectedTurma?.nome || ''} baixado como ${format.toUpperCase()}`, {
       description: `Arquivo ${fileName} salvo na pasta de downloads`
     });
   };
@@ -687,12 +687,12 @@ const Relatorios: React.FC = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                          <DropdownMenuItem onClick={handleExportReport}>
+                          <DropdownMenuItem onClick={() => handleExportReport('excel')}>
                             <FileSpreadsheet className="h-4 w-4 mr-2" />
                             <span>Baixar como Excel</span>
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={handleExportReport}>
-                            <FilePdf className="h-4 w-4 mr-2" />
+                          <DropdownMenuItem onClick={() => handleExportReport('pdf')}>
+                            <FileCode className="h-4 w-4 mr-2" />
                             <span>Baixar como PDF</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
