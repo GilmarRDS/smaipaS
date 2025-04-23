@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,10 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { UploadCloud, FileType, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-
-
 import { turmasService } from '../../services/turmasService';
 import { avaliacoesService } from '../../services/avaliacoesService';
+
 
 interface ImportarGabaritoProps {
   turma: string;
@@ -37,8 +36,6 @@ const ImportarGabarito: React.FC<ImportarGabaritoProps> = ({
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Ajuste: turmasService.listarPorEscola e avaliacoesService.listarPorEscola precisam de escolaId
-        // Como escolaId não está disponível, usar string vazia ou ajustar conforme contexto
         const turmasData = await turmasService.listarPorEscola('');
         setTurmas(turmasData);
         const avaliacoesData = await avaliacoesService.listarPorEscola('');
