@@ -32,7 +32,7 @@ export class DescritorController {
 
   async criar(req: Request, res: Response) {
     try {
-      const { codigo, descricao, disciplina, tipo, ciclo } = req.body;
+      const { codigo, descricao, disciplina, tipo} = req.body;
 
       const descritor = await prisma.descritor.create({
         data: {
@@ -53,7 +53,7 @@ export class DescritorController {
   async atualizar(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { codigo, descricao, disciplina, tipo, ciclo } = req.body;
+      const { codigo, descricao, disciplina, tipo} = req.body;
 
       const descritor = await prisma.descritor.update({
         where: { id },

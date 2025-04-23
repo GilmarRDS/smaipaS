@@ -14,22 +14,35 @@ import {
 interface DescritorFormProps {
   descritor?: Descritor;
   onSubmit: (descritor: Omit<Descritor, 'id' | 'dataCriacao' | 'dataAtualizacao'>) => void;
-  onCancel: () => void; // Propriedade adicionada
+  onCancel: () => void;
 }
+
+// Tipos visuais usados no Select
+type TipoVisual = 'inicial' | 'final';
+
+// Mapeamento entre o que o usuário vê e o que o backend espera
+const mapTipoVisualParaBackend = (tipo: TipoVisual): 'DIAGNOSTICA_INICIAL' | 'DIAGNOSTICA_FINAL' =>
+  tipo === 'inicial' ? 'DIAGNOSTICA_INICIAL' : 'DIAGNOSTICA_FINAL';
+
+const mapTipoBackendParaVisual = (tipo: 'DIAGNOSTICA_INICIAL' | 'DIAGNOSTICA_FINAL'): TipoVisual =>
+  tipo === 'DIAGNOSTICA_FINAL' ? 'final' : 'inicial';
 
 export function DescritorForm({ descritor, onSubmit, onCancel }: DescritorFormProps) {
   const [codigo, setCodigo] = useState(descritor?.codigo || '');
   const [descricao, setDescricao] = useState(descritor?.descricao || '');
   const [disciplina, setDisciplina] = useState<'PORTUGUES' | 'MATEMATICA'>(descritor?.disciplina || 'PORTUGUES');
-  const [tipo, setTipo] = useState<'inicial' | 'final'>(descritor?.tipo || 'inicial');
+  const [tipo, setTipo] = useState<TipoVisual>(
+    descritor ? mapTipoBackendParaVisual(descritor.tipo) : 'inicial'
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
     onSubmit({
       codigo,
       descricao,
       disciplina,
-      tipo,
+      tipo: mapTipoVisualParaBackend(tipo),
     });
   };
 
@@ -78,7 +91,7 @@ export function DescritorForm({ descritor, onSubmit, onCancel }: DescritorFormPr
         <label htmlFor="tipo" className="block text-sm font-medium text-gray-700">
           Tipo de Diagnóstico
         </label>
-        <Select value={tipo} onValueChange={(value: 'inicial' | 'final') => setTipo(value)}>
+        <Select value={tipo} onValueChange={(value: TipoVisual) => setTipo(value)}>
           <SelectTrigger>
             <SelectValue placeholder="Selecione o tipo de diagnóstico" />
           </SelectTrigger>
