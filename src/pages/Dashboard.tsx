@@ -1,26 +1,25 @@
-
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Filter } from 'lucide-react';
+import { Filter, Loader2 } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import FilterControls from '@/components/dashboard/FilterControls';
 import DashboardCards from '@/components/dashboard/DashboardCards';
+import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import PerformanceCharts from '@/components/dashboard/PerformanceCharts';
 import DifficultyAnalysis from '@/components/dashboard/DifficultyAnalysis';
 import StudentDescriptorAnalysis from '@/components/dashboard/StudentDescriptorAnalysis';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import useDashboardData from '@/hooks/useDashboardData';
 
 const Dashboard: React.FC = () => {
   const { user, isSecretaria } = useAuth();
   const {
     selectedFilters,
     handleFilterChange,
-    performanceData,
-    presencaData,
     descritoresPorAluno,
     selectedAluno,
     setSelectedAluno,
-    alunoHabilidades
+    alunoHabilidades,
+    isLoading
   } = useDashboardData();
 
   return (
@@ -46,23 +45,29 @@ const Dashboard: React.FC = () => {
           />
         </div>
 
-        <DashboardCards isSecretaria={isSecretaria} />
+        {isLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <>
+            <DashboardCards isSecretaria={isSecretaria} />
+            <DashboardCharts isSecretaria={isSecretaria} />
 
-        <PerformanceCharts 
-          performanceData={performanceData} 
-          presencaData={presencaData} 
-        />
+            <PerformanceCharts isSecretaria={isSecretaria} />
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <DifficultyAnalysis />
-          
-          <StudentDescriptorAnalysis 
-            studentData={descritoresPorAluno}
-            selectedStudent={selectedAluno}
-            onStudentChange={setSelectedAluno}
-            studentSkills={alunoHabilidades}
-          />
-        </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <DifficultyAnalysis />
+              
+              <StudentDescriptorAnalysis 
+                studentData={descritoresPorAluno}
+                selectedStudent={selectedAluno}
+                onStudentChange={setSelectedAluno}
+                studentSkills={alunoHabilidades}
+              />
+            </div>
+          </>
+        )}
       </div>
     </MainLayout>
   );

@@ -1,137 +1,107 @@
-
-import { useState } from 'react';
-import MainLayout from '@/components/layout/MainLayout';
-import { Button } from '@/components/ui/button';
-import { Users, Plus } from 'lucide-react';
-import { toast } from 'sonner';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Turma, TURMAS_MOCK, ESCOLAS_MOCK } from '@/types/turmas';
-import TurmaForm from '@/components/turmas/TurmaForm';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import { toast } from 'sonner';
+import { Turma } from '@/types/turmas';
+import { turmasService } from '@/services/turmasService';
 import TurmasList from '@/components/turmas/TurmasList';
+import TurmaForm from '@/components/turmas/TurmaForm';
+import MainLayout from '@/components/layout/MainLayout';
 
 const Turmas = () => {
-  const { user, isSecretaria } = useAuth();
-  const [turmas, setTurmas] = useState<Turma[]>(TURMAS_MOCK);
-  const [open, setOpen] = useState(false);
-  const [editingTurma, setEditingTurma] = useState<Turma | null>(null);
-  
-  // Filtrar turmas por escola se for usuário de escola
-  const turmasFiltradas = isSecretaria 
-    ? turmas 
-    : turmas.filter(turma => turma.escolaId === user?.schoolId);
+  const { user } = useAuth();
+  const [turmas, setTurmas] = useState<Turma[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [selectedTurma, setSelectedTurma] = useState<Turma | null>(null);
 
-  // Escolas disponíveis para seleção (apenas para secretaria)
-  const escolasDisponiveis = isSecretaria 
-    ? ESCOLAS_MOCK 
-    : ESCOLAS_MOCK.filter(escola => escola.id === user?.schoolId);
-
-  const handleOpenForm = (turma?: Turma) => {
-    if (turma) {
-      setEditingTurma(turma);
-    } else {
-      setEditingTurma(null);
+  const loadTurmas = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await turmasService.listarPorEscola(user?.schoolId || '');
+      setTurmas(data);
+    } catch (error) {
+      toast.error('Erro ao carregar turmas');
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
-    setOpen(true);
+  }, [user?.schoolId]);
+
+  useEffect(() => {
+    loadTurmas();
+  }, [loadTurmas]);
+
+  const handleCreate = () => {
+    setSelectedTurma(null);
+    setShowForm(true);
   };
 
-  const handleSubmit = (data: Omit<Turma, 'id' | 'escola'>) => {
-    // Validações básicas
-    if (!data.nome || !data.ano || !data.turno || !data.escolaId) {
-      toast.error('Todos os campos são obrigatórios');
-      return;
-    }
-
-    // Encontrar o nome da escola
-    const selectedSchool = ESCOLAS_MOCK.find(escola => escola.id === data.escolaId);
-    
-    if (!selectedSchool) {
-      toast.error('Escola não encontrada');
-      return;
-    }
-
-    // Se estiver editando
-    if (editingTurma) {
-      const updatedTurmas = turmas.map(t => 
-        t.id === editingTurma.id 
-          ? { 
-              ...t, 
-              nome: data.nome, 
-              ano: data.ano, 
-              turno: data.turno,
-              escolaId: data.escolaId,
-              escola: selectedSchool.nome
-            }
-          : t
-      );
-      setTurmas(updatedTurmas);
-      toast.success('Turma atualizada com sucesso!');
-    } else {
-      // Adicionando nova turma
-      const newTurma: Turma = {
-        id: `turma-${Date.now()}`, // Gera ID único
-        nome: data.nome,
-        ano: data.ano,
-        turno: data.turno,
-        escolaId: data.escolaId,
-        escola: selectedSchool.nome
-      };
-      setTurmas([...turmas, newTurma]);
-      toast.success('Turma cadastrada com sucesso!');
-    }
-    
-    setOpen(false);
+  const handleEdit = (turma: Turma) => {
+    setSelectedTurma(turma);
+    setShowForm(true);
   };
 
-  const handleDelete = (id: string) => {
-    // Corrigir a sintaxe do toast
-    toast("Confirmar exclusão", {
-      description: "Tem certeza que deseja excluir esta turma?",
-      action: {
-        label: "Excluir",
-        onClick: () => {
-          setTurmas(turmas.filter(turma => turma.id !== id));
-          toast.success('Turma excluída com sucesso!');
-        }
-      },
-      cancel: {
-        label: "Cancelar",
-        onClick: () => {}
+  const handleDelete = async (turma: Turma) => {
+    try {
+      await turmasService.deletar(turma.id);
+      toast.success('Turma excluída com sucesso');
+      loadTurmas();
+    } catch (error) {
+      toast.error('Erro ao excluir turma');
+      console.error(error);
+    }
+  };
+
+  const handleSubmit = async (data: Partial<Turma>) => {
+    try {
+      if (selectedTurma) {
+        await turmasService.atualizar(selectedTurma.id, data);
+        toast.success('Turma atualizada com sucesso');
+      } else {
+        await turmasService.criar({
+          ...data,
+          escolaId: user?.schoolId || '',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        } as Omit<Turma, 'id'>);
+        toast.success('Turma criada com sucesso');
       }
-    });
+      setShowForm(false);
+      loadTurmas();
+    } catch (error) {
+      toast.error('Erro ao salvar turma');
+      console.error(error);
+    }
   };
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Users className="h-6 w-6 text-primary" />
+    <div className="container mx-auto p-4">
+      <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold">Turmas</h1>
-          </div>
-          
-          <Button onClick={() => handleOpenForm()}>
-            <Plus className="h-4 w-4 mr-2" />
+        <Button onClick={handleCreate}>
+          <Plus className="w-4 h-4 mr-2" />
             Nova Turma
           </Button>
         </div>
 
-        <TurmasList 
-          turmas={turmasFiltradas} 
-          onEdit={handleOpenForm} 
-          onDelete={handleDelete} 
-        />
-        
+      {showForm ? (
         <TurmaForm
-          open={open}
-          onOpenChange={setOpen}
-          editingTurma={editingTurma}
+          turma={selectedTurma}
           onSubmit={handleSubmit}
-          escolasDisponiveis={escolasDisponiveis}
-          isSecretaria={isSecretaria}
-          defaultEscolaId={user?.schoolId}
+          onCancel={() => setShowForm(false)}
         />
+      ) : (
+        <TurmasList
+          turmas={turmas}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          isLoading={loading}
+        />
+      )}
       </div>
-    </MainLayout>
   );
 };
 

@@ -1,0 +1,55 @@
+Replacement 1:
+Search string:
+              for (const aluno of alunos) {
+                try {
+                  const resposta = await alunosService.obterResposta(avaliacao.id, aluno.id);
+                  
+                  if (resposta) {
+                    totalNota += resposta.nota;
+                    totalAlunos++;
+                  }
+                } catch (error) {
+                  continue;
+                }
+              }
+Replacement:
+              for (const aluno of alunos) {
+                try {
+                  const resposta = await alunosService.obterRespostas(avaliacao.id, aluno.id);
+                  
+                  if (resposta) {
+                    totalNota += resposta.nota;
+                    totalAlunos++;
+                  }
+                } catch (error) {
+                  continue;
+                }
+              }
+
+Replacement 2:
+Search string:
+              for (const aluno of alunos) {
+                try {
+                  const resposta = await alunosService.obterResposta(avaliacao.id, aluno.id);
+                  if (resposta) {
+                    totalPresentes++;
+                  } else {
+                    totalAusentes++;
+                  }
+                } catch (error) {
+                  totalAusentes++;
+                }
+              }
+Replacement:
+              for (const aluno of alunos) {
+                try {
+                  const resposta = await alunosService.obterRespostas(avaliacao.id, aluno.id);
+                  if (resposta) {
+                    totalPresentes++;
+                  } else {
+                    totalAusentes++;
+                  }
+                } catch (error) {
+                  totalAusentes++;
+                }
+              }

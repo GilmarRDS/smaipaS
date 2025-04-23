@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id            String   @id @default(uuid())
+  nome          String
+  email         String   @unique
+  senha         String
+  role          Role     @default(escola)
+  escolaId      String?
+  escola        Escola?  @relation(fields: [escolaId], references: [id])
+  dataCriacao   DateTime @default(now())
+  dataAtualizacao DateTime @updatedAt
+}
+
+model Escola {
+  id            String   @id @default(uuid())
+  nome          String
+  inep          String   @unique
+  endereco      String
+  telefone      String
+  diretor       String
+  dataCriacao   DateTime @default(now())
+  dataAtualizacao DateTime @updatedAt
+  usuarios      Usuario[]
+  turmas        Turma[]
+  avaliacoes    Avaliacao[]
+}
+
+model Turma {
+  id            String   @id @default(uuid())
+  nome          String
+  ano           Int
+  escolaId      String
+  escola        Escola   @relation(fields: [escolaId], references: [id])
+  alunos        Aluno[]
+  avaliacoes    Avaliacao[]
+  dataCriacao   DateTime @default(now())
+  dataAtualizacao DateTime @updatedAt
+}
+
+model Aluno {
+  id            String   @id @default(uuid())
+  nome          String
+  matricula     String
+  turmaId       String
+  turma         Turma    @relation(fields: [turmaId], references: [id])
+  respostas     Resposta[]
+  dataCriacao   DateTime @default(now())
+  dataAtualizacao DateTime @updatedAt
+}
+
+model Avaliacao {
+  id            String   @id @default(uuid())
+  nome          String
+  tipo          TipoAvaliacao
+  disciplina    Disciplina
+  dataAplicacao DateTime
+  turmaId       String
+  turma         Turma    @relation(fields: [turmaId], references: [id])
+  escolaId      String
+  escola        Escola   @relation(fields: [escolaId], references: [id])
+  gabarito      Gabarito?
+  respostas     Resposta[]
+  dataCriacao   DateTime @default(now())
+  dataAtualizacao DateTime @updatedAt
+}
+
+model Gabarito {
+  id            String   @id @default(uuid())
+  avaliacaoId   String   @unique
+  avaliacao     Avaliacao @relation(fields: [avaliacaoId], references: [id])
+  itens         ItemGabarito[]
+  dataCriacao   DateTime @default(now())
+  dataAtualizacao DateTime @updatedAt
+}
+
+model ItemGabarito {
+  id            String   @id @default(uuid())
+  numero        Int
+  resposta      String
+  descritorId   String?
+  descritor     Descritor? @relation(fields: [descritorId], references: [id])
+  gabaritoId    String
+  gabarito      Gabarito  @relation(fields: [gabaritoId], references: [id])
+  dataCriacao   DateTime @default(now())
+  dataAtualizacao DateTime @updatedAt
+}
+
+model Resposta {
+  id            String   @id @default(uuid())
+  avaliacaoId   String
+  avaliacao     Avaliacao @relation(fields: [avaliacaoId], references: [id])
+  alunoId       String
+  aluno         Aluno    @relation(fields: [alunoId], references: [id])
+  itens         ItemResposta[]
+  compareceu    Boolean  @default(true)
+  transferido   Boolean  @default(false)
+  dataCriacao   DateTime @default(now())
+  dataAtualizacao DateTime @updatedAt
+}
+
+model ItemResposta {
+  id            String   @id @default(uuid())
+  numero        Int
+  resposta      String
+  correta       Boolean?
+  descritorId   String?
+  descritor     Descritor? @relation(fields: [descritorId], references: [id])
+  respostaId    String
+  respostaPai   Resposta @relation(fields: [respostaId], references: [id])
+  dataCriacao   DateTime @default(now())
+  dataAtualizacao DateTime @updatedAt
+}
+
+model Descritor {
+  id            String   @id @default(uuid())
+  codigo        String
+  descricao     String
+  disciplina    Disciplina
+  tipo          TipoAvaliacao
+  itensGabarito ItemGabarito[]
+  itensResposta ItemResposta[]
+  dataCriacao   DateTime @default(now())
+  dataAtualizacao DateTime @updatedAt
+}
+
+enum Role {
+  secretaria
+  escola
+}
+
+enum TipoAvaliacao {
+  DIAGNOSTICA_INICIAL
+  DIAGNOSTICA_FINAL
+}
+
+enum Disciplina {
+  PORTUGUES
+  MATEMATICA
+} 

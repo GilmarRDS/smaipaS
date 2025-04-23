@@ -1,9 +1,9 @@
-
 import React, { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { AppSidebar, SidebarButton } from './Sidebar';
+import { AppSidebar } from './Sidebar';
+import { SidebarButton } from './SidebarButton';
 
 interface MainLayoutProps {
   children: ReactNode;

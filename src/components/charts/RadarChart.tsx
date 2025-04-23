@@ -1,9 +1,12 @@
-
 import React from 'react';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip, Legend } from 'recharts';
 
+interface RadarChartDataItem {
+  [key: string]: string | number;
+}
+
 interface RadarChartProps {
-  data: any[];
+  data: RadarChartDataItem[];
   dataKey: string;
   nameKey: string;
   title?: string;

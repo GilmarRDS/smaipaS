@@ -1,52 +1,7 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { toast } from 'sonner';
-
-// Tipos para usuários
-export type UserRole = 'secretaria' | 'escola';
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  schoolId?: string;
-  schoolName?: string;
-}
-
-// Mock de usuários para demonstração
-const MOCK_USERS: User[] = [
-  {
-    id: '1',
-    name: 'Admin Secretaria',
-    email: 'admin@secretaria.edu.br',
-    role: 'secretaria',
-  },
-  {
-    id: '2',
-    name: 'Escola Municipal A',
-    email: 'escola.a@escolas.edu.br',
-    role: 'escola',
-    schoolId: 'escola-1',
-    schoolName: 'Escola Municipal A'
-  },
-  {
-    id: '3',
-    name: 'Escola Municipal B',
-    email: 'escola.b@escolas.edu.br',
-    role: 'escola',
-    schoolId: 'escola-2',
-    schoolName: 'Escola Municipal B'
-  }
-];
-
-interface AuthContextType {
-  user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
-  isAuthenticated: boolean;
-  isSecretaria: boolean;
-}
+import api from '@/lib/api';
+import { User, AuthContextType } from '@/types/auth';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -57,7 +12,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Verificar se existe um usuário no localStorage
     const storedUser = localStorage.getItem('smaipa_user');
-    if (storedUser) {
+    const token = localStorage.getItem('smaipa_token');
+    
+    if (storedUser && token) {
       try {
         const userData = JSON.parse(storedUser);
         setUser(userData);
@@ -65,33 +22,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (error) {
         console.error('Erro ao carregar usuário do localStorage', error);
         localStorage.removeItem('smaipa_user');
+        localStorage.removeItem('smaipa_token');
       }
     }
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Simular atraso de rede
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Verificar credenciais (simplificado para demonstração)
-    const foundUser = MOCK_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
-    
-    if (foundUser && password === '123456') { // Senha fixa para demonstração
-      setUser(foundUser);
+    try {
+      const response = await api.post('/usuarios/login', { 
+        email, 
+        senha: password 
+      });
+      
+      const { token, usuario } = response.data;
+      
+      // Converter o formato do usuário do backend para o formato do frontend
+      const userData: User = {
+        id: usuario.id,
+        name: usuario.nome,
+        email: usuario.email,
+        role: usuario.role,
+        schoolId: usuario.role === 'escola' ? usuario.escolaId || usuario.escola?.id || '' : '',
+        schoolName: usuario.escola?.nome
+      };
+      
+      if (userData.role === 'escola' && !userData.schoolId) {
+        throw new Error('Usuário do tipo escola deve ter um schoolId definido');
+      }
+      
+      localStorage.setItem('smaipa_token', token);
+      localStorage.setItem('smaipa_user', JSON.stringify(userData));
+      
+      setUser(userData);
       setIsAuthenticated(true);
-      localStorage.setItem('smaipa_user', JSON.stringify(foundUser));
-      toast.success(`Bem-vindo(a), ${foundUser.name}!`);
+      toast.success(`Bem-vindo(a), ${userData.name}!`);
       return true;
+    } catch (error) {
+      console.error('Erro ao fazer login:', error);
+      toast.error('Credenciais inválidas');
+      return false;
     }
-    
-    toast.error('Credenciais inválidas');
-    return false;
   };
 
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem('smaipa_user');
+    localStorage.removeItem('smaipa_token');
     toast.info('Sessão encerrada');
   };
 

@@ -1,20 +1,43 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { School, Plus } from 'lucide-react';
+import { School, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Escola, ESCOLAS_MOCK } from '@/types/escolas';
+import { Escola } from '@/types/escolas';
+import { escolasService } from '@/services/escolasService';
 import EscolaForm from '@/components/escolas/EscolaForm';
 import EscolasList from '@/components/escolas/EscolasList';
 
 const Escolas = () => {
   const { isSecretaria } = useAuth();
-  const [escolas, setEscolas] = useState<Escola[]>(ESCOLAS_MOCK);
+  const [escolas, setEscolas] = useState<Escola[]>([]);
   const [open, setOpen] = useState(false);
   const [editingEscola, setEditingEscola] = useState<Escola | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Se não for da secretaria, não carregar dados
+    if (!isSecretaria) {
+      return;
+    }
+
+    const carregarEscolas = async () => {
+      try {
+        setIsLoading(true);
+        const data = await escolasService.listar();
+        setEscolas(data);
+      } catch (error) {
+        console.error('Erro ao carregar escolas:', error);
+        toast.error('Erro ao carregar escolas');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    carregarEscolas();
+  }, [isSecretaria]);
 
   // Se não for da secretaria, redirecionar
   if (!isSecretaria) {
@@ -31,45 +54,64 @@ const Escolas = () => {
     setOpen(true);
   };
 
-  const handleSubmit = (escolaData: Omit<Escola, 'id'>) => {
-    // Se estiver editando
-    if (editingEscola) {
-      const updatedEscolas = escolas.map(esc => 
-        esc.id === editingEscola.id 
-          ? { ...esc, ...escolaData }
-          : esc
-      );
-      setEscolas(updatedEscolas);
-      toast.success('Escola atualizada com sucesso!');
-    } else {
-      // Adicionando nova escola
-      const newEscola: Escola = {
-        id: `escola-${Date.now()}`, // Gera ID único
-        ...escolaData
-      };
-      setEscolas([...escolas, newEscola]);
-      toast.success('Escola cadastrada com sucesso!');
+  const handleSubmit = async (escolaData: Omit<Escola, 'id'>) => {
+    try {
+      // Se estiver editando
+      if (editingEscola) {
+        await escolasService.atualizar(editingEscola.id, escolaData);
+        const updatedEscolas = escolas.map(esc => 
+          esc.id === editingEscola.id 
+            ? { ...esc, ...escolaData }
+            : esc
+        );
+        setEscolas(updatedEscolas);
+        toast.success('Escola atualizada com sucesso!');
+      } else {
+        // Adicionando nova escola
+        const newEscola = await escolasService.criar(escolaData);
+        setEscolas([...escolas, newEscola]);
+        toast.success('Escola cadastrada com sucesso!');
+      }
+      
+      setOpen(false);
+    } catch (error) {
+      console.error('Erro ao salvar escola:', error);
+      toast.error('Erro ao salvar escola');
     }
-    
-    setOpen(false);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     toast("Confirmar exclusão", {
       description: "Tem certeza que deseja excluir esta escola?",
       action: {
         label: "Excluir",
-        onClick: () => {
-          setEscolas(escolas.filter(escola => escola.id !== id));
-          toast.success('Escola excluída com sucesso!');
+        onClick: async () => {
+          try {
+            await escolasService.deletar(id);
+            setEscolas(escolas.filter(escola => escola.id !== id));
+            toast.success('Escola excluída com sucesso!');
+          } catch (error) {
+            console.error('Erro ao excluir escola:', error);
+            toast.error('Erro ao excluir escola');
+          }
         }
       },
       cancel: {
         label: "Cancelar",
-        onClick: () => {} // Adding the required onClick handler
+        onClick: () => {}
       }
     });
   };
+
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>

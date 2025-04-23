@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Sidebar as ShadcnSidebar,
@@ -11,32 +10,9 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { ChevronLeft } from 'lucide-react';
-
-interface SidebarLinkProps {
-  to: string;
-  icon: React.ReactNode;
-  label: string;
-  active?: boolean;
-}
-
-const SidebarLink: React.FC<SidebarLinkProps> = ({ to, icon, label, active }) => {
-  return (
-    <SidebarMenuItem>
-      <SidebarMenuButton asChild className={cn(active && "bg-sidebar-accent text-white")}>
-        <Link to={to} className="w-full">
-          {icon}
-          <span>{label}</span>
-        </Link>
-      </SidebarMenuButton>
-    </SidebarMenuItem>
-  );
-};
+import { SidebarLink } from './SidebarLink';
 
 export const AppSidebar: React.FC = () => {
   const { user, logout, isSecretaria } = useAuth();
@@ -158,18 +134,5 @@ export const AppSidebar: React.FC = () => {
         </div>
       </SidebarFooter>
     </ShadcnSidebar>
-  );
-};
-
-export const SidebarButton: React.FC = () => {
-  return (
-    <Button 
-      size="icon" 
-      variant="ghost" 
-      className="fixed top-4 right-4 z-50 lg:hidden"
-      data-sidebar-toggle
-    >
-      <ChevronLeft className="h-5 w-5" />
-    </Button>
   );
 };

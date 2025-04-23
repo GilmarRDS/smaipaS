@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { UploadCloud, FileType, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+
+
+import { turmasService } from '../../services/turmasService';
+import { avaliacoesService } from '../../services/avaliacoesService';
 
 interface ImportarGabaritoProps {
   turma: string;
@@ -28,6 +31,24 @@ const ImportarGabarito: React.FC<ImportarGabaritoProps> = ({
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [turmas, setTurmas] = useState<{id: string, nome: string}[]>([]);
+  const [avaliacoes, setAvaliacoes] = useState<{id: string, nome: string}[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Ajuste: turmasService.listarPorEscola e avaliacoesService.listarPorEscola precisam de escolaId
+        // Como escolaId não está disponível, usar string vazia ou ajustar conforme contexto
+        const turmasData = await turmasService.listarPorEscola('');
+        setTurmas(turmasData);
+        const avaliacoesData = await avaliacoesService.listarPorEscola('');
+        setAvaliacoes(avaliacoesData);
+      } catch (error) {
+        console.error('Erro ao buscar dados para importação:', error);
+      }
+    };
+    fetchData();
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -106,8 +127,9 @@ const ImportarGabarito: React.FC<ImportarGabaritoProps> = ({
                 <SelectValue placeholder="Selecione a turma" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="5-ano">5º Ano</SelectItem>
-                <SelectItem value="9-ano">9º Ano</SelectItem>
+                {turmas.map(t => (
+                  <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -119,8 +141,7 @@ const ImportarGabarito: React.FC<ImportarGabaritoProps> = ({
                 <SelectValue placeholder="Selecione o componente" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="portugues">Língua Portuguesa</SelectItem>
-                <SelectItem value="matematica">Matemática</SelectItem>
+                {/* Componente curricular não listado, manter vazio ou implementar serviço se existir */}
               </SelectContent>
             </Select>
           </div>
@@ -132,8 +153,9 @@ const ImportarGabarito: React.FC<ImportarGabaritoProps> = ({
                 <SelectValue placeholder="Selecione a avaliação" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="diagnostica-1">Diagnóstica 1</SelectItem>
-                <SelectItem value="diagnostica-2">Diagnóstica 2</SelectItem>
+                {avaliacoes.map(a => (
+                  <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

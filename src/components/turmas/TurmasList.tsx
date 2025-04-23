@@ -1,29 +1,18 @@
-
-import { Turma } from '@/types/turmas';
+import React from 'react';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ActionButton } from '@/components/ui/action-button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Turma } from '@/types/turmas';
+import { toast } from 'sonner';
 
 interface TurmasListProps {
   turmas: Turma[];
   onEdit: (turma: Turma) => void;
-  onDelete: (id: string) => void;
+  onDelete: (turma: Turma) => void;
+  isLoading?: boolean;
 }
 
-const TurmasList = ({ turmas, onEdit, onDelete }: TurmasListProps) => {
+const TurmasList = ({ turmas, onEdit, onDelete, isLoading = false }: TurmasListProps) => {
   const getTurnoLabel = (turno: Turma['turno']) => {
     const labels = {
       matutino: 'Matutino',
@@ -34,69 +23,65 @@ const TurmasList = ({ turmas, onEdit, onDelete }: TurmasListProps) => {
     return labels[turno];
   };
   
-  const getTurnoClass = (turno: Turma['turno']) => {
-    const classes = {
-      matutino: 'bg-blue-100 text-blue-800',
-      vespertino: 'bg-orange-100 text-orange-800',
-      noturno: 'bg-purple-100 text-purple-800',
-      integral: 'bg-green-100 text-green-800'
-    };
-    return classes[turno];
+  const handleDelete = (turma: Turma) => {
+    toast("Confirmar exclusão", {
+      description: "Tem certeza que deseja excluir esta turma?",
+      action: {
+        label: "Excluir",
+        onClick: () => onDelete(turma)
+      },
+      cancel: {
+        label: "Cancelar",
+        onClick: () => {}
+      }
+    });
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (turmas.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        Nenhuma turma encontrada
+      </div>
+    );
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Lista de Turmas</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {turmas.length === 0 ? (
-          <div className="text-center py-6 text-muted-foreground">
-            Nenhuma turma cadastrada
+    <div className="space-y-4">
+      {turmas.map((turma) => (
+        <Card key={turma.id} className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold">{turma.nome}</h3>
+              <p className="text-sm text-gray-500">{turma.ano} - {getTurnoLabel(turma.turno)}</p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onEdit(turma)}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDelete(turma)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Ano</TableHead>
-                <TableHead>Turno</TableHead>
-                <TableHead>Escola</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {turmas.map((turma) => (
-                <TableRow key={turma.id}>
-                  <TableCell className="font-medium">{turma.nome}</TableCell>
-                  <TableCell>{turma.ano}º Ano</TableCell>
-                  <TableCell>
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTurnoClass(turma.turno)}`}>
-                      {getTurnoLabel(turma.turno)}
-                    </span>
-                  </TableCell>
-                  <TableCell>{turma.escola}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <ActionButton 
-                        action="edit" 
-                        iconOnly 
-                        onClick={() => onEdit(turma)}
-                      />
-                      <ActionButton 
-                        action="delete" 
-                        iconOnly 
-                        onClick={() => onDelete(turma.id)}
-                      />
+        </Card>
+      ))}
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
   );
 };
 

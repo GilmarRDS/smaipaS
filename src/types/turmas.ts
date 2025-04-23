@@ -1,11 +1,15 @@
-
 export interface Turma {
   id: string;
   nome: string;
   ano: string;
   turno: 'matutino' | 'vespertino' | 'noturno' | 'integral';
-  escola: string;
   escolaId: string;
+  escola?: {
+    id: string;
+    nome: string;
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Escola {
@@ -20,8 +24,9 @@ export const TURMAS_MOCK: Turma[] = [
     nome: '1º Ano A',
     ano: '1',
     turno: 'matutino',
-    escola: 'Escola Municipal A',
     escolaId: 'escola-1',
+    createdAt: '',
+    updatedAt: '',
   },
   {
     id: 'turma-2',

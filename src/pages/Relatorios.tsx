@@ -1,17 +1,46 @@
+import React, { useState, useEffect } from 'react';
+import MainLayout from '../components/layout/MainLayout';
+import { Card, CardContent } from '../components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { useAuth } from '../contexts/AuthContext';
+import FilterControls from '../components/dashboard/FilterControls';
+import { turmasService } from '../services/turmasService';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
+import StudentDetailsView from '../components/relatorios/StudentDetailsView';
+import PerformanceCharts from '../components/relatorios/PerformanceCharts';
+import DescriptorsCharts from '../components/relatorios/DescriptorsCharts';
+import StudentsTable from '../components/relatorios/StudentsTable';
+import { avaliacoesService } from '../services/avaliacoesService';
+import { Avaliacao } from '../types/avaliacoes';
 
-import React, { useState } from 'react';
-import MainLayout from '@/components/layout/MainLayout';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/contexts/AuthContext';
-import FilterControls from '@/components/dashboard/FilterControls';
-import { TURMAS_MOCK } from '@/types/turmas';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import StudentDetailsView from '@/components/relatorios/StudentDetailsView';
-import PerformanceCharts from '@/components/relatorios/PerformanceCharts';
-import DescriptorsCharts from '@/components/relatorios/DescriptorsCharts';
-import StudentsTable from '@/components/relatorios/StudentsTable';
-import { filterData, mockStudentData } from '@/utils/relatoriosUtils';
+interface Student {
+  id: string;
+  nome: string;
+  presente: boolean;
+  portugues: number | null;
+  matematica: number | null;
+  media: number | null;
+  transferida?: boolean;
+  descritores: {
+    portugues: Array<{
+      codigo: string;
+      nome: string;
+      percentual: number;
+    }> | null;
+    matematica: Array<{
+      codigo: string;
+      nome: string;
+      percentual: number;
+    }> | null;
+  } | null;
+}
+
+interface DadosRelatorios {
+  desempenhoTurmas: Array<{ turma: string; portugues: number; matematica: number }>;
+  evolucaoDesempenho: Array<{ avaliacao: string; portugues: number; matematica: number }>;
+  desempenhoHabilidades: Array<{ nome: string; percentual: number }>;
+  desempenhoDescritores: Array<{ descritor: string; nome: string; percentual: number }>;
+}
 
 const Relatorios: React.FC = () => {
   const { isSecretaria, user } = useAuth();
@@ -23,9 +52,18 @@ const Relatorios: React.FC = () => {
     avaliacao: 'all_avaliacoes'
   });
   
-  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [showStudentDetails, setShowStudentDetails] = useState(false);
-  
+
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [errorStudents, setErrorStudents] = useState<string | null>(null);
+
+  const [desempenhoTurmas, setDesempenhoTurmas] = useState<DadosRelatorios['desempenhoTurmas']>([]);
+  const [evolucaoDesempenho, setEvolucaoDesempenho] = useState<DadosRelatorios['evolucaoDesempenho']>([]);
+  const [desempenhoHabilidades, setDesempenhoHabilidades] = useState<DadosRelatorios['desempenhoHabilidades']>([]);
+  const [desempenhoDescritores, setDesempenhoDescritores] = useState<DadosRelatorios['desempenhoDescritores']>([]);
+
   const handleFilterChange = (filterType: string, value: string) => {
     setSelectedFilters(prev => {
       if (filterType === 'turma') {
@@ -35,30 +73,93 @@ const Relatorios: React.FC = () => {
           avaliacao: 'all_avaliacoes'
         };
       }
-      
+
       return {
         ...prev,
         [filterType]: value
       };
     });
   };
-  
-  const { 
-    desempenhoTurmas: filteredDesempenhoTurmas, 
-    evolucaoDesempenho: filteredEvolucaoDesempenho,
-    desempenhoHabilidades: filteredDesempenhoHabilidades,
-    desempenhoDescritores: filteredDesempenhoDescritores
-  } = filterData(selectedFilters);
-  
-  const handleViewStudentDetails = (student: any) => {
+
+  const handleViewStudentDetails = (student: Student) => {
     setSelectedStudent(student);
     setShowStudentDetails(true);
   };
-  
+
+  const [turmas, setTurmas] = React.useState<Array<{id: string; nome: string}>>([]);
+
+  React.useEffect(() => {
+    async function fetchTurmas() {
+      if (selectedFilters.escola === 'all_escolas') {
+        setTurmas([]);
+        return;
+      }
+      try {
+        const turmasData = await turmasService.listar(selectedFilters.escola);
+        setTurmas(turmasData);
+      } catch (error) {
+        console.error('Erro ao buscar turmas:', error);
+        setTurmas([]);
+      }
+    }
+    fetchTurmas();
+  }, [selectedFilters.escola]);
+
   const selectedTurma = selectedFilters.turma !== 'all_turmas' 
-    ? TURMAS_MOCK.find(turma => turma.id === selectedFilters.turma) 
+    ? turmas.find(turma => turma.id === selectedFilters.turma) 
     : undefined;
-  
+
+  useEffect(() => {
+    async function fetchRelatorioData() {
+      try {
+        const dados = await (avaliacoesService as unknown as { obterDadosRelatorios?: (params: { escolaId?: string; turmaId?: string; componente?: string }) => Promise<DadosRelatorios | undefined> }).obterDadosRelatorios?.({
+          escolaId: selectedFilters.escola !== 'all_escolas' ? selectedFilters.escola : undefined,
+          turmaId: selectedFilters.turma !== 'all_turmas' ? selectedFilters.turma : undefined,
+          componente: selectedFilters.componente !== 'all_componentes' ? selectedFilters.componente : undefined,
+        }) as DadosRelatorios | undefined;
+
+        setDesempenhoTurmas(dados?.desempenhoTurmas ?? []);
+        setEvolucaoDesempenho(dados?.evolucaoDesempenho ?? []);
+        setDesempenhoHabilidades(dados?.desempenhoHabilidades ?? []);
+        setDesempenhoDescritores(dados?.desempenhoDescritores ?? []);
+      } catch (error) {
+        console.error('Erro ao buscar dados dos relatórios:', error);
+      }
+    }
+    fetchRelatorioData();
+  }, [selectedFilters]);
+
+  useEffect(() => {
+    const fetchStudents = async () => {
+      if (selectedFilters.turma === 'all_turmas') {
+        setStudents([]);
+        return;
+      }
+      setLoadingStudents(true);
+      setErrorStudents(null);
+      try {
+        const data: Avaliacao[] = await avaliacoesService.listarPorTurma(selectedFilters.turma);
+        const mappedStudents = data.map((aluno) => ({
+          id: aluno.id,
+          nome: aluno.nome,
+          presente: false,
+          portugues: null,
+          matematica: null,
+          media: null,
+          descritores: null,
+          transferida: (aluno as { transferida?: boolean }).transferida // workaround for missing property
+        }));
+        setStudents(mappedStudents);
+      } catch (error) {
+        setErrorStudents('Erro ao carregar alunos');
+      } finally {
+        setLoadingStudents(false);
+      }
+    };
+
+    fetchStudents();
+  }, [selectedFilters.turma]);
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -68,7 +169,7 @@ const Relatorios: React.FC = () => {
             Analise o desempenho dos alunos nas avaliações
           </p>
         </div>
-        
+
         <Card className="bg-smaipa-50/50 border-smaipa-100">
           <CardContent className="pt-6">
             <FilterControls 
@@ -77,40 +178,44 @@ const Relatorios: React.FC = () => {
             />
           </CardContent>
         </Card>
-        
+
         <Tabs defaultValue="geral" className="space-y-4">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="geral">Visão Geral</TabsTrigger>
             <TabsTrigger value="descritores">Por Descritores</TabsTrigger>
             <TabsTrigger value="alunos">Por Alunos</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="geral" className="space-y-4">
             <PerformanceCharts 
-              desempenhoTurmas={filteredDesempenhoTurmas}
-              evolucaoDesempenho={filteredEvolucaoDesempenho}
-              desempenhoHabilidades={filteredDesempenhoHabilidades}
+              desempenhoTurmas={desempenhoTurmas}
+              evolucaoDesempenho={evolucaoDesempenho}
+              desempenhoHabilidades={desempenhoHabilidades}
             />
           </TabsContent>
-          
+
           <TabsContent value="descritores" className="space-y-4">
             <DescriptorsCharts 
-              desempenhoDescritores={filteredDesempenhoDescritores}
+              desempenhoDescritores={desempenhoDescritores}
               componente={selectedFilters.componente}
             />
           </TabsContent>
-          
+
           <TabsContent value="alunos" className="space-y-4">
-            <StudentsTable 
-              students={mockStudentData}
-              isTurmaSelected={selectedFilters.turma !== 'all_turmas'}
-              selectedTurma={selectedTurma}
-              onViewStudentDetails={handleViewStudentDetails}
-            />
+            {loadingStudents && <p>Carregando alunos...</p>}
+            {errorStudents && <p className="text-red-600">{errorStudents}</p>}
+            {!loadingStudents && !errorStudents && (
+              <StudentsTable 
+                students={students}
+                isTurmaSelected={selectedFilters.turma !== 'all_turmas'}
+                selectedTurma={selectedTurma}
+                onViewStudentDetails={handleViewStudentDetails}
+              />
+            )}
           </TabsContent>
         </Tabs>
       </div>
-      
+
       <Dialog open={showStudentDetails} onOpenChange={setShowStudentDetails}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -127,3 +232,4 @@ const Relatorios: React.FC = () => {
 };
 
 export default Relatorios;
+

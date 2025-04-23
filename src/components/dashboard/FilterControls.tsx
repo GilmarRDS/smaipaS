@@ -1,10 +1,11 @@
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { ESCOLAS_MOCK } from "@/types/escolas";
-import { TURMAS_MOCK } from "@/types/turmas";
-import { AVALIACOES_MOCK } from "@/types/avaliacoes";
+import { escolasService } from '@/services/escolasService';
+import { turmasService } from '@/services/turmasService';
+import { avaliacoesService } from '@/services/avaliacoesService';
+import { useAuth } from '@/contexts/AuthContext';
+import { Loader2 } from 'lucide-react';
 
 interface FilterControlsProps {
   onFilterChange: (filterType: string, value: string) => void;
@@ -18,28 +19,76 @@ interface FilterControlsProps {
 }
 
 const FilterControls: React.FC<FilterControlsProps> = ({ onFilterChange, selectedFilters }) => {
+  const { user, isSecretaria } = useAuth();
+  const [escolas, setEscolas] = useState([]);
+  const [turmas, setTurmas] = useState([]);
+  const [avaliacoes, setAvaliacoes] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const carregarDados = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Carregar escolas
+        const escolasData = await escolasService.listar();
+        setEscolas(escolasData);
+        
+        // Carregar turmas
+        let turmasData;
+        if (isSecretaria) {
+          turmasData = await turmasService.listar();
+        } else {
+          turmasData = await turmasService.listarPorEscola(user?.schoolId || '');
+        }
+        setTurmas(turmasData);
+        
+        // Carregar avaliações
+        let avaliacoesData;
+        if (isSecretaria) {
+          avaliacoesData = await avaliacoesService.listar();
+        } else {
+          avaliacoesData = await avaliacoesService.listarPorEscola(user?.schoolId || '');
+        }
+        setAvaliacoes(avaliacoesData);
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    carregarDados();
+  }, [isSecretaria, user?.schoolId]);
+
   // Get unique turnos from turmas
-  const turnos = [...new Set(TURMAS_MOCK.map(turma => turma.turno))];
+  const turnos = [...new Set(turmas.map(turma => turma.turno))];
   
   // Get filtered turmas based on selected escola
   const filteredTurmas = selectedFilters.escola !== "all_escolas" 
-    ? TURMAS_MOCK.filter(turma => turma.escolaId === selectedFilters.escola)
-    : TURMAS_MOCK;
+    ? turmas.filter(turma => turma.escolaId === selectedFilters.escola)
+    : turmas;
 
   // Get selected turma details
-  const selectedTurma = TURMAS_MOCK.find(turma => turma.id === selectedFilters.turma);
+  const selectedTurma = turmas.find(turma => turma.id === selectedFilters.turma);
   const selectedAnoEscolar = selectedTurma?.ano || '';
   
   // Filter avaliacoes based on selected ano escolar
   const filteredAvaliacoes = selectedAnoEscolar 
-    ? AVALIACOES_MOCK.filter(avaliacao => avaliacao.ano === selectedAnoEscolar)
-    : AVALIACOES_MOCK;
+    ? avaliacoes.filter(avaliacao => avaliacao.ano === selectedAnoEscolar)
+    : avaliacoes;
 
   const handleSelectChange = (filterType: string, value: string) => {
-    // Debug to console for troubleshooting
-    console.log(`Filter changed: ${filterType} = ${value}`);
     onFilterChange(filterType, value);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
@@ -54,7 +103,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({ onFilterChange, selecte
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all_escolas">Todas as escolas</SelectItem>
-            {ESCOLAS_MOCK.map((escola) => (
+            {escolas.map((escola) => (
               <SelectItem key={escola.id} value={escola.id}>
                 {escola.nome}
               </SelectItem>
@@ -114,7 +163,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({ onFilterChange, selecte
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all_componentes">Todos os componentes</SelectItem>
-            <SelectItem value="portugues">Língua Portuguesa</SelectItem>
+            <SelectItem value="portugues">Português</SelectItem>
             <SelectItem value="matematica">Matemática</SelectItem>
           </SelectContent>
         </Select>
