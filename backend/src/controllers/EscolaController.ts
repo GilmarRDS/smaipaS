@@ -1,6 +1,5 @@
-import { Response } from 'express';
-import { prisma } from '../lib/prisma';
 import { Request, Response } from 'express';
+import { prisma } from '../lib/prisma';
 
 export class EscolaController {
   async criar(request: Request, response: Response) {

@@ -42,12 +42,12 @@ const useDashboardData = () => {
         // Carregar avaliações
         const avaliacoes = user.role === 'secretaria' 
           ? [] // Secretaria não carrega dados específicos de escola
-          : await avaliacoesService.listarPorEscola(user.schoolId);
+          : await avaliacoesService.obterDadosRelatorios({ escolaId: user.schoolId });
         
         // Carregar turmas
         const turmas = user.role === 'secretaria'
           ? [] // Secretaria não carrega dados específicos de escola
-          : await turmasService.listarPorEscola(user.schoolId);
+          : await turmasService.listar(user.schoolId);
         
         // Processar dados de performance
         const performanceMap: { [key: string]: { portugues: number; matematica: number; totalPortugues: number; totalMatematica: number } } = {};

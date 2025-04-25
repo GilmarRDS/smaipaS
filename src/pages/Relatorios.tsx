@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import { Card, CardContent } from '../components/ui/card';
@@ -11,7 +12,6 @@ import PerformanceCharts from '../components/relatorios/PerformanceCharts';
 import DescriptorsCharts from '../components/relatorios/DescriptorsCharts';
 import StudentsTable from '../components/relatorios/StudentsTable';
 import { avaliacoesService } from '../services/avaliacoesService';
-import { Avaliacao } from '../types/avaliacoes';
 
 interface Student {
   id: string;
@@ -112,16 +112,23 @@ const Relatorios: React.FC = () => {
   useEffect(() => {
     async function fetchRelatorioData() {
       try {
-        const dados = await (avaliacoesService as unknown as { obterDadosRelatorios?: (params: { escolaId?: string; turmaId?: string; componente?: string }) => Promise<DadosRelatorios | undefined> }).obterDadosRelatorios?.({
+        const dados = await avaliacoesService.obterDadosRelatorios({
           escolaId: selectedFilters.escola !== 'all_escolas' ? selectedFilters.escola : undefined,
           turmaId: selectedFilters.turma !== 'all_turmas' ? selectedFilters.turma : undefined,
           componente: selectedFilters.componente !== 'all_componentes' ? selectedFilters.componente : undefined,
-        }) as DadosRelatorios | undefined;
+        });
+
+        // Mapear dados para o formato esperado pelos gráficos de descritores
+        const desempenhoDescritoresMapped = (dados.desempenhoDescritores as any[]).map((d) => ({
+          descritor: d.codigo,
+          nome: d.nome,
+          percentual: d.percentual
+        }));
 
         setDesempenhoTurmas(dados?.desempenhoTurmas ?? []);
         setEvolucaoDesempenho(dados?.evolucaoDesempenho ?? []);
         setDesempenhoHabilidades(dados?.desempenhoHabilidades ?? []);
-        setDesempenhoDescritores(dados?.desempenhoDescritores ?? []);
+        setDesempenhoDescritores(desempenhoDescritoresMapped);
       } catch (error) {
         console.error('Erro ao buscar dados dos relatórios:', error);
       }
@@ -138,8 +145,9 @@ const Relatorios: React.FC = () => {
       setLoadingStudents(true);
       setErrorStudents(null);
       try {
-        const data: Avaliacao[] = await avaliacoesService.listarPorTurma(selectedFilters.turma);
-        const mappedStudents = data.map((aluno) => ({
+        const data = await avaliacoesService.listarPorTurma(selectedFilters.turma);
+        // Mapear dados para o formato esperado
+        const mappedStudents = data.map((aluno: any) => ({
           id: aluno.id,
           nome: aluno.nome,
           presente: false,
@@ -147,7 +155,7 @@ const Relatorios: React.FC = () => {
           matematica: null,
           media: null,
           descritores: null,
-          transferida: (aluno as { transferida?: boolean }).transferida // workaround for missing property
+          transferida: false
         }));
         setStudents(mappedStudents);
       } catch (error) {
@@ -232,4 +240,3 @@ const Relatorios: React.FC = () => {
 };
 
 export default Relatorios;
-

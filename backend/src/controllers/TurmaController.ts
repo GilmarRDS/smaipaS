@@ -26,7 +26,7 @@ export class TurmaController {
       return response.status(400).json({ error: 'Escola não encontrada' });
     }
 
-    // Se for um usuário da escola, só pode criar turmas para a própria escola
+    // Permitir que usuários da secretaria criem turmas para qualquer escola
     if (request.usuario.role === 'escola' && escolaId !== request.usuario.escolaId) {
       return response.status(403).json({ error: 'Acesso negado' });
     }

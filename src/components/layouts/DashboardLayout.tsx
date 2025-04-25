@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Header } from '../Header';
 import { Sidebar } from '../Sidebar';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -28,4 +28,4 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </div>
     </div>
   );
-} 
+}

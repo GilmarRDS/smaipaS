@@ -1,104 +1,105 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
-import { toast } from 'sonner';
-import { Descritor } from '@/types/descritores';
-import { descritoresService } from '@/services/descritoresService';
+import MainLayout from '@/components/layout/MainLayout';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DescritoresList } from '@/components/descritores/DescritoresList';
 import { DescritorForm } from '@/components/descritores/DescritorForm';
+import { descritoresService } from '@/services/descritoresService';
+import { Descritor } from '@/types/descritores';
+import { toast } from 'sonner';
 
-const Descritores = () => {
-  const { user } = useAuth();
+const Descritores: React.FC = () => {
+  const [activeTab, setActiveTab] = useState('listar');
   const [descritores, setDescritores] = useState<Descritor[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [selectedDescritor, setSelectedDescritor] = useState<Descritor | null>(null);
+  const [editingDescritor, setEditingDescritor] = useState<Descritor | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadDescritores();
+    const fetchDescritores = async () => {
+      try {
+        setIsLoading(true);
+        const data = await descritoresService.listarDescritores();
+        setDescritores(data);
+      } catch (error) {
+        toast.error('Erro ao carregar descritores');
+        console.error('Erro ao carregar descritores:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDescritores();
   }, []);
 
-  const loadDescritores = async () => {
-    try {
-      setLoading(true);
-      const data = await descritoresService.listarDescritores();
-      setDescritores(data);
-    } catch (error) {
-      toast.error('Erro ao carregar descritores');
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreate = () => {
-    setSelectedDescritor(null);
-    setShowForm(true);
-  };
-
   const handleEdit = (descritor: Descritor) => {
-    setSelectedDescritor(descritor);
-    setShowForm(true);
+    setEditingDescritor(descritor);
+    setActiveTab('cadastrar');
   };
 
   const handleDelete = async (descritor: Descritor) => {
     try {
       await descritoresService.deletarDescritor(descritor.id);
+      setDescritores(descritores.filter(d => d.id !== descritor.id));
       toast.success('Descritor excluído com sucesso');
-      loadDescritores();
     } catch (error) {
       toast.error('Erro ao excluir descritor');
-      console.error(error);
+      console.error('Erro ao excluir descritor:', error);
     }
   };
 
-  const handleSubmit = async (data: Partial<Descritor>) => {
+  const handleSubmit = async (descritorData: Omit<Descritor, 'id'>) => {
     try {
-      if (selectedDescritor) {
-        await descritoresService.atualizarDescritor(selectedDescritor.id, data);
+      if (editingDescritor) {
+        await descritoresService.atualizarDescritor(editingDescritor.id, descritorData);
+        setDescritores(descritores.map(d => (d.id === editingDescritor.id ? { ...d, ...descritorData } : d)));
         toast.success('Descritor atualizado com sucesso');
       } else {
-        await descritoresService.criarDescritor(data);
+        const newDescritor = await descritoresService.criarDescritor(descritorData);
+        setDescritores([...descritores, newDescritor]);
         toast.success('Descritor criado com sucesso');
       }
-      setShowForm(false);
-      loadDescritores();
+      setActiveTab('listar');
+      setEditingDescritor(null);
     } catch (error) {
       toast.error('Erro ao salvar descritor');
-      console.error(error);
+      console.error('Erro ao salvar descritor:', error);
     }
   };
 
-  if (loading) {
-    return <div>Carregando...</div>;
-  }
-  
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Descritores</h1>
-        <Button onClick={handleCreate}>
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Descritor
-        </Button>
-          </div>
-          
-      {showForm ? (
-        <DescritorForm
-          descritor={selectedDescritor}
-          onSubmit={handleSubmit}
-          onCancel={() => setShowForm(false)}
-        />
-      ) : (
-        <DescritoresList
-          descritores={descritores}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
-          )}
+    <MainLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Descritores</h1>
+          <p className="text-muted-foreground">Gerencie os descritores cadastrados</p>
         </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="listar">Listar Descritores</TabsTrigger>
+            <TabsTrigger value="cadastrar">{editingDescritor ? 'Editar Descritor' : 'Cadastrar Descritor'}</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="listar" className="space-y-4">
+            {isLoading ? (
+              <div>Carregando descritores...</div>
+            ) : (
+              <DescritoresList descritores={descritores} onEdit={handleEdit} onDelete={handleDelete} />
+            )}
+          </TabsContent>
+
+          <TabsContent value="cadastrar" className="space-y-4">
+            <DescritorForm
+              descritor={editingDescritor}
+              onSubmit={handleSubmit}
+              onCancel={() => {
+                setActiveTab('listar');
+                setEditingDescritor(null);
+              }}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </MainLayout>
   );
 };
 
