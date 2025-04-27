@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import MainLayout from 'components/layout/MainLayout';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/ui/tabs';
-import { Button } from 'components/ui/button';
+import MainLayout from '@/components/layout/MainLayout';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import { Turma } from 'types/turmas';
-import { turmasService } from 'services/turmasService';
-import TurmasList from 'components/turmas/TurmasList';
-import TurmaForm from 'components/turmas/TurmaForm';
-import { useAuth } from 'contexts/AuthContext';
-import { escolasService } from 'services/escolasService';
-import { Escola } from 'types/escolas';
+import { Turma } from '@/types/turmas';
+import { turmasService } from '@/services/turmasService';
+import TurmasList from '@/components/turmas/TurmasList';
+import TurmaForm from '@/components/turmas/TurmaForm';
+import { useAuth } from '@/contexts/AuthContext';
+import { escolasService } from '@/services/escolasService';
+import { Escola } from '@/types/escolas';
 
 const Turmas: React.FC = () => {
   const { user } = useAuth();
