@@ -11,7 +11,7 @@ interface HeaderProps {
 }
 
 export function Header({ user }: HeaderProps) {
-  const { signOut } = useAuth();
+  const { logout } = useAuth();
 
   return (
     <header className="bg-white shadow">
@@ -47,7 +47,7 @@ export function Header({ user }: HeaderProps) {
                   <Menu.Item>
                     {({ active }) => (
                       <button
-                        onClick={signOut}
+                        onClick={logout}
                         className={`${
                           active ? 'bg-gray-100' : ''
                         } block w-full px-4 py-2 text-left text-sm text-gray-700`}
@@ -64,4 +64,4 @@ export function Header({ user }: HeaderProps) {
       </div>
     </header>
   );
-} 
+}

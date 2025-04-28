@@ -40,7 +40,7 @@ export function DescritoresList({ descritores, onEdit, onDelete }: DescritoresLi
                 {descritor.disciplina}
               </span>
               <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm">
-                {descritor.tipo === 'inicial' ? 'Diagnóstico Inicial' : 'Diagnóstico Final'}
+                {descritor.tipo === 'DIAGNOSTICA_INICIAL' ? 'Diagnóstico Inicial' : 'Diagnóstico Final'}
               </span>
             </div>
           </div>
