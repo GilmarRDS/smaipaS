@@ -36,7 +36,7 @@ model Escola {
 model Turma {
   id            String   @id @default(uuid())
   nome          String
-  ano           Int
+  ano           String
   escolaId      String
   escola        Escola   @relation(fields: [escolaId], references: [id])
   alunos        Aluno[]
