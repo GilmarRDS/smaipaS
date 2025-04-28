@@ -20,5 +20,19 @@ export const avaliacoesService = {
   async obterGabarito(avaliacaoId: string) {
     const response = await api.get(`/avaliacoes/gabarito/${avaliacaoId}`);
     return response.data;
+  },
+
+  async criar(avaliacaoData: Omit<Avaliacao, 'id'>): Promise<Avaliacao> {
+    const response = await api.post<Avaliacao>('/avaliacoes', avaliacaoData);
+    return response.data;
+  },
+
+  async atualizar(id: string, avaliacaoData: Omit<Avaliacao, 'id'>): Promise<Avaliacao> {
+    const response = await api.put<Avaliacao>(`/avaliacoes/${id}`, avaliacaoData);
+    return response.data;
+  },
+
+  async deletar(id: string): Promise<void> {
+    await api.delete(`/avaliacoes/${id}`);
   }
 };

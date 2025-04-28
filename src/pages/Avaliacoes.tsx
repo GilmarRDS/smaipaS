@@ -13,13 +13,17 @@ const Avaliacoes: React.FC = () => {
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
   const [editingAvaliacao, setEditingAvaliacao] = useState<Avaliacao | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const escolaId = 'some-valid-escola-id'; // TODO: substituir pelo valor real
 
   useEffect(() => {
     const fetchAvaliacoes = async () => {
       try {
         setIsLoading(true);
-        // Use listarPorEscola or listarPorTurma if needed, here using listarPorEscola with empty string as placeholder
-        const data = await avaliacoesService.listarPorEscola('');
+        if (!escolaId) {
+          console.error("EscolaId não definido para buscar avaliações");
+          return;
+        }
+        const data = await avaliacoesService.listarPorEscola(escolaId);
         setAvaliacoes(data);
       } catch (error) {
         toast.error('Erro ao carregar avaliações');
@@ -30,17 +34,17 @@ const Avaliacoes: React.FC = () => {
     };
 
     fetchAvaliacoes();
-  }, []);
+  }, [escolaId]);
 
   const handleEdit = (avaliacao: Avaliacao) => {
     setEditingAvaliacao(avaliacao);
     setActiveTab('cadastrar');
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (avaliacao: Avaliacao) => {
     try {
-      await avaliacoesService.deletarAvaliacao(id);
-      setAvaliacoes(avaliacoes.filter(a => a.id !== id));
+      await avaliacoesService.deletar(avaliacao.id);
+      setAvaliacoes(avaliacoes.filter(a => a.id !== avaliacao.id));
       toast.success('Avaliação deletada com sucesso');
     } catch (error) {
       toast.error('Erro ao deletar avaliação');
@@ -51,8 +55,8 @@ const Avaliacoes: React.FC = () => {
   const handleSubmit = async (avaliacaoData: Omit<Avaliacao, 'id'>) => {
     try {
       if (editingAvaliacao) {
-        await avaliacoesService.atualizar(editingAvaliacao.id, avaliacaoData);
-        setAvaliacoes(avaliacoes.map(a => (a.id === editingAvaliacao.id ? { ...a, ...avaliacaoData } : a)));
+        const updated = await avaliacoesService.atualizar(editingAvaliacao.id, avaliacaoData);
+        setAvaliacoes(avaliacoes.map(a => (a.id === editingAvaliacao.id ? updated : a)));
         toast.success('Avaliação atualizada com sucesso');
       } else {
         const newAvaliacao = await avaliacoesService.criar(avaliacaoData);

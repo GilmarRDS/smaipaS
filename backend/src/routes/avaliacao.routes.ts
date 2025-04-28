@@ -19,7 +19,11 @@ avaliacaoRoutes.delete('/:id', asyncHandler((req, res) => avaliacaoController.de
 
 // Novas rotas para corrigir erros 404
 avaliacaoRoutes.get('/turma/:turmaId', asyncHandler((req, res) => avaliacaoController.listarPorTurma(req, res)));
-avaliacaoRoutes.get('/escola/:escolaId', asyncHandler((req, res) => avaliacaoController.listarTodas(req, res))); // listarTodas com filtro escolaId
+// Corrigir rota para listar avaliações por escola usando listarTodas com filtro escolaId
+avaliacaoRoutes.get('/escola/:escolaId', asyncHandler((req, res) => {
+  req.query.escolaId = req.params.escolaId;
+  return avaliacaoController.listarTodas(req, res);
+}));
 avaliacaoRoutes.get('/dados-relatorios', asyncHandler((req, res) => avaliacaoController.obterDadosRelatorios(req, res)));
 
 // Rota para obter gabarito por avaliacaoId - método a ser criado no controller
