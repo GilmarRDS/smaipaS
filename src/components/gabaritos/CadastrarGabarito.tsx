@@ -113,7 +113,14 @@ const CadastrarGabarito: React.FC<CadastrarGabaritoProps> = ({
                 <SelectValue placeholder="Selecione a turma" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="1-ano">5º Ano</SelectItem>
+                <SelectItem value="2-ano">5º Ano</SelectItem>
+                <SelectItem value="3-ano">5º Ano</SelectItem>
+                <SelectItem value="4-ano">5º Ano</SelectItem>
                 <SelectItem value="5-ano">5º Ano</SelectItem>
+                <SelectItem value="6-ano">5º Ano</SelectItem>
+                <SelectItem value="7-ano">5º Ano</SelectItem>
+                <SelectItem value="8-ano">5º Ano</SelectItem>
                 <SelectItem value="9-ano">9º Ano</SelectItem>
               </SelectContent>
             </Select>

@@ -1,11 +1,11 @@
 -- CreateEnum
+CREATE TYPE "Turno" AS ENUM ('matutino', 'vespertino', 'noturno', 'integral');
+
+-- CreateEnum
 CREATE TYPE "Role" AS ENUM ('secretaria', 'escola');
 
 -- CreateEnum
 CREATE TYPE "TipoAvaliacao" AS ENUM ('DIAGNOSTICA_INICIAL', 'DIAGNOSTICA_FINAL');
-
--- CreateEnum
-CREATE TYPE "Ciclo" AS ENUM ('CICLO_1', 'CICLO_2', 'CICLO_3', 'CICLO_4', 'CICLO_5');
 
 -- CreateEnum
 CREATE TYPE "Disciplina" AS ENUM ('PORTUGUES', 'MATEMATICA');
@@ -42,7 +42,8 @@ CREATE TABLE "Escola" (
 CREATE TABLE "Turma" (
     "id" TEXT NOT NULL,
     "nome" TEXT NOT NULL,
-    "ano" INTEGER NOT NULL,
+    "ano" TEXT NOT NULL,
+    "turno" "Turno" NOT NULL,
     "escolaId" TEXT NOT NULL,
     "dataCriacao" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "dataAtualizacao" TIMESTAMP(3) NOT NULL,
@@ -67,7 +68,6 @@ CREATE TABLE "Avaliacao" (
     "id" TEXT NOT NULL,
     "nome" TEXT NOT NULL,
     "tipo" "TipoAvaliacao" NOT NULL,
-    "ciclo" "Ciclo" NOT NULL,
     "disciplina" "Disciplina" NOT NULL,
     "dataAplicacao" TIMESTAMP(3) NOT NULL,
     "turmaId" TEXT NOT NULL,
@@ -134,7 +134,7 @@ CREATE TABLE "Descritor" (
     "codigo" TEXT NOT NULL,
     "descricao" TEXT NOT NULL,
     "disciplina" "Disciplina" NOT NULL,
-    "ciclo" "Ciclo" NOT NULL,
+    "tipo" "TipoAvaliacao" NOT NULL,
     "dataCriacao" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "dataAtualizacao" TIMESTAMP(3) NOT NULL,
 

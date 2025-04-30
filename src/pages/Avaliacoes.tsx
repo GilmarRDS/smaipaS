@@ -4,26 +4,53 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AvaliacaoForm } from '@/components/avaliacoes/AvaliacaoForm';
 import { AvaliacoesList } from '@/components/avaliacoes/AvaliacoesList';
 import { avaliacoesService } from '@/services/avaliacoesService';
+import { escolasService } from '@/services/escolasService';
 import { Avaliacao } from '@/types/avaliacoes';
+import { Escola } from '@/types/escolas';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Avaliacoes: React.FC = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('listar');
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
   const [editingAvaliacao, setEditingAvaliacao] = useState<Avaliacao | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const escolaId = 'some-valid-escola-id'; // TODO: substituir pelo valor real
+  const [escolas, setEscolas] = useState<Escola[]>([]);
+  const [selectedEscolaId, setSelectedEscolaId] = useState<string>('');
+
+  useEffect(() => {
+    const loadEscolas = async () => {
+      if (user?.role === 'secretaria') {
+        try {
+          const data = await escolasService.listar();
+          setEscolas(data);
+          if (data.length > 0) {
+            setSelectedEscolaId(data[0].id);
+          }
+        } catch (error) {
+          toast.error('Erro ao carregar escolas');
+          console.error(error);
+        }
+      } else if (user?.role === 'escola') {
+        if (user.schoolId) {
+          setSelectedEscolaId(user.schoolId);
+        }
+      }
+    };
+    loadEscolas();
+  }, [user]);
 
   useEffect(() => {
     const fetchAvaliacoes = async () => {
+      if (!selectedEscolaId) {
+        setAvaliacoes([]);
+        return;
+      }
       try {
         setIsLoading(true);
-        if (!escolaId) {
-          console.error("EscolaId não definido para buscar avaliações");
-          return;
-        }
-        const data = await avaliacoesService.listarPorEscola(escolaId);
+        const data = await avaliacoesService.listarPorEscola(selectedEscolaId);
         setAvaliacoes(data);
       } catch (error) {
         toast.error('Erro ao carregar avaliações');
@@ -32,9 +59,8 @@ const Avaliacoes: React.FC = () => {
         setIsLoading(false);
       }
     };
-
     fetchAvaliacoes();
-  }, [escolaId]);
+  }, [selectedEscolaId]);
 
   const handleEdit = (avaliacao: Avaliacao) => {
     setEditingAvaliacao(avaliacao);
@@ -79,6 +105,26 @@ const Avaliacoes: React.FC = () => {
           <p className="text-muted-foreground">Gerencie as avaliações aplicadas</p>
         </div>
 
+        {user?.role === 'secretaria' && (
+          <div className="mb-4">
+            <label htmlFor="escola-select" className="block mb-1 font-medium">
+              Selecione a Escola
+            </label>
+            <select
+              id="escola-select"
+              value={selectedEscolaId}
+              onChange={(e) => setSelectedEscolaId(e.target.value)}
+              className="border rounded px-3 py-2 w-full max-w-xs"
+            >
+              {escolas.map((escola) => (
+                <option key={escola.id} value={escola.id}>
+                  {escola.nome}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="listar">Listar Avaliações</TabsTrigger>
@@ -103,6 +149,7 @@ const Avaliacoes: React.FC = () => {
                 setActiveTab('listar');
                 setEditingAvaliacao(null);
               }}
+              schoolId={selectedEscolaId}
             />
           </TabsContent>
         </Tabs>

@@ -8,127 +8,135 @@ datasource db {
 }
 
 model Usuario {
-  id            String   @id @default(uuid())
-  nome          String
-  email         String   @unique
-  senha         String
-  role          Role     @default(escola)
-  escolaId      String?
-  escola        Escola?  @relation(fields: [escolaId], references: [id])
-  dataCriacao   DateTime @default(now())
+  id              String   @id @default(uuid())
+  nome            String
+  email           String   @unique
+  senha           String
+  role            Role     @default(escola)
+  escolaId        String?
+  dataCriacao     DateTime @default(now())
   dataAtualizacao DateTime @updatedAt
+  escola          Escola?  @relation(fields: [escolaId], references: [id])
 }
 
 model Escola {
-  id            String   @id @default(uuid())
-  nome          String
-  inep          String   @unique
-  endereco      String
-  telefone      String
-  diretor       String
-  dataCriacao   DateTime @default(now())
-  dataAtualizacao DateTime @updatedAt
-  usuarios      Usuario[]
-  turmas        Turma[]
-  avaliacoes    Avaliacao[]
+  id              String      @id @default(uuid())
+  nome            String
+  inep            String      @unique
+  endereco        String
+  telefone        String
+  diretor         String
+  dataCriacao     DateTime    @default(now())
+  dataAtualizacao DateTime    @updatedAt
+  avaliacoes      Avaliacao[]
+  turmas          Turma[]
+  usuarios        Usuario[]
 }
 
 model Turma {
-  id            String   @id @default(uuid())
-  nome          String
-  ano           String
-  escolaId      String
-  escola        Escola   @relation(fields: [escolaId], references: [id])
-  alunos        Aluno[]
-  avaliacoes    Avaliacao[]
-  dataCriacao   DateTime @default(now())
-  dataAtualizacao DateTime @updatedAt
+  id              String      @id @default(uuid())
+  nome            String
+  ano             String
+  turno           Turno
+  escolaId        String
+  dataCriacao     DateTime    @default(now())
+  dataAtualizacao DateTime    @updatedAt
+  alunos          Aluno[]
+  avaliacoes      Avaliacao[]
+  escola          Escola      @relation(fields: [escolaId], references: [id])
 }
 
 model Aluno {
-  id            String   @id @default(uuid())
-  nome          String
-  matricula     String
-  turmaId       String
-  turma         Turma    @relation(fields: [turmaId], references: [id])
-  respostas     Resposta[]
-  dataCriacao   DateTime @default(now())
-  dataAtualizacao DateTime @updatedAt
+  id              String     @id @default(uuid())
+  nome            String
+  matricula       String
+  turmaId         String
+  dataCriacao     DateTime   @default(now())
+  dataAtualizacao DateTime   @updatedAt
+  turma           Turma      @relation(fields: [turmaId], references: [id])
+  respostas       Resposta[]
 }
 
 model Avaliacao {
-  id            String   @id @default(uuid())
-  nome          String
-  tipo          TipoAvaliacao
-  disciplina    Disciplina
-  dataAplicacao DateTime
-  turmaId       String
-  turma         Turma    @relation(fields: [turmaId], references: [id])
-  escolaId      String
-  escola        Escola   @relation(fields: [escolaId], references: [id])
-  gabarito      Gabarito?
-  respostas     Resposta[]
-  dataCriacao   DateTime @default(now())
-  dataAtualizacao DateTime @updatedAt
+  id              String        @id @default(uuid())
+  nome            String
+  tipo            TipoAvaliacao
+  disciplina      Disciplina
+  dataAplicacao   DateTime
+  turmaId         String
+  escolaId        String
+  dataCriacao     DateTime      @default(now())
+  dataAtualizacao DateTime      @updatedAt
+  escola          Escola        @relation(fields: [escolaId], references: [id])
+  turma           Turma         @relation(fields: [turmaId], references: [id])
+  gabarito        Gabarito?
+  respostas       Resposta[]
 }
 
 model Gabarito {
-  id            String   @id @default(uuid())
-  avaliacaoId   String   @unique
-  avaliacao     Avaliacao @relation(fields: [avaliacaoId], references: [id])
-  itens         ItemGabarito[]
-  dataCriacao   DateTime @default(now())
-  dataAtualizacao DateTime @updatedAt
+  id              String         @id @default(uuid())
+  avaliacaoId     String         @unique
+  dataCriacao     DateTime       @default(now())
+  dataAtualizacao DateTime       @updatedAt
+  avaliacao       Avaliacao      @relation(fields: [avaliacaoId], references: [id])
+  itens           ItemGabarito[]
 }
 
 model ItemGabarito {
-  id            String   @id @default(uuid())
-  numero        Int
-  resposta      String
-  descritorId   String?
-  descritor     Descritor? @relation(fields: [descritorId], references: [id])
-  gabaritoId    String
-  gabarito      Gabarito  @relation(fields: [gabaritoId], references: [id])
-  dataCriacao   DateTime @default(now())
-  dataAtualizacao DateTime @updatedAt
+  id              String     @id @default(uuid())
+  numero          Int
+  resposta        String
+  descritorId     String?
+  gabaritoId      String
+  dataCriacao     DateTime   @default(now())
+  dataAtualizacao DateTime   @updatedAt
+  descritor       Descritor? @relation(fields: [descritorId], references: [id])
+  gabarito        Gabarito   @relation(fields: [gabaritoId], references: [id])
 }
 
 model Resposta {
-  id            String   @id @default(uuid())
-  avaliacaoId   String
-  avaliacao     Avaliacao @relation(fields: [avaliacaoId], references: [id])
-  alunoId       String
-  aluno         Aluno    @relation(fields: [alunoId], references: [id])
-  itens         ItemResposta[]
-  compareceu    Boolean  @default(true)
-  transferido   Boolean  @default(false)
-  dataCriacao   DateTime @default(now())
-  dataAtualizacao DateTime @updatedAt
+  id              String         @id @default(uuid())
+  avaliacaoId     String
+  alunoId         String
+  compareceu      Boolean        @default(true)
+  transferido     Boolean        @default(false)
+  dataCriacao     DateTime       @default(now())
+  dataAtualizacao DateTime       @updatedAt
+  itens           ItemResposta[]
+  aluno           Aluno          @relation(fields: [alunoId], references: [id])
+  avaliacao       Avaliacao      @relation(fields: [avaliacaoId], references: [id])
 }
 
 model ItemResposta {
-  id            String   @id @default(uuid())
-  numero        Int
-  resposta      String
-  correta       Boolean?
-  descritorId   String?
-  descritor     Descritor? @relation(fields: [descritorId], references: [id])
-  respostaId    String
-  respostaPai   Resposta @relation(fields: [respostaId], references: [id])
-  dataCriacao   DateTime @default(now())
-  dataAtualizacao DateTime @updatedAt
+  id              String     @id @default(uuid())
+  numero          Int
+  resposta        String
+  correta         Boolean?
+  descritorId     String?
+  respostaId      String
+  dataCriacao     DateTime   @default(now())
+  dataAtualizacao DateTime   @updatedAt
+  descritor       Descritor? @relation(fields: [descritorId], references: [id])
+  respostaPai     Resposta   @relation(fields: [respostaId], references: [id])
 }
 
 model Descritor {
-  id            String   @id @default(uuid())
-  codigo        String
-  descricao     String
-  disciplina    Disciplina
-  tipo          TipoAvaliacao
-  itensGabarito ItemGabarito[]
-  itensResposta ItemResposta[]
-  dataCriacao   DateTime @default(now())
-  dataAtualizacao DateTime @updatedAt
+  id              String         @id @default(uuid())
+  codigo          String
+  descricao       String
+  disciplina      Disciplina
+  tipo            TipoAvaliacao
+  dataCriacao     DateTime       @default(now())
+  dataAtualizacao DateTime       @updatedAt
+  itensGabarito   ItemGabarito[]
+  itensResposta   ItemResposta[]
+}
+
+enum Turno {
+  matutino
+  vespertino
+  noturno
+  integral
 }
 
 enum Role {
@@ -144,4 +152,4 @@ enum TipoAvaliacao {
 enum Disciplina {
   PORTUGUES
   MATEMATICA
-} 
+}
