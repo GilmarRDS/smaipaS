@@ -18,4 +18,8 @@ usuarioRoutes.get('/:id', asyncHandler((req, res) => usuarioController.buscarPor
 usuarioRoutes.put('/:id', asyncHandler((req, res) => usuarioController.atualizar(req, res)));
 usuarioRoutes.delete('/:id', asyncHandler((req, res) => usuarioController.deletar(req, res)));
 
+// New routes for password recovery
+usuarioRoutes.post('/recuperar-senha', asyncHandler((req, res) => usuarioController.recuperarSenha(req, res)));
+usuarioRoutes.post('/resetar-senha', asyncHandler((req, res) => usuarioController.resetarSenha(req, res)));
+
 export { usuarioRoutes };

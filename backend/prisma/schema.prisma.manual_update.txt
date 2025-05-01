@@ -1,0 +1,27 @@
+Para adicionar os campos necessários para recuperação de senha, atualize o modelo Usuario no arquivo backend/prisma/schema.prisma adicionando as seguintes linhas:
+
+model Usuario {
+  id              String   @id @default(uuid())
+  nome            String
+  email           String   @unique
+  senha           String
+  role            Role     @default(escola)
+  escolaId        String?
+  dataCriacao     DateTime @default(now())
+  dataAtualizacao DateTime @updatedAt
+  escola          Escola?  @relation(fields: [escolaId], references: [id])
+  
+  // Campos para recuperação de senha
+  resetToken      String?  @unique
+  resetTokenExpires DateTime?
+}
+
+Após essa alteração, execute o comando para gerar o cliente Prisma atualizado:
+
+npx prisma generate
+
+E aplique a migração no banco de dados:
+
+npx prisma migrate dev --name add_reset_password_fields
+
+Se precisar, posso ajudar a criar o arquivo de migração manualmente.

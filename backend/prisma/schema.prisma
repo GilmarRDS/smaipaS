@@ -17,6 +17,10 @@ model Usuario {
   dataCriacao     DateTime @default(now())
   dataAtualizacao DateTime @updatedAt
   escola          Escola?  @relation(fields: [escolaId], references: [id])
+  
+  // Campos para recuperação de senha
+  resetToken      String?  @unique
+  resetTokenExpires DateTime?
 }
 
 model Escola {

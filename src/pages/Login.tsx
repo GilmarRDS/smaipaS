@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -63,7 +63,7 @@ export default function LoginPage() {
               />
             </div>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex flex-col items-center space-y-2">
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>
@@ -74,6 +74,9 @@ export default function LoginPage() {
                 'Entrar'
               )}
             </Button>
+            <Link to="/recuperar-senha" className="text-sm text-primary hover:underline">
+              Esqueceu a senha?
+            </Link>
           </CardFooter>
         </form>
       </Card>

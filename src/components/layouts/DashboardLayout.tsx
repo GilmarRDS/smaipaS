@@ -1,31 +1,17 @@
-import { ReactNode } from 'react';
-import { Header } from '../Header';
-import { Sidebar } from '../Sidebar';
-import { useAuth } from '@/contexts/AuthContext';
+import React from 'react';
+import Sidebar from '../Sidebar';
+import { AlterarSenhaDialog } from '../AlterarSenhaDialog';
 
-interface DashboardLayoutProps {
-  children: ReactNode;
-}
-
-export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { user } = useAuth();
-
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="flex h-screen">
-        {/* Sidebar */}
-        <div className="hidden md:flex md:w-64 md:flex-col">
-          <Sidebar />
+    <div className="flex min-h-screen">
+      <Sidebar>
+        {/* Outros links do sidebar */}
+        <div className="p-4">
+          <AlterarSenhaDialog />
         </div>
-
-        {/* Main content */}
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <Header user={user} />
-          <main className="flex-1 overflow-y-auto bg-gray-100 p-6">
-            {children}
-          </main>
-        </div>
-      </div>
+      </Sidebar>
+      <main className="flex-1 p-6 bg-gray-50">{children}</main>
     </div>
   );
 }
