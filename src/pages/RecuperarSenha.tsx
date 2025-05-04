@@ -5,6 +5,7 @@ import { Input } from '../components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { Label } from '../components/ui/label';
 import { useToast } from '../components/ui/use-toast';
+import api from '../lib/api';
 
 export default function RecuperarSenha() {
   const [email, setEmail] = useState('');
@@ -17,13 +18,17 @@ export default function RecuperarSenha() {
     setIsLoading(true);
 
     try {
-      // TODO: Implementar chamada à API para solicitar recuperação de senha
+      await api.post('http://localhost:3000/usuarios/recuperar-senha', { email });
+      
       toast({
         title: 'Sucesso',
         description: 'Se o e-mail estiver cadastrado, você receberá instruções para redefinir sua senha.',
       });
+      
       navigate('/login');
     } catch (error) {
+      console.error('Erro na recuperação de senha:', error);
+      
       toast({
         title: 'Erro',
         description: 'Ocorreu um erro ao solicitar a recuperação de senha.',

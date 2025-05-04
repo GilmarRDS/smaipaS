@@ -1,25 +1,26 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import PrivateRoute from '@/components/PrivateRoute';
-import ErrorBoundary from '@/components/ErrorBoundary';
+import { Toaster } from './components/ui/toaster';
+import { Toaster as Sonner } from './components/ui/sonner';
+import { TooltipProvider } from './components/ui/tooltip';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import PrivateRoute from './components/PrivateRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Pages
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Gabaritos from "./pages/Gabaritos";
-import Respostas from "./pages/Respostas";
-import Descritores from "./pages/Descritores";
-import Relatorios from "./pages/Relatorios";
-import Escolas from "./pages/Escolas";
-import Usuarios from "./pages/Usuarios";
-import Turmas from "./pages/Turmas";
-import Avaliacoes from "./pages/Avaliacoes";
-import NotFound from "./pages/NotFound";
-import Alunos from '@/pages/Alunos';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Gabaritos from './pages/Gabaritos';
+import Respostas from './pages/Respostas';
+import Descritores from './pages/Descritores';
+import Relatorios from './pages/Relatorios';
+import Escolas from './pages/Escolas';
+import Usuarios from './pages/Usuarios';
+import Turmas from './pages/Turmas';
+import Avaliacoes from './pages/Avaliacoes';
+import NotFound from './pages/NotFound';
+import Alunos from './pages/Alunos';
+import RecuperarSenha from './pages/RecuperarSenha';
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/recuperar-senha" element={<RecuperarSenha />} />
               <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
               <Route path="/gabaritos" element={<PrivateRoute><Gabaritos /></PrivateRoute>} />
               <Route path="/respostas" element={<PrivateRoute><Respostas /></PrivateRoute>} />

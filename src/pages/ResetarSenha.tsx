@@ -5,7 +5,7 @@ import { Input } from '../components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { Label } from '../components/ui/label';
 import { useToast } from '../components/ui/use-toast';
-import { api } from '../lib/api';
+import api from '../lib/api';
 
 export default function ResetarSenha() {
   const [searchParams] = useSearchParams();
@@ -41,7 +41,7 @@ export default function ResetarSenha() {
 
     setIsLoading(true);
     try {
-      await api.post('/usuario/resetar-senha', { token, novaSenha });
+      await api.post('/password/reset', { token, newPassword: novaSenha });
       toast({
         title: 'Sucesso',
         description: 'Senha redefinida com sucesso. Faça login com sua nova senha.',

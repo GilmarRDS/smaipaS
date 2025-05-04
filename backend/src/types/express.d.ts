@@ -1,12 +1,11 @@
-import 'express-serve-static-core';
+import 'express';
 
-declare module 'express-serve-static-core' {
-  interface Request {
-    usuario: {
+declare module 'express' {
+  export interface Request {
+    usuario?: {
       id: string;
       role: string;
       escolaId?: string;
     };
   }
 }
-
