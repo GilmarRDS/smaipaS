@@ -25,20 +25,37 @@ usuarioRoutes.post('/', asyncHandler((req, res) => usuarioController.criar(req, 
 usuarioRoutes.post('/recuperar-senha', asyncHandler((req, res) => passwordController.forgotPassword(req, res)));
 usuarioRoutes.post('/resetar-senha', asyncHandler((req, res) => passwordController.resetPassword(req, res)));
 
+// // Rotas autenticadas
+// usuarioRoutes.get('/', authMiddleware, asyncHandler((req, res) => 
+//   usuarioController.listarTodos(req as RequestWithUsuario, res)
+// ));
+
+// usuarioRoutes.get('/:id', authMiddleware, asyncHandler((req, res) => 
+//   usuarioController.buscarPorId(req as RequestWithUsuario, res)
+// ));
+
+// usuarioRoutes.put('/:id', authMiddleware, asyncHandler((req, res) => 
+//   usuarioController.atualizar(req as RequestWithUsuario, res)
+// ));
+
+// usuarioRoutes.delete('/:id', authMiddleware, asyncHandler((req, res) => 
+//   usuarioController.deletar(req as RequestWithUsuario, res)
+// ));
+
 // Rotas autenticadas
-usuarioRoutes.get('/', authMiddleware, asyncHandler((req, res) => 
+usuarioRoutes.get('/', asyncHandler((req, res) => 
   usuarioController.listarTodos(req as RequestWithUsuario, res)
 ));
 
-usuarioRoutes.get('/:id', authMiddleware, asyncHandler((req, res) => 
+usuarioRoutes.get('/:id', asyncHandler((req, res) => 
   usuarioController.buscarPorId(req as RequestWithUsuario, res)
 ));
 
-usuarioRoutes.put('/:id', authMiddleware, asyncHandler((req, res) => 
+usuarioRoutes.put('/:id', asyncHandler((req, res) => 
   usuarioController.atualizar(req as RequestWithUsuario, res)
 ));
 
-usuarioRoutes.delete('/:id', authMiddleware, asyncHandler((req, res) => 
+usuarioRoutes.delete('/:id',  asyncHandler((req, res) => 
   usuarioController.deletar(req as RequestWithUsuario, res)
 ));
 
