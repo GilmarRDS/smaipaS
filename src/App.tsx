@@ -21,6 +21,7 @@ import Avaliacoes from './pages/Avaliacoes';
 import NotFound from './pages/NotFound';
 import Alunos from './pages/Alunos';
 import RecuperarSenha from './pages/RecuperarSenha';
+import RedefinirSenha from './pages/RedefinirSenha';
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/login" element={<Login />} />
               <Route path="/recuperar-senha" element={<RecuperarSenha />} />
+              <Route path="/redefinir-senha" element={<RedefinirSenha />} />
               <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
               <Route path="/gabaritos" element={<PrivateRoute><Gabaritos /></PrivateRoute>} />
               <Route path="/respostas" element={<PrivateRoute><Respostas /></PrivateRoute>} />

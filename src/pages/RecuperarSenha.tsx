@@ -18,7 +18,9 @@ export default function RecuperarSenha() {
     setIsLoading(true);
 
     try {
-      await api.post('http://localhost:3000/usuarios/recuperar-senha', { email });
+      console.log('Enviando requisição de recuperação de senha para:', email);
+      const response = await api.post('/usuarios/recuperar-senha', { email });
+      console.log('Resposta da API:', response.data);
       
       toast({
         title: 'Sucesso',
@@ -26,12 +28,12 @@ export default function RecuperarSenha() {
       });
       
       navigate('/login');
-    } catch (error) {
-      console.error('Erro na recuperação de senha:', error);
+    } catch (error: any) {
+      console.error('Erro na recuperação de senha:', error.response?.data || error.message);
       
       toast({
         title: 'Erro',
-        description: 'Ocorreu um erro ao solicitar a recuperação de senha.',
+        description: error.response?.data?.error || 'Ocorreu um erro ao solicitar a recuperação de senha.',
         variant: 'destructive',
       });
     } finally {

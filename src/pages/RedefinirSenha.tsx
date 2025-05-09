@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { Label } from '../components/ui/label';
 import { useToast } from '../components/ui/use-toast';
 import api from '../lib/api';
@@ -10,88 +10,83 @@ import api from '../lib/api';
 export default function RedefinirSenha() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  
-  const [novaSenha, setNovaSenha] = useState('');
+  const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [tokenValido, setTokenValido] = useState(false);
-  const [verificandoToken, setVerificandoToken] = useState(true);
+  const [isValidating, setIsValidating] = useState(true);
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const verificarToken = async () => {
+    const validateToken = async () => {
       if (!token) {
         toast({
           title: 'Erro',
-          description: 'Token de recuperação não encontrado.',
+          description: 'Token não fornecido',
           variant: 'destructive',
         });
-        setVerificandoToken(false);
+        navigate('/recuperar-senha');
         return;
       }
 
       try {
-        const response = await api.get(`/auth/validate-reset-token/${token}`);
-        if (response.data.message === 'Token is valid.') {
-          setTokenValido(true);
-        }
+        await api.get(`/usuarios/validar-token/${token}`);
+        setIsValidating(false);
       } catch (error) {
+        console.error('Erro ao validar token:', error);
         toast({
           title: 'Erro',
-          description: 'O link de recuperação é inválido ou expirou.',
+          description: 'Token inválido ou expirado',
           variant: 'destructive',
         });
-      } finally {
-        setVerificandoToken(false);
+        navigate('/recuperar-senha');
       }
     };
 
-    verificarToken();
-  }, [token, toast]);
+    validateToken();
+  }, [token, navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (novaSenha !== confirmarSenha) {
+    if (senha !== confirmarSenha) {
       toast({
         title: 'Erro',
-        description: 'As senhas não coincidem.',
+        description: 'As senhas não coincidem',
         variant: 'destructive',
       });
       return;
     }
 
-    if (novaSenha.length < 8) {
+    if (senha.length < 8) {
       toast({
         title: 'Erro',
-        description: 'A senha deve ter pelo menos 8 caracteres.',
+        description: 'A senha deve ter pelo menos 8 caracteres',
         variant: 'destructive',
       });
       return;
     }
 
     setIsLoading(true);
+
     try {
-      await api.post('/auth/reset-password', {
+      await api.post('/usuarios/resetar-senha', {
         token,
-        newPassword: novaSenha
+        newPassword: senha,
       });
       
       toast({
         title: 'Sucesso',
-        description: 'Senha redefinida com sucesso.',
+        description: 'Senha redefinida com sucesso',
       });
       
-      // Redirecionar para a página de login após 2 segundos
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
-    } catch (error) {
-      console.error('Erro ao redefinir senha:', error);
+      navigate('/login');
+    } catch (error: any) {
+      console.error('Erro ao redefinir senha:', error.response?.data || error.message);
+      
       toast({
         title: 'Erro',
-        description: 'Ocorreu um erro ao redefinir sua senha.',
+        description: error.response?.data?.error || 'Ocorreu um erro ao redefinir a senha',
         variant: 'destructive',
       });
     } finally {
@@ -99,31 +94,16 @@ export default function RedefinirSenha() {
     }
   };
 
-  if (verificandoToken) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-center">
-          <p className="text-lg mb-4">Verificando link de recuperação...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!tokenValido) {
+  if (isValidating) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>Link Inválido</CardTitle>
-            <CardDescription>
-              O link de recuperação de senha é inválido ou expirou.
+            <CardTitle className="text-2xl text-center">Validando Token</CardTitle>
+            <CardDescription className="text-center">
+              Por favor, aguarde enquanto validamos seu token...
             </CardDescription>
           </CardHeader>
-          <CardFooter>
-            <Button onClick={() => navigate('/login')} className="w-full">
-              Voltar para Login
-            </Button>
-          </CardFooter>
         </Card>
       </div>
     );
@@ -135,40 +115,36 @@ export default function RedefinirSenha() {
         <CardHeader>
           <CardTitle className="text-2xl text-center">Redefinir Senha</CardTitle>
           <CardDescription className="text-center">
-            Crie uma nova senha para sua conta
+            Digite sua nova senha abaixo.
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="novaSenha">Nova Senha</Label>
+              <Label htmlFor="senha">Nova Senha</Label>
               <Input
-                id="novaSenha"
+                id="senha"
                 type="password"
-                value={novaSenha}
-                onChange={(e) => setNovaSenha(e.target.value)}
-                placeholder="Digite sua nova senha"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
                 required
+                minLength={8}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmarSenha">Confirmar Senha</Label>
+              <Label htmlFor="confirmarSenha">Confirmar Nova Senha</Label>
               <Input
                 id="confirmarSenha"
                 type="password"
                 value={confirmarSenha}
                 onChange={(e) => setConfirmarSenha(e.target.value)}
-                placeholder="Confirme sua nova senha"
                 required
+                minLength={8}
               />
             </div>
           </CardContent>
           <CardFooter>
-            <Button 
-              type="submit" 
-              disabled={isLoading} 
-              className="w-full"
-            >
+            <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? 'Redefinindo...' : 'Redefinir Senha'}
             </Button>
           </CardFooter>

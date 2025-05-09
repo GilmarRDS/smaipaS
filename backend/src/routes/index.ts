@@ -6,6 +6,7 @@ import { alunoRoutes } from './aluno.routes';
 import { avaliacaoRoutes } from './avaliacao.routes';
 import { gabaritoRoutes } from './gabarito.routes';
 import { respostaRoutes } from './resposta.routes';
+import { descritorRoutes } from './descritor.routes';
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use('/alunos', alunoRoutes);
 router.use('/avaliacoes', avaliacaoRoutes);
 router.use('/gabaritos', gabaritoRoutes);
 router.use('/respostas', respostaRoutes);
+router.use('/descritores', descritorRoutes);
 
 export { router }; 

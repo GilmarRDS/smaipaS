@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma';
 import { Prisma } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { RequestWithUsuario } from '../middlewares/auth';
 
 export class UsuarioController {
   async criar(request: Request, response: Response) {
@@ -49,10 +50,16 @@ export class UsuarioController {
   }
 
   async listarTodos(request: Request, response: Response) {
+    const req = request as RequestWithUsuario;
+
+    if (!req.usuario) {
+      return response.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
     // Se for um usuário da escola, só pode ver os usuários da própria escola
-    if (request.usuario.role === 'escola') {
+    if (req.usuario.role === 'escola') {
       const usuarios = await prisma.usuario.findMany({
-        where: { escolaId: request.usuario.escolaId },
+        where: { escolaId: req.usuario.escolaId },
         select: {
           id: true,
           nome: true,
@@ -92,14 +99,19 @@ export class UsuarioController {
   }
 
   async buscarPorId(request: Request, response: Response) {
+    const req = request as RequestWithUsuario;
     const { id } = request.params;
 
+    if (!req.usuario) {
+      return response.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
     // Se for um usuário da escola, só pode ver usuários da própria escola
-    if (request.usuario.role === 'escola') {
+    if (req.usuario.role === 'escola') {
       const usuario = await prisma.usuario.findFirst({
         where: { 
           id,
-          escolaId: request.usuario.escolaId,
+          escolaId: req.usuario.escolaId,
         },
         select: {
           id: true,
@@ -149,8 +161,13 @@ export class UsuarioController {
   }
 
   async atualizar(request: Request, response: Response) {
+    const req = request as RequestWithUsuario;
     const { id } = request.params;
     const { nome, email, senha, role, escolaId } = request.body;
+
+    if (!req.usuario) {
+      return response.status(401).json({ error: 'Usuário não autenticado' });
+    }
 
     // Verificar se o usuário existe
     const usuarioExistente = await prisma.usuario.findUnique({
@@ -162,7 +179,7 @@ export class UsuarioController {
     }
 
     // Se for um usuário da escola, só pode atualizar usuários da própria escola
-    if (request.usuario.role === 'escola' && usuarioExistente.escolaId !== request.usuario.escolaId) {
+    if (req.usuario.role === 'escola' && usuarioExistente.escolaId !== req.usuario.escolaId) {
       return response.status(403).json({ error: 'Acesso negado' });
     }
 
@@ -222,7 +239,12 @@ export class UsuarioController {
   }
 
   async deletar(request: Request, response: Response) {
+    const req = request as RequestWithUsuario;
     const { id } = request.params;
+
+    if (!req.usuario) {
+      return response.status(401).json({ error: 'Usuário não autenticado' });
+    }
 
     // Verificar se o usuário existe
     const usuarioExistente = await prisma.usuario.findUnique({
@@ -234,7 +256,7 @@ export class UsuarioController {
     }
 
     // Se for um usuário da escola, só pode deletar usuários da própria escola
-    if (request.usuario.role === 'escola' && usuarioExistente.escolaId !== request.usuario.escolaId) {
+    if (req.usuario.role === 'escola' && usuarioExistente.escolaId !== req.usuario.escolaId) {
       return response.status(403).json({ error: 'Acesso negado' });
     }
 
@@ -246,43 +268,49 @@ export class UsuarioController {
   }
 
   async login(request: Request, response: Response) {
-    const { email, senha } = request.body;
+    try {
+      const { email, senha } = request.body;
 
-    const usuario = await prisma.usuario.findUnique({
-      where: { email },
-      include: {
-        escola: true,
-      },
-    });
-
-    if (!usuario) {
-      return response.status(401).json({ error: 'Credenciais inválidas' });
-    }
-
-    const senhaValida = await bcrypt.compare(senha, usuario.senha);
-
-    if (!senhaValida) {
-      return response.status(401).json({ error: 'Credenciais inválidas' });
-    }
-
-    const { senha: _, ...usuarioSemSenha } = usuario;
-
-    const token = jwt.sign(
-      {
-        id: usuario.id,
-        role: usuario.role,
-        escolaId: usuario.escolaId,
-      },
-      process.env.JWT_SECRET || 'smaipa-secret',
-      {
-        subject: usuario.id,
-        expiresIn: '1d',
+      if (!email || !senha) {
+        return response.status(400).json({ error: 'Email e senha são obrigatórios' });
       }
-    );
 
-    return response.json({
-      usuario: usuarioSemSenha,
-      token,
-    });
+      const usuario = await prisma.usuario.findUnique({
+        where: { email },
+        include: {
+          escola: true,
+        },
+      });
+
+      if (!usuario) {
+        return response.status(401).json({ error: 'E-mail ou senha inválidos' });
+      }
+
+      const senhaValida = await bcrypt.compare(senha, usuario.senha);
+
+      if (!senhaValida) {
+        return response.status(401).json({ error: 'E-mail ou senha inválidos' });
+      }
+
+      const token = jwt.sign(
+        {
+          id: usuario.id,
+          role: usuario.role,
+          escolaId: usuario.escolaId,
+        },
+        process.env.JWT_SECRET || 'smaipa-secret',
+        { expiresIn: '1d' }
+      );
+
+      const { senha: _, ...usuarioSemSenha } = usuario;
+
+      return response.json({
+        usuario: usuarioSemSenha,
+        token,
+      });
+    } catch (error) {
+      console.error('Erro no login:', error);
+      return response.status(500).json({ error: 'Erro interno do servidor' });
+    }
   }
 }

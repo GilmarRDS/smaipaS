@@ -1,4 +1,4 @@
-import { Router, RequestHandler, Response, NextFunction } from 'express';
+import { Router, RequestHandler, Response, NextFunction, Request } from 'express';
 import { RequestWithUsuario } from './types/express';
 import { UsuarioController } from './controllers/UsuarioController';
 import { EscolaController } from './controllers/EscolaController';
@@ -63,8 +63,8 @@ router.put('/avaliacoes/:id', asyncHandler((req: RequestWithUsuario, res: Respon
 router.delete('/avaliacoes/:id', asyncHandler((req: RequestWithUsuario, res: Response) => avaliacaoController.deletar(req, res)));
 
 // Rotas de descritores
-router.get('/descritores', asyncHandler((req: RequestWithUsuario, res: Response) => descritorController.listar(req, res)));
-router.get('/descritores/:id', asyncHandler((req: RequestWithUsuario, res: Response) => descritorController.obterPorId(req, res)));
+router.get('/descritores', asyncHandler((req: RequestWithUsuario, res: Response) => descritorController.listarTodos(req, res)));
+router.get('/descritores/:id', asyncHandler((req: RequestWithUsuario, res: Response) => descritorController.buscarPorId(req, res)));
 router.post('/descritores', asyncHandler((req: RequestWithUsuario, res: Response) => descritorController.criar(req, res)));
 router.put('/descritores/:id', asyncHandler((req: RequestWithUsuario, res: Response) => descritorController.atualizar(req, res)));
 router.delete('/descritores/:id', asyncHandler((req: RequestWithUsuario, res: Response) => descritorController.deletar(req, res)));
@@ -73,9 +73,8 @@ router.delete('/descritores/:id', asyncHandler((req: RequestWithUsuario, res: Re
 router.get('/relatorios/dados', asyncHandler((req: RequestWithUsuario, res: Response, next: NextFunction) => avaliacaoController.obterDadosRelatorios(req, res).catch(next)));
 
 // Rotas de recuperação de senha
-router.post('/password/forgot', asyncHandler((req: RequestWithUsuario, res: Response) => passwordController.forgotPassword(req, res)));
-router.get('/password/reset/:token', asyncHandler((req: RequestWithUsuario, res: Response) => passwordController.validateResetToken(req, res)));
-router.post('/password/reset', asyncHandler((req: RequestWithUsuario, res: Response) => passwordController.resetPassword(req, res)));
-
+router.post('/usuarios/recuperar-senha', asyncHandler((req: RequestWithUsuario, res: Response) => passwordController.forgotPassword(req, res)));
+router.get('/usuarios/validar-token/:token', asyncHandler((req: RequestWithUsuario, res: Response) => passwordController.validateResetToken(req, res)));
+router.post('/usuarios/resetar-senha', asyncHandler((req: RequestWithUsuario, res: Response) => passwordController.resetPassword(req, res)));
 
 export { router };

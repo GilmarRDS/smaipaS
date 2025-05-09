@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
-import { sendPasswordResetEmail } from '../services/emailService';
+import { sendPasswordRecoveryEmail } from '../services/emailService';
 
 export class PasswordController {
   /**
@@ -13,55 +13,37 @@ export class PasswordController {
       const { email } = req.body;
 
       if (!email) {
-        return res.status(400).send({ message: 'Email is required' });
+        return res.status(400).json({ error: 'Email é obrigatório' });
       }
 
-      // Find user by email
-      const user = await prisma.usuario.findUnique({ where: { email } });
-      
-      // For security, don't reveal if a user exists or not
-      if (!user) {
-        console.log(`Password reset requested for non-existent email: ${email}`);
-        // Send the same response as if the user exists to prevent email enumeration
-        return res.status(200).send({ 
-          message: 'If a user with that email exists, a password reset link has been sent.' 
-        });
-      }
-
-      // Generate a random token with 32 bytes (64 hex characters)
-      const resetToken = crypto.randomBytes(32).toString('hex');
-      
-      // Hash the token for database storage
-      const hashedToken = crypto
-        .createHash('sha256')
-        .update(resetToken)
-        .digest('hex');
-
-      // Set token expiration (1 hour from now)
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 1);
-
-      // Save token to user record
-      await prisma.usuario.update({
+      const user = await prisma.usuario.findUnique({
         where: { email },
+      });
+
+      if (!user) {
+        return res.status(404).json({ error: 'Usuário não encontrado' });
+      }
+
+      // Gerar token de recuperação
+      const token = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 3600000); // 1 hora
+
+      // Atualizar usuário com o token
+      await prisma.usuario.update({
+        where: { id: user.id },
         data: {
-          resetToken: hashedToken,
+          resetToken: token,
           resetTokenExpires: expiresAt,
         },
       });
 
-      // Use email service to send reset email
-      await sendPasswordResetEmail(email, resetToken);
+      // Enviar email
+      await sendPasswordRecoveryEmail(email, token);
 
-      console.log(`Password reset email sent to: ${email}`);
-      return res.status(200).send({ 
-        message: 'If a user with that email exists, a password reset link has been sent.' 
-      });
+      return res.json({ message: 'Email de recuperação enviado com sucesso' });
     } catch (error) {
-      console.error('Error in forgotPassword:', error);
-      return res.status(500).send({ 
-        message: 'An error occurred while processing your request.' 
-      });
+      console.error('Erro em forgotPassword:', error);
+      return res.status(500).json({ error: 'Erro ao processar recuperação de senha' });
     }
   }
 
@@ -73,33 +55,24 @@ export class PasswordController {
       const { token } = req.params;
 
       if (!token) {
-        return res.status(400).send({ message: 'Token is required' });
+        return res.status(400).json({ error: 'Token é obrigatório' });
       }
 
-      // Hash the token from the URL to compare with the hashed token in the database
-      const hashedToken = crypto
-        .createHash('sha256')
-        .update(token)
-        .digest('hex');
-
-      // Find user with this token that hasn't expired
       const user = await prisma.usuario.findFirst({
         where: {
-          resetToken: hashedToken,
-          resetTokenExpires: { gt: new Date() } // Token hasn't expired yet
+          resetToken: token,
+          resetTokenExpires: { gt: new Date() }
         }
       });
 
       if (!user) {
-        return res.status(400).send({ message: 'Invalid or expired token.' });
+        return res.status(400).json({ error: 'Token inválido ou expirado' });
       }
 
-      return res.status(200).send({ message: 'Token is valid.' });
+      return res.json({ message: 'Token válido' });
     } catch (error) {
-      console.error('Error in validateResetToken:', error);
-      return res.status(500).send({ 
-        message: 'An error occurred while validating the token.' 
-      });
+      console.error('Erro em validateResetToken:', error);
+      return res.status(500).json({ error: 'Erro ao validar token' });
     }
   }
 
@@ -111,41 +84,29 @@ export class PasswordController {
       const { token, newPassword } = req.body;
 
       if (!token || !newPassword) {
-        return res.status(400).send({ 
-          message: 'Token and new password are required.' 
-        });
+        return res.status(400).json({ error: 'Token e nova senha são obrigatórios' });
       }
 
-      // Password validation
       if (newPassword.length < 8) {
-        return res.status(400).send({ 
-          message: 'Password must be at least 8 characters long.' 
-        });
+        return res.status(400).json({ error: 'A senha deve ter pelo menos 8 caracteres' });
       }
 
-      // Hash the token to compare with the stored hashed token
-      const hashedToken = crypto
-        .createHash('sha256')
-        .update(token)
-        .digest('hex');
-
-      // Find user with this token that hasn't expired
       const user = await prisma.usuario.findFirst({
         where: {
-          resetToken: hashedToken,
-          resetTokenExpires: { gt: new Date() } // Token hasn't expired yet
+          resetToken: token,
+          resetTokenExpires: { gt: new Date() }
         }
       });
 
       if (!user) {
-        return res.status(400).send({ message: 'Invalid or expired token.' });
+        return res.status(400).json({ error: 'Token inválido ou expirado' });
       }
 
-      // Hash the new password
+      // Hash da nova senha
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-      // Update user's password and clear reset token
+      // Atualizar senha e limpar token
       await prisma.usuario.update({
         where: { id: user.id },
         data: {
@@ -155,15 +116,10 @@ export class PasswordController {
         },
       });
 
-      // Could send confirmation email here
-      
-      console.log(`Password reset successful for user: ${user.email}`);
-      return res.status(200).send({ message: 'Password has been reset successfully.' });
+      return res.json({ message: 'Senha redefinida com sucesso' });
     } catch (error) {
-      console.error('Error in resetPassword:', error);
-      return res.status(500).send({ 
-        message: 'An error occurred while resetting the password.' 
-      });
+      console.error('Erro em resetPassword:', error);
+      return res.status(500).json({ error: 'Erro ao redefinir senha' });
     }
   }
 }

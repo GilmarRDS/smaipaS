@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
+import { RequestWithUsuario } from '../middlewares/auth';
 
 export class EscolaController {
   async criar(request: Request, response: Response) {
     try {
-      const reqWithUser = request as Request & { usuario?: { id: string; role: string; escolaId?: string } };
+      const req = request as RequestWithUsuario;
       const { nome, inep, endereco, telefone, diretor } = request.body;
 
       // Validação básica dos campos obrigatórios
@@ -40,11 +41,16 @@ export class EscolaController {
 
   async listarTodas(request: Request, response: Response) {
     try {
-      const reqWithUser = request as Request & { usuario?: { id: string; role: string; escolaId?: string } };
+      const req = request as RequestWithUsuario;
+      
+      if (!req.usuario) {
+        return response.status(401).json({ error: 'Usuário não autenticado' });
+      }
+
       // Se for um usuário da escola, só pode ver a própria escola
-      if (request.usuario.role === 'escola') {
+      if (req.usuario.role === 'escola') {
         const escola = await prisma.escola.findUnique({
-          where: { id: request.usuario.escolaId },
+          where: { id: req.usuario.escolaId },
           include: {
             usuarios: {
               select: {
@@ -101,11 +107,15 @@ export class EscolaController {
 
   async buscarPorId(request: Request, response: Response) {
     try {
-      const reqWithUser = request as Request & { usuario?: { id: string; role: string; escolaId?: string } };
+      const req = request as RequestWithUsuario;
       const { id } = request.params;
 
+      if (!req.usuario) {
+        return response.status(401).json({ error: 'Usuário não autenticado' });
+      }
+
       // Se for um usuário da escola, só pode ver a própria escola
-      if (request.usuario.role === 'escola' && id !== request.usuario.escolaId) {
+      if (req.usuario.role === 'escola' && id !== req.usuario.escolaId) {
         return response.status(403).json({ error: 'Acesso negado' });
       }
 
@@ -143,9 +153,13 @@ export class EscolaController {
 
   async atualizar(request: Request, response: Response) {
     try {
-      const reqWithUser = request as Request & { usuario?: { id: string; role: string; escolaId?: string } };
+      const req = request as RequestWithUsuario;
       const { id } = request.params;
       const { nome, inep, endereco, telefone, diretor } = request.body;
+
+      if (!req.usuario) {
+        return response.status(401).json({ error: 'Usuário não autenticado' });
+      }
 
       // Validação básica dos campos obrigatórios
       if (!nome || !inep || !endereco || !telefone || !diretor) {
@@ -153,7 +167,7 @@ export class EscolaController {
       }
 
       // Se for um usuário da escola, só pode atualizar a própria escola
-      if (request.usuario.role === 'escola' && id !== request.usuario.escolaId) {
+      if (req.usuario.role === 'escola' && id !== req.usuario.escolaId) {
         return response.status(403).json({ error: 'Acesso negado' });
       }
 
@@ -214,11 +228,15 @@ export class EscolaController {
 
   async deletar(request: Request, response: Response) {
     try {
-      const reqWithUser = request as Request & { usuario?: { id: string; role: string; escolaId?: string } };
+      const req = request as RequestWithUsuario;
       const { id } = request.params;
 
-      // Apenas usuários da secretaria podem deletar escolas
-      if (request.usuario.role !== 'secretaria') {
+      if (!req.usuario) {
+        return response.status(401).json({ error: 'Usuário não autenticado' });
+      }
+
+      // Se for um usuário da escola, só pode deletar a própria escola
+      if (req.usuario.role === 'escola' && id !== req.usuario.escolaId) {
         return response.status(403).json({ error: 'Acesso negado' });
       }
 
@@ -238,6 +256,40 @@ export class EscolaController {
       return response.status(204).send();
     } catch (error) {
       console.error('Erro ao deletar escola:', error);
+      return response.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  }
+
+  async listarTurmas(request: Request, response: Response) {
+    try {
+      const req = request as RequestWithUsuario;
+      const { id } = request.params;
+
+      if (!req.usuario) {
+        return response.status(401).json({ error: 'Usuário não autenticado' });
+      }
+
+      // Se for um usuário da escola, só pode ver as turmas da própria escola
+      if (req.usuario.role === 'escola' && id !== req.usuario.escolaId) {
+        return response.status(403).json({ error: 'Acesso negado' });
+      }
+
+      const turmas = await prisma.turma.findMany({
+        where: { escolaId: id },
+        include: {
+          alunos: {
+            select: {
+              id: true,
+              nome: true,
+              matricula: true,
+            },
+          },
+        },
+      });
+
+      return response.json(turmas);
+    } catch (error) {
+      console.error('Erro ao listar turmas da escola:', error);
       return response.status(500).json({ error: 'Erro interno do servidor' });
     }
   }

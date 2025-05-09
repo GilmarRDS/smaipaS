@@ -1,16 +1,24 @@
-import * as nodemailer from 'nodemailer';
+import nodemailer from 'nodemailer';
+import { config } from '../config';
 
+// Criar objeto de transporte reutilizável usando transporte SMTP
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT) || 587,
-  secure: false,
+  host: config.email.host,
+  port: config.email.port,
+  secure: config.email.port === 465,
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: config.email.user,
+    pass: config.email.pass,
   },
-  connectionTimeout: 30000, // timeout de conexão em milissegundos
-  greetingTimeout: 30000,   // timeout para o greeting SMTP
-  socketTimeout: 30000      // timeout para operações de socket
+});
+
+// Verificar configuração do transporter
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('Erro na configuração do serviço de email:', error);
+  } else {
+    console.log('Serviço de email está pronto para enviar mensagens');
+  }
 });
 
 /**
@@ -21,36 +29,63 @@ const transporter = nodemailer.createTransport({
  */
 import { prisma } from '../lib/prisma';
 
-export async function sendPasswordResetEmail(to: string, token: string): Promise<void> {
+export const sendPasswordRecoveryEmail = async (email: string, token: string) => {
   try {
-    // Verifica se o email existe no banco de dados
-    const user = await prisma.usuario.findUnique({ where: { email: to } });
-    if (!user) {
-      console.log(`Tentativa de envio de email para endereço não cadastrado: ${to}`);
-      throw new Error('Email não cadastrado');
-    }
-
-    const resetUrl = `${process.env.FRONTEND_URL}/recuperar-senha?token=${token}`;
+    // Usar a URL do frontend da configuração
+    const resetUrl = `${config.frontend.url}/redefinir-senha?token=${token}`;
+    console.log('URL de redefinição de senha:', resetUrl); // Debug log
 
     const mailOptions = {
-      from: `"No Reply" <${process.env.EMAIL_USER}>`,
-      to,
-      subject: 'Recuperação de senha',
+      from: `"SMAIPA" <${config.email.user}>`,
+      to: email,
+      subject: 'Recuperação de Senha - SMAIPA',
       html: `
-        <p>Você solicitou a recuperação de senha.</p>
-        <p>Clique no link abaixo para redefinir sua senha:</p>
-        <a href="${resetUrl}">${resetUrl}</a>
-        <p>Se você não solicitou, ignore este email.</p>
-      `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+          <h2 style="color: #2c3e50; text-align: center; margin-bottom: 30px;">Recuperação de Senha</h2>
+          
+          <p style="color: #34495e; font-size: 16px; line-height: 1.6;">Olá,</p>
+          
+          <p style="color: #34495e; font-size: 16px; line-height: 1.6;">
+            Recebemos uma solicitação para redefinir a senha da sua conta no SMAIPA.
+          </p>
+          
+          <p style="color: #34495e; font-size: 16px; line-height: 1.6;">
+            Para prosseguir com a redefinição de senha, clique no botão abaixo:
+          </p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetUrl}" 
+               style="display: inline-block; padding: 12px 24px; background-color: #3498db; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+              Redefinir Minha Senha
+            </a>
+          </div>
+          
+          <p style="color: #7f8c8d; font-size: 14px; line-height: 1.6;">
+            Se você não solicitou esta recuperação de senha, por favor ignore este e-mail.
+          </p>
+          
+          <p style="color: #7f8c8d; font-size: 14px; line-height: 1.6;">
+            Este link é válido por 1 hora.
+          </p>
+          
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+          
+          <p style="color: #7f8c8d; font-size: 14px; line-height: 1.6; text-align: center;">
+            Atenciosamente,<br>
+            <strong>Equipe SMAIPA</strong>
+          </p>
+        </div>
+      `,
     };
 
-    await transporter.sendMail(mailOptions);
-    console.log(`Email de recuperação enviado para: ${to}`);
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email de recuperação de senha enviado:', info.messageId);
+    return true;
   } catch (error) {
-    console.error(`Erro ao enviar email de recuperação para ${to}:`, error);
-    throw error;
+    console.error('Erro ao enviar email de recuperação de senha:', error);
+    throw new Error('Falha ao enviar email de recuperação de senha');
   }
-}
+};
 
 /**
  * Envia um email de boas-vindas para um novo usuário
