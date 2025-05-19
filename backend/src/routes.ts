@@ -52,6 +52,19 @@ router.delete('/turmas/:id', asyncHandler((req: RequestWithUsuario, res: Respons
 router.get('/turmas/:turmaId/alunos', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.listarTodos(req, res)));
 router.get('/alunos/:id', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.buscarPorId(req, res)));
 router.post('/alunos', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.criar(req, res)));
+// Nova rota para listar todos os alunos de uma escola
+router.get('/escolas/:escolaId/alunos', async (req, res) => {
+  const { escolaId } = req.params;
+  // Buscar todas as turmas da escola
+  const turmas = await req.prisma.turma.findMany({ where: { escolaId }, select: { id: true } });
+  const turmaIds = turmas.map(t => t.id);
+  // Buscar todos os alunos dessas turmas
+  const alunos = await req.prisma.aluno.findMany({
+    where: { turmaId: { in: turmaIds } },
+    include: { turma: { select: { id: true, nome: true } } }
+  });
+  res.json(alunos);
+});
 router.put('/alunos/:id', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.atualizar(req, res)));
 router.delete('/alunos/:id', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.deletar(req, res)));
 

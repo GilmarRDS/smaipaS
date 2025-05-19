@@ -22,10 +22,15 @@ const Alunos = () => {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [alunosData, turmasData] = await Promise.all([
-        alunosService.listarPorEscola(user?.schoolId || ''),
-        turmasService.listarPorEscola(user?.schoolId || '')
-      ]);
+      let alunosData = [];
+      let turmasData = [];
+      if (user?.role === 'secretaria') {
+        alunosData = await alunosService.listar();
+        turmasData = await turmasService.listar();
+      } else {
+        alunosData = await alunosService.listarPorEscola(user?.schoolId || '');
+        turmasData = await turmasService.listarPorEscola(user?.schoolId || '');
+      }
       setAlunos(alunosData);
       setTurmas(turmasData);
     } catch (error) {
@@ -34,7 +39,7 @@ const Alunos = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.schoolId]);
+  }, [user?.role, user?.schoolId]);
 
   useEffect(() => {
     loadData();

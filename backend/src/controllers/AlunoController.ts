@@ -2,6 +2,7 @@ import { Request as ExpressRequest, Response } from 'express';
 // import '../../types/express';
 import { prisma } from '../lib/prisma';
 import { Prisma } from '@prisma/client';
+import { v4 as uuidv4 } from 'uuid';
 
 interface CustomRequest extends ExpressRequest {
   usuario: {
@@ -33,9 +34,15 @@ export class AlunoController {
       return response.status(403).json({ error: 'Acesso negado' });
     }
 
+    // Gerar matrícula automática se não for fornecida
+    let matriculaFinal = matricula;
+    if (!matriculaFinal || matriculaFinal.trim() === '') {
+      matriculaFinal = uuidv4().slice(0, 8);
+    }
+
     // Verificar se a matrícula já está em uso
     const matriculaEmUso = await prisma.aluno.findFirst({
-      where: { matricula },
+      where: { matricula: matriculaFinal },
     });
 
     if (matriculaEmUso) {
@@ -45,7 +52,7 @@ export class AlunoController {
     const aluno = await prisma.aluno.create({
       data: {
         nome,
-        matricula,
+        matricula: matriculaFinal,
         turmaId,
       },
     });
