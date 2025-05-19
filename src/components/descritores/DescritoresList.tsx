@@ -29,22 +29,40 @@ export function DescritoresList({ descritores, onEdit, onDelete }: DescritoresLi
   return (
     <div className="space-y-4">
       {descritores.map((descritor) => (
-        <div key={descritor.id} className="bg-white p-4 rounded-lg shadow">
+        <Card key={descritor.id} className="p-4">
           <div className="flex justify-between items-start">
-            <div>
+            <div className="space-y-2">
               <h3 className="text-lg font-semibold">{descritor.codigo}</h3>
               <p className="text-gray-600">{descritor.descricao}</p>
+              <div className="flex gap-2">
+                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
+                  {descritor.disciplina === 'PORTUGUES' ? 'Português' : 'Matemática'}
+                </span>
+                <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm">
+                  {descritor.tipo === 'DIAGNOSTICA_INICIAL' ? 'Diagnóstico Inicial' : 'Diagnóstico Final'}
+                </span>
+              </div>
             </div>
             <div className="flex gap-2">
-              <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
-                {descritor.disciplina}
-              </span>
-              <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm">
-                {descritor.tipo === 'DIAGNOSTICA_INICIAL' ? 'Diagnóstico Inicial' : 'Diagnóstico Final'}
-              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onEdit(descritor)}
+                title="Editar descritor"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDelete(descritor)}
+                title="Excluir descritor"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
           </div>
-        </div>
+        </Card>
       ))}
     </div>
   );

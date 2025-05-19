@@ -67,15 +67,6 @@ export class DescritorController {
         return response.status(400).json({ error: 'Todos os campos são obrigatórios' });
       }
 
-      // Verificar se o descritor já existe pelo código
-      const descritorExistente = await prisma.descritor.findUnique({
-        where: { codigo }
-      });
-
-      if (descritorExistente) {
-        return response.status(400).json({ error: 'Descritor com este código já cadastrado' });
-      }
-
       const descritor = await prisma.descritor.create({
         data: {
           codigo,
@@ -119,17 +110,6 @@ export class DescritorController {
 
       if (!descritorExistente) {
         return response.status(404).json({ error: 'Descritor não encontrado' });
-      }
-
-      // Verificar se o código já está em uso por outro descritor
-      if (codigo !== descritorExistente.codigo) {
-        const codigoEmUso = await prisma.descritor.findUnique({
-          where: { codigo }
-        });
-
-        if (codigoEmUso) {
-          return response.status(400).json({ error: 'Código já cadastrado' });
-        }
       }
 
       const descritor = await prisma.descritor.update({
