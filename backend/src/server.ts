@@ -1,5 +1,5 @@
 import 'express-async-errors';
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { config } from 'dotenv';
 import { router } from './routes/index';
@@ -19,7 +19,7 @@ app.use(cors({
 app.use(express.json());
 
 // Aplicar middleware de autenticação em todas as rotas da API
-app.use('/api', authMiddleware);
+app.use('/api', authMiddleware as express.RequestHandler);
 
 // Rotas da API
 app.use('/api', router);
@@ -42,7 +42,7 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const HOST = '0.0.0.0'; // Escutar em todas as interfaces de rede
 
 app.listen(PORT, HOST, () => {

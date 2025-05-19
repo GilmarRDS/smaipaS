@@ -41,7 +41,7 @@ export const authMiddleware = async (
   console.log('Headers recebidos:', req.headers);
 
   // Verifica se a rota é pública
-  const isPublicRoute = publicRoutes.some(route => req.originalUrl === route);
+  const isPublicRoute = publicRoutes.some(route => req.originalUrl.startsWith(route));
   if (isPublicRoute) {
     console.log('Rota pública detectada, permitindo acesso');
     return next();
