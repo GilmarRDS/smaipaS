@@ -48,20 +48,38 @@ export const turmasService = {
 
   async criar(turma: Omit<Turma, 'id'>) {
     try {
+      console.log('Enviando dados para criar turma:', turma);
       const response = await api.post<Turma>('/turmas', turma);
       return response.data;
     } catch (error) {
-      console.error('Erro ao criar turma:', error);
+      if (error instanceof AxiosError) {
+        console.error('Erro ao criar turma:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      } else {
+        console.error('Erro ao criar turma:', error);
+      }
       throw error;
     }
   },
 
   async atualizar(id: string, turma: Partial<Turma>) {
     try {
+      console.log('Enviando dados para atualizar turma:', { id, turma });
       const response = await api.put<Turma>(`/turmas/${id}`, turma);
       return response.data;
     } catch (error) {
-      console.error('Erro ao atualizar turma:', error);
+      if (error instanceof AxiosError) {
+        console.error('Erro ao atualizar turma:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      } else {
+        console.error('Erro ao atualizar turma:', error);
+      }
       throw error;
     }
   },

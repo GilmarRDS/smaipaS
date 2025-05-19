@@ -4,6 +4,7 @@ import cors from 'cors';
 import { config } from 'dotenv';
 import { router } from './routes/index';
 import path from 'path';
+import { authMiddleware } from './middlewares/auth';
 
 config();
 
@@ -16,6 +17,9 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// Aplicar middleware de autenticação em todas as rotas da API
+app.use('/api', authMiddleware);
 
 // Rotas da API
 app.use('/api', router);

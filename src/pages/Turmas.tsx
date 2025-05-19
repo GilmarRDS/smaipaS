@@ -105,23 +105,24 @@ const Turmas: React.FC = () => {
 
     try {
       if (editingTurma) {
+        console.log('Atualizando turma com dados:', turmaData);
         await turmasService.atualizar(editingTurma.id, turmaData);
         toast.success('Turma atualizada com sucesso');
       } else {
-        await turmasService.criar({
+        const dadosTurma = {
           ...turmaData,
           escolaId: escolaIdToUse,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        } as Omit<Turma, 'id'>);
+        };
+        console.log('Criando turma com dados:', dadosTurma);
+        await turmasService.criar(dadosTurma as Omit<Turma, 'id'>);
         toast.success('Turma criada com sucesso');
       }
       setActiveTab('listar');
       setEditingTurma(null);
       loadTurmas();
     } catch (error) {
+      console.error('Erro ao salvar turma:', error);
       toast.error('Erro ao salvar turma');
-      console.error(error);
     }
   };
 
