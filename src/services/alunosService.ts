@@ -22,14 +22,9 @@ export const alunosService = {
     }
   },
 
-  async listarPorTurma(turmaId: string) {
-    try {
-      const response = await api.get<Aluno[]>(`/turmas/${turmaId}/alunos`);
-      return response.data;
-    } catch (error) {
-      console.error('Erro ao listar alunos da turma:', error);
-      throw error;
-    }
+  async listarPorTurma(turmaId: string): Promise<Aluno[]> {
+    const response = await api.get(`/alunos/turma/${turmaId}`);
+    return response.data;
   },
 
   async obterPorId(id: string) {
@@ -42,33 +37,18 @@ export const alunosService = {
     }
   },
 
-  async criar(aluno: Omit<Aluno, 'id'>) {
-    try {
-      const response = await api.post<Aluno>('/alunos', aluno);
-      return response.data;
-    } catch (error) {
-      console.error('Erro ao criar aluno:', error);
-      throw error;
-    }
+  async criar(aluno: Omit<Aluno, 'id'>): Promise<Aluno> {
+    const response = await api.post('/alunos', aluno);
+    return response.data;
   },
 
-  async atualizar(id: string, aluno: Partial<Aluno>) {
-    try {
-      const response = await api.put<Aluno>(`/alunos/${id}`, aluno);
-      return response.data;
-    } catch (error) {
-      console.error('Erro ao atualizar aluno:', error);
-      throw error;
-    }
+  async atualizar(id: string, aluno: Partial<Aluno>): Promise<Aluno> {
+    const response = await api.put(`/alunos/${id}`, aluno);
+    return response.data;
   },
 
-  async deletar(id: string) {
-    try {
-      await api.delete(`/alunos/${id}`);
-    } catch (error) {
-      console.error('Erro ao deletar aluno:', error);
-      throw error;
-    }
+  async deletar(id: string): Promise<void> {
+    await api.delete(`/alunos/${id}`);
   },
 
   async obterRespostas(alunoId: string, avaliacaoId: string) {
@@ -79,5 +59,20 @@ export const alunosService = {
       console.error('Erro ao obter respostas do aluno:', error);
       throw error;
     }
+  },
+
+  async importarAlunos(formData: FormData): Promise<void> {
+    await api.post('/alunos/importar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  async downloadTemplate(): Promise<Blob> {
+    const response = await api.get('/alunos/template', {
+      responseType: 'blob',
+    });
+    return response.data;
   }
 }; 

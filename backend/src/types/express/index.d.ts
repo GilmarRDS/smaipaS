@@ -8,3 +8,8 @@ declare global {
     }
   }
 }
+
+// Tipo para requests após autenticação
+export interface RequestWithUsuario extends Express.Request {
+  usuario: Usuario;
+}

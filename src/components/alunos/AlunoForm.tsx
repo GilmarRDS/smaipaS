@@ -30,6 +30,12 @@ const formSchema = z.object({
   matricula: z.string().optional(),
   escolaId: z.string().optional(),
   turmaId: z.string().min(1, 'Turma é obrigatória'),
+  dataNascimento: z.string()
+    .min(1, 'Data de nascimento é obrigatória')
+    .refine((date) => {
+      const dateObj = new Date(date);
+      return !isNaN(dateObj.getTime());
+    }, 'Data inválida'),
 });
 
 interface AlunoFormProps {
@@ -42,7 +48,7 @@ interface AlunoFormProps {
 const AlunoForm = ({ aluno, turmas: turmasProp, onSubmit, onCancel }: AlunoFormProps) => {
   const { user } = useAuth();
   const [escolas, setEscolas] = useState<Escola[]>([]);
-  const [turmas, setTurmas] = useState<Turma[]>(turmasProp);
+  const [turmas, setTurmas] = useState<Turma[]>(turmasProp || []);
   const [selectedEscolaId, setSelectedEscolaId] = useState<string>(aluno?.turma?.escola?.id || user?.schoolId || '');
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -52,6 +58,7 @@ const AlunoForm = ({ aluno, turmas: turmasProp, onSubmit, onCancel }: AlunoFormP
       matricula: aluno?.matricula || '',
       escolaId: selectedEscolaId,
       turmaId: aluno?.turmaId || '',
+      dataNascimento: aluno?.dataNascimento || '',
     },
   });
 
@@ -87,6 +94,7 @@ const AlunoForm = ({ aluno, turmas: turmasProp, onSubmit, onCancel }: AlunoFormP
     const payload: any = {
       nome: data.nome,
       turmaId: data.turmaId,
+      dataNascimento: new Date(data.dataNascimento).toISOString().split('T')[0],
     };
     if (data.matricula) payload.matricula = data.matricula;
     if (user?.role === 'secretaria') payload.escolaId = data.escolaId;
@@ -139,6 +147,20 @@ const AlunoForm = ({ aluno, turmas: turmasProp, onSubmit, onCancel }: AlunoFormP
 
         <FormField
           control={form.control}
+          name="dataNascimento"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Data de Nascimento</FormLabel>
+              <FormControl>
+                <Input type="date" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
           name="matricula"
           render={({ field }) => (
             <FormItem>
@@ -164,7 +186,7 @@ const AlunoForm = ({ aluno, turmas: turmasProp, onSubmit, onCancel }: AlunoFormP
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {turmas.map((turma) => (
+                  {(turmas || []).map((turma) => (
                     <SelectItem key={turma.id} value={turma.id}>
                       {turma.nome}
                     </SelectItem>

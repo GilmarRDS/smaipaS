@@ -9,7 +9,7 @@
     "removeComments": true,
     "typeRoots": [
       "./node_modules/@types",
-      "./src/@types"
+      "./src/types"
     ],
     "esModuleInterop": true,
     "resolveJsonModule": true,

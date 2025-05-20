@@ -8,6 +8,7 @@ import { AvaliacaoController } from './controllers/AvaliacaoController';
 import { DescritorController } from './controllers/DescritorController';
 // Importar o novo PasswordController
 import { PasswordController } from './controllers/PasswordController';
+import { prisma } from './lib/prisma';
 
 const router = Router();
 
@@ -53,18 +54,18 @@ router.get('/turmas/:turmaId/alunos', asyncHandler((req: RequestWithUsuario, res
 router.get('/alunos/:id', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.buscarPorId(req, res)));
 router.post('/alunos', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.criar(req, res)));
 // Nova rota para listar todos os alunos de uma escola
-router.get('/escolas/:escolaId/alunos', async (req, res) => {
+router.get('/escolas/:escolaId/alunos', asyncHandler(async (req: RequestWithUsuario, res: Response) => {
   const { escolaId } = req.params;
   // Buscar todas as turmas da escola
-  const turmas = await req.prisma.turma.findMany({ where: { escolaId }, select: { id: true } });
-  const turmaIds = turmas.map(t => t.id);
+  const turmas = await prisma.turma.findMany({ where: { escolaId }, select: { id: true } });
+  const turmaIds = turmas.map((t: { id: string }) => t.id);
   // Buscar todos os alunos dessas turmas
-  const alunos = await req.prisma.aluno.findMany({
+  const alunos = await prisma.aluno.findMany({
     where: { turmaId: { in: turmaIds } },
     include: { turma: { select: { id: true, nome: true } } }
   });
   res.json(alunos);
-});
+}));
 router.put('/alunos/:id', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.atualizar(req, res)));
 router.delete('/alunos/:id', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.deletar(req, res)));
 

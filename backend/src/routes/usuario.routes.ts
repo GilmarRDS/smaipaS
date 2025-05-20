@@ -36,20 +36,20 @@ usuarioRoutes.get('/me', authMiddleware, asyncHandler((req, res) => {
 }));
 
 // Rotas autenticadas
-usuarioRoutes.get('/', authMiddleware, asyncHandler((req, res) => 
-  usuarioController.listarTodos(req as RequestWithUsuario, res)
+usuarioRoutes.get('/', authMiddleware, asyncHandler((req: RequestWithUsuario, res) => 
+  usuarioController.listarTodos(req, res)
 ));
 
-usuarioRoutes.get('/:id', authMiddleware, asyncHandler((req, res) => 
-  usuarioController.buscarPorId(req as RequestWithUsuario, res)
+usuarioRoutes.get('/:id', authMiddleware, asyncHandler((req: RequestWithUsuario, res) => 
+  usuarioController.buscarPorId(req, res)
 ));
 
-usuarioRoutes.put('/:id', authMiddleware, asyncHandler((req, res) => 
-  usuarioController.atualizar(req as RequestWithUsuario, res)
+usuarioRoutes.put('/:id', authMiddleware, asyncHandler((req: RequestWithUsuario, res) => 
+  usuarioController.atualizar(req, res)
 ));
 
-usuarioRoutes.delete('/:id', authMiddleware, asyncHandler((req, res) => 
-  usuarioController.deletar(req as RequestWithUsuario, res)
+usuarioRoutes.delete('/:id', authMiddleware, asyncHandler((req: RequestWithUsuario, res) => 
+  usuarioController.deletar(req, res)
 ));
 
 export { usuarioRoutes };

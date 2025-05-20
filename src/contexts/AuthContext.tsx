@@ -5,7 +5,7 @@ import { User, AuthContextType } from '@/types/auth';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -112,22 +112,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const isSecretaria = user?.role === 'secretaria';
+  const isAdmin = user?.role === 'admin';
 
   if (isLoading) {
     return <div>Carregando...</div>;
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated, isSecretaria }}>
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated, isSecretaria, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = (): AuthContextType => {
+export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth deve ser usado dentro de um AuthProvider');
   }
   return context;
-};
+}

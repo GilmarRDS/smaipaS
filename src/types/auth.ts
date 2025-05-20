@@ -1,4 +1,4 @@
-export type UserRole = 'secretaria' | 'escola';
+export type UserRole = 'secretaria' | 'escola' | 'admin';
 
 export interface User {
   id: string;
@@ -15,4 +15,5 @@ export interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   isSecretaria: boolean;
+  isAdmin: boolean;
 } 
