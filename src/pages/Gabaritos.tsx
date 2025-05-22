@@ -23,8 +23,9 @@ const Gabaritos: React.FC = () => {
   const [turma, setTurma] = useState('');
   const [componente, setComponente] = useState('');
   const [avaliacao, setAvaliacao] = useState('');
-  const [numQuestoes, setNumQuestoes] = useState('20');
-  const [gabarito, setGabarito] = useState<string[]>(Array(20).fill(''));
+  const [numQuestoes, setNumQuestoes] = useState('10');
+  const [gabarito, setGabarito] = useState<string[]>(Array(10).fill(''));
+  const [turno, setTurno] = useState('');
   const [gabaritosDB, setGabaritosDB] = useState<GabaritoMock[]>([]);
   const [carregando, setCarregando] = useState(true);
 
@@ -94,6 +95,8 @@ const Gabaritos: React.FC = () => {
               setNumQuestoes={setNumQuestoes}
               gabarito={gabarito}
               setGabarito={setGabarito}
+              turno={turno}
+              setTurno={setTurno}
             />
           </TabsContent>
 

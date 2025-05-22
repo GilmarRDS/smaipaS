@@ -6,8 +6,8 @@ export interface Avaliacao {
   dataFim: string;
   componente: 'portugues' | 'matematica';
   disciplina: 'PORTUGUES' | 'MATEMATICA';
-  tipo: 'DIAGNOSTICA_INICIAL' | 'DIAGNOSTICA_FINAL';
-  ano: string;
+  tipo: 'PROVA' | 'SIMULADO';
+  ano: '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
   numQuestoes: number;
   status: 'agendada' | 'em-andamento' | 'concluida' | 'cancelada';
   turmaId: string;
@@ -33,6 +33,9 @@ export interface Avaliacao {
     id: string;
     nome: string;
   };
+  dataAplicacao: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Helper function to get status badge color

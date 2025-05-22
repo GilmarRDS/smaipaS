@@ -20,6 +20,7 @@ export interface ItemGabarito {
 export interface Gabarito {
   id: string;
   avaliacaoId: string;
+  turno: 'matutino' | 'vespertino' | 'noturno' | 'integral';
   itens: ItemGabarito[];
   dataCriacao: string;
   dataAtualizacao: string;

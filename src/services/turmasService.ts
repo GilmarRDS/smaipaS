@@ -9,7 +9,11 @@ export const turmasService = {
         throw new Error('ID da escola é obrigatório');
       }
       const response = await api.get(`/api/escolas/${escolaId}/turmas`);
-      return response.data;
+      const turmas = response.data;
+      const turmasFiltradas = Array.isArray(turmas)
+        ? turmas.filter((turma: Turma) => turma.escolaId === escolaId)
+        : [];
+      return turmasFiltradas;
     } catch (error) {
       console.error('Erro ao listar turmas:', error);
       throw error;

@@ -6,6 +6,7 @@ import { TurmaController } from './controllers/TurmaController';
 import { AlunoController } from './controllers/AlunoController';
 import { AvaliacaoController } from './controllers/AvaliacaoController';
 import { DescritorController } from './controllers/DescritorController';
+import { GabaritoController } from './controllers/GabaritoController';
 // Importar o novo PasswordController
 import { PasswordController } from './controllers/PasswordController';
 import { prisma } from './lib/prisma';
@@ -18,6 +19,7 @@ const turmaController = new TurmaController();
 const alunoController = new AlunoController();
 const avaliacaoController = new AvaliacaoController();
 const descritorController = new DescritorController();
+const gabaritoController = new GabaritoController();
 // Instanciar o novo PasswordController
 const passwordController = new PasswordController();
 
@@ -69,15 +71,6 @@ router.get('/escolas/:escolaId/alunos', asyncHandler(async (req: RequestWithUsua
 router.put('/alunos/:id', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.atualizar(req, res)));
 router.delete('/alunos/:id', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.deletar(req, res)));
 
-// Rotas de avaliações
-router.get('/escolas/:escolaId/avaliacoes', asyncHandler((req: RequestWithUsuario, res: Response) => avaliacaoController.listarTodas(req, res)));
-router.get('/avaliacoes/turma/:turmaId', asyncHandler((req: RequestWithUsuario, res: Response) => avaliacaoController.listarPorTurma(req, res)));
-router.get('/avaliacoes/:id', asyncHandler((req: RequestWithUsuario, res: Response) => avaliacaoController.buscarPorId(req, res)));
-router.post('/avaliacoes', asyncHandler((req: RequestWithUsuario, res: Response) => avaliacaoController.criar(req, res)));
-router.put('/avaliacoes/:id', asyncHandler((req: RequestWithUsuario, res: Response) => avaliacaoController.atualizar(req, res)));
-router.delete('/avaliacoes/:id', asyncHandler((req: RequestWithUsuario, res: Response) => avaliacaoController.deletar(req, res)));
-router.get('/avaliacoes/gabarito/:avaliacaoId', asyncHandler((req: RequestWithUsuario, res: Response) => avaliacaoController.obterGabarito(req, res)));
-
 // Rotas de descritores
 router.get('/descritores', asyncHandler((req: RequestWithUsuario, res: Response) => descritorController.listarTodos(req, res)));
 router.get('/descritores/:id', asyncHandler((req: RequestWithUsuario, res: Response) => descritorController.buscarPorId(req, res)));
@@ -92,5 +85,12 @@ router.get('/relatorios/dados', asyncHandler((req: RequestWithUsuario, res: Resp
 router.post('/usuarios/recuperar-senha', asyncHandler((req: RequestWithUsuario, res: Response) => passwordController.forgotPassword(req, res)));
 router.get('/usuarios/validar-token/:token', asyncHandler((req: RequestWithUsuario, res: Response) => passwordController.validateResetToken(req, res)));
 router.post('/usuarios/resetar-senha', asyncHandler((req: RequestWithUsuario, res: Response) => passwordController.resetPassword(req, res)));
+
+// Rotas de gabarito
+router.get('/gabaritos', asyncHandler((req: RequestWithUsuario, res: Response) => gabaritoController.listarTodos(req, res)));
+router.get('/gabaritos/:id', asyncHandler((req: RequestWithUsuario, res: Response) => gabaritoController.buscarPorId(req, res)));
+router.post('/gabaritos', asyncHandler((req: RequestWithUsuario, res: Response) => gabaritoController.criar(req, res)));
+router.put('/gabaritos/:id', asyncHandler((req: RequestWithUsuario, res: Response) => gabaritoController.atualizar(req, res)));
+router.delete('/gabaritos/:id', asyncHandler((req: RequestWithUsuario, res: Response) => gabaritoController.deletar(req, res)));
 
 export { router };

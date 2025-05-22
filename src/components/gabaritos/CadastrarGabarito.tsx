@@ -25,6 +25,8 @@ interface CadastrarGabaritoProps {
   setNumQuestoes: (value: string) => void;
   gabarito: string[];
   setGabarito: (value: string[]) => void;
+  turno: string;
+  setTurno: (value: string) => void;
 }
 
 const alternativas = ['A', 'B', 'C', 'D', 'E'];
@@ -40,6 +42,8 @@ const CadastrarGabarito: React.FC<CadastrarGabaritoProps> = ({
   setNumQuestoes,
   gabarito,
   setGabarito,
+  turno,
+  setTurno,
 }) => {
   const { user } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
@@ -116,20 +120,16 @@ const CadastrarGabarito: React.FC<CadastrarGabaritoProps> = ({
     
     try {
       const itens = gabarito.map((resposta, index) => ({
-        id: `temp-${index + 1}`, // ID temporário que será substituído pelo backend
         numero: index + 1,
         resposta,
         descritorId: '' // TODO: Implementar seleção de descritor
       }));
 
-      const now = new Date().toISOString();
-      const gabaritoData: Omit<Gabarito, 'id'> = {
+      await gabaritosService.criar({
         avaliacaoId: avaliacao,
-        itens,
-        dataCriacao: now,
-        dataAtualizacao: now
-      };
-      await gabaritosService.criar(gabaritoData);
+        turno,
+        itens
+      });
       
       toast.success('Gabarito cadastrado com sucesso!');
       setGabarito(Array(parseInt(numQuestoes, 10)).fill(''));
@@ -182,6 +182,21 @@ const CadastrarGabarito: React.FC<CadastrarGabaritoProps> = ({
               <SelectContent>
                 <SelectItem value="portugues">Língua Portuguesa</SelectItem>
                 <SelectItem value="matematica">Matemática</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="turno-manual">Turno</Label>
+            <Select value={turno} onValueChange={(value: 'matutino' | 'vespertino' | 'noturno' | 'integral') => setTurno(value)}>
+              <SelectTrigger id="turno-manual">
+                <SelectValue placeholder="Selecione o turno" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="matutino">Matutino</SelectItem>
+                <SelectItem value="vespertino">Vespertino</SelectItem>
+                <SelectItem value="noturno">Noturno</SelectItem>
+                <SelectItem value="integral">Integral</SelectItem>
               </SelectContent>
             </Select>
           </div>

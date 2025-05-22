@@ -2,7 +2,7 @@ import 'express-async-errors';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { config } from 'dotenv';
-import { router } from './routes';
+import { router } from './routes/index';
 import path from 'path';
 import { authMiddleware } from './middlewares/auth';
 

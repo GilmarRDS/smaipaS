@@ -32,7 +32,6 @@ model Escola {
   diretor         String
   dataCriacao     DateTime    @default(now())
   dataAtualizacao DateTime    @updatedAt
-  avaliacoes      Avaliacao[]
   turmas          Turma[]
   usuarios        Usuario[]
 }
@@ -46,7 +45,6 @@ model Turma {
   dataCriacao     DateTime    @default(now())
   dataAtualizacao DateTime    @updatedAt
   alunos          Aluno[]
-  avaliacoes      Avaliacao[]
   escola          Escola      @relation(fields: [escolaId], references: [id], onDelete: Cascade)
 }
 
@@ -67,13 +65,10 @@ model Avaliacao {
   nome            String
   tipo            TipoAvaliacao
   disciplina      Disciplina
+  ano             String        // Ano/série da avaliação
   dataAplicacao   DateTime
-  turmaId         String
-  escolaId        String
   dataCriacao     DateTime      @default(now())
   dataAtualizacao DateTime      @updatedAt
-  escola          Escola        @relation(fields: [escolaId], references: [id], onDelete: Cascade)
-  turma           Turma         @relation(fields: [turmaId], references: [id], onDelete: Cascade)
   gabarito        Gabarito?
   respostas       Resposta[]
 }
@@ -81,6 +76,7 @@ model Avaliacao {
 model Gabarito {
   id              String         @id @default(uuid())
   avaliacaoId     String         @unique
+  turno           Turno
   dataCriacao     DateTime       @default(now())
   dataAtualizacao DateTime       @updatedAt
   avaliacao       Avaliacao      @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)

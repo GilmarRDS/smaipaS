@@ -22,8 +22,8 @@ const Respostas: React.FC = () => {
   const [turma, setTurma] = useState('');
   const [avaliacao, setAvaliacao] = useState('');
   const [aluno, setAluno] = useState('');
-  const [numQuestoes, setNumQuestoes] = useState(20);
-  const [respostas, setRespostas] = useState<string[]>(Array(20).fill(''));
+  const [numQuestoes, setNumQuestoes] = useState(10);
+  const [respostas, setRespostas] = useState<string[]>(Array(10).fill(''));
   const [ausente, setAusente] = useState(false);
   const [transferido, setTransferido] = useState(false);
 

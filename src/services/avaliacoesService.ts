@@ -1,6 +1,11 @@
 import api from '@/lib/api';
 import { Avaliacao } from '@/types/avaliacoes';
 
+interface ListarTodasParams {
+  ano?: string;
+  disciplina?: string;
+}
+
 export const avaliacoesService = {
   async listarPorTurma(turmaId: string): Promise<Avaliacao[]> {
     try {
@@ -69,5 +74,14 @@ export const avaliacoesService = {
       console.error('Erro ao deletar avaliação:', error);
       throw error;
     }
+  },
+
+  async listarTodas(params: ListarTodasParams = {}): Promise<Avaliacao[]> {
+    const queryParams = new URLSearchParams();
+    if (params.ano) queryParams.append('ano', params.ano);
+    if (params.disciplina) queryParams.append('disciplina', params.disciplina);
+
+    const response = await api.get(`/api/avaliacoes?${queryParams.toString()}`);
+    return response.data;
   }
 };
