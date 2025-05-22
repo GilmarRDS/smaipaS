@@ -14,31 +14,31 @@ export interface Usuario {
 
 export const usuariosService = {
   async listar() {
-    const response = await api.get<Usuario[]>('/usuarios');
+    const response = await api.get<Usuario[]>('/api/usuarios');
     return response.data;
   },
 
   async listarPorEscola(escolaId: string) {
-    const response = await api.get<Usuario[]>(`/usuarios/escola/${escolaId}`);
+    const response = await api.get<Usuario[]>(`/api/usuarios/escola/${escolaId}`);
     return response.data;
   },
 
   async obterPorId(id: string) {
-    const response = await api.get<Usuario>(`/usuarios/${id}`);
+    const response = await api.get<Usuario>(`/api/usuarios/${id}`);
     return response.data;
   },
 
   async criar(usuario: Omit<Usuario, 'id'> & { senha: string }) {
-    const response = await api.post<Usuario>('/usuarios', usuario);
+    const response = await api.post<Usuario>('/api/usuarios', usuario);
     return response.data;
   },
 
   async atualizar(id: string, usuario: Partial<Usuario> & { senha?: string }) {
-    const response = await api.put<Usuario>(`/usuarios/${id}`, usuario);
+    const response = await api.put<Usuario>(`/api/usuarios/${id}`, usuario);
     return response.data;
   },
 
   async deletar(id: string) {
-    await api.delete(`/usuarios/${id}`);
+    await api.delete(`/api/usuarios/${id}`);
   }
 };

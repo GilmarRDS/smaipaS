@@ -79,6 +79,9 @@ export class EscolaController {
 
       // Se for um usuário da secretaria, pode ver todas as escolas
       const escolas = await prisma.escola.findMany({
+        orderBy: {
+          nome: 'asc'
+        },
         include: {
           usuarios: {
             select: {

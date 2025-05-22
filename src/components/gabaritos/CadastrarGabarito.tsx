@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -7,6 +6,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { Save, CheckCircle, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { turmasService } from '@/services/turmasService';
+import { avaliacoesService } from '@/services/avaliacoesService';
+import { gabaritosService } from '@/services/gabaritosService';
+import useAuth from '@/hooks/useAuth';
+import { Turma } from '@/types/turmas';
+import { Avaliacao } from '@/types/avaliacoes';
+import { Gabarito } from '@/types/gabaritos';
 
 interface CadastrarGabaritoProps {
   turma: string;
@@ -35,8 +41,50 @@ const CadastrarGabarito: React.FC<CadastrarGabaritoProps> = ({
   gabarito,
   setGabarito,
 }) => {
+  const { user } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
-  
+  const [turmas, setTurmas] = useState<Turma[]>([]);
+  const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Carregar turmas
+  useEffect(() => {
+    const carregarTurmas = async () => {
+      try {
+        let turmasData: Turma[] = [];
+        if (user?.role === 'secretaria') {
+          toast.error('Selecione uma escola primeiro');
+          return;
+        } else if (user?.role === 'escola' && user.schoolId) {
+          turmasData = await turmasService.listar(user.schoolId);
+        }
+        setTurmas(turmasData);
+      } catch (error) {
+        console.error('Erro ao carregar turmas:', error);
+        toast.error('Erro ao carregar turmas');
+      }
+    };
+    carregarTurmas();
+  }, [user?.role, user?.schoolId]);
+
+  // Carregar avaliações quando a turma for selecionada
+  useEffect(() => {
+    const carregarAvaliacoes = async () => {
+      if (!turma) {
+        setAvaliacoes([]);
+        return;
+      }
+      try {
+        const avaliacoesData = await avaliacoesService.listarPorTurma(turma);
+        setAvaliacoes(avaliacoesData);
+      } catch (error) {
+        console.error('Erro ao carregar avaliações:', error);
+        toast.error('Erro ao carregar avaliações');
+      }
+    };
+    carregarAvaliacoes();
+  }, [turma]);
+
   const handleNumQuestoesChange = (value: string) => {
     const num = parseInt(value, 10);
     setNumQuestoes(value);
@@ -49,7 +97,7 @@ const CadastrarGabarito: React.FC<CadastrarGabaritoProps> = ({
     setGabarito(newGabarito);
   };
   
-  const handleSalvarGabarito = () => {
+  const handleSalvarGabarito = async () => {
     if (!turma || !componente || !avaliacao) {
       toast.error('Preencha todos os campos obrigatórios', {
         description: 'Turma, componente curricular e avaliação são obrigatórios'
@@ -64,28 +112,33 @@ const CadastrarGabarito: React.FC<CadastrarGabaritoProps> = ({
       return;
     }
     
-    // Simulação de salvamento
     setIsSaving(true);
     
-    const promise = () => new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          success: true,
-          message: 'Gabarito cadastrado com sucesso!'
-        });
-      }, 2000);
-    });
-    
-    toast.promise(promise, {
-      loading: 'Salvando gabarito...',
-      success: (data) => {
-        setIsSaving(false);
-        // Reset form
-        setGabarito(Array(parseInt(numQuestoes, 10)).fill(''));
-        return 'Gabarito cadastrado com sucesso!';
-      },
-      error: 'Erro ao salvar gabarito',
-    });
+    try {
+      const itens = gabarito.map((resposta, index) => ({
+        id: `temp-${index + 1}`, // ID temporário que será substituído pelo backend
+        numero: index + 1,
+        resposta,
+        descritorId: '' // TODO: Implementar seleção de descritor
+      }));
+
+      const now = new Date().toISOString();
+      const gabaritoData: Omit<Gabarito, 'id'> = {
+        avaliacaoId: avaliacao,
+        itens,
+        dataCriacao: now,
+        dataAtualizacao: now
+      };
+      await gabaritosService.criar(gabaritoData);
+      
+      toast.success('Gabarito cadastrado com sucesso!');
+      setGabarito(Array(parseInt(numQuestoes, 10)).fill(''));
+    } catch (error) {
+      console.error('Erro ao salvar gabarito:', error);
+      toast.error('Erro ao salvar gabarito');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const getCompletionPercentage = (): number => {
@@ -113,15 +166,9 @@ const CadastrarGabarito: React.FC<CadastrarGabaritoProps> = ({
                 <SelectValue placeholder="Selecione a turma" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1-ano">5º Ano</SelectItem>
-                <SelectItem value="2-ano">5º Ano</SelectItem>
-                <SelectItem value="3-ano">5º Ano</SelectItem>
-                <SelectItem value="4-ano">5º Ano</SelectItem>
-                <SelectItem value="5-ano">5º Ano</SelectItem>
-                <SelectItem value="6-ano">5º Ano</SelectItem>
-                <SelectItem value="7-ano">5º Ano</SelectItem>
-                <SelectItem value="8-ano">5º Ano</SelectItem>
-                <SelectItem value="9-ano">9º Ano</SelectItem>
+                {turmas.map(t => (
+                  <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -146,8 +193,9 @@ const CadastrarGabarito: React.FC<CadastrarGabaritoProps> = ({
                 <SelectValue placeholder="Selecione a avaliação" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="diagnostica-1">Diagnóstica 1</SelectItem>
-                <SelectItem value="diagnostica-2">Diagnóstica 2</SelectItem>
+                {avaliacoes.map(a => (
+                  <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

@@ -20,7 +20,7 @@ async function main() {
   await prisma.usuario.create({
     data: {
       nome: 'Administrador',
-      email: 'admin@smaipa.com',
+      email: 'semed.ti1@gmail.com',
       senha: senhaSecretaria,
       role: 'secretaria',
     },

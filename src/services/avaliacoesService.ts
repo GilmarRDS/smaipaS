@@ -3,36 +3,71 @@ import { Avaliacao } from '@/types/avaliacoes';
 
 export const avaliacoesService = {
   async listarPorTurma(turmaId: string): Promise<Avaliacao[]> {
-    const response = await api.get<Avaliacao[]>(`/avaliacoes/turma/${turmaId}`);
-    return response.data;
+    try {
+      const response = await api.get<Avaliacao[]>(`/api/avaliacoes/turma/${turmaId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao listar avaliações da turma:', error);
+      throw error;
+    }
   },
 
   async listarPorEscola(escolaId: string): Promise<Avaliacao[]> {
-    const response = await api.get<Avaliacao[]>(`/avaliacoes/escola/${escolaId}`);
-    return response.data;
+    try {
+      const response = await api.get<Avaliacao[]>(`/api/escolas/${escolaId}/avaliacoes`);
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao listar avaliações da escola:', error);
+      throw error;
+    }
   },
 
   async obterDadosRelatorios(params: { escolaId?: string; turmaId?: string; componente?: string }) {
-    const response = await api.get('/avaliacoes/dados-relatorios', { params });
-    return response.data;
+    try {
+      const response = await api.get('/api/relatorios/dados', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao obter dados dos relatórios:', error);
+      throw error;
+    }
   },
 
   async obterGabarito(avaliacaoId: string) {
-    const response = await api.get(`/avaliacoes/gabarito/${avaliacaoId}`);
-    return response.data;
+    try {
+      const response = await api.get(`/api/avaliacoes/gabarito/${avaliacaoId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao obter gabarito:', error);
+      throw error;
+    }
   },
 
   async criar(avaliacaoData: Omit<Avaliacao, 'id'>): Promise<Avaliacao> {
-    const response = await api.post<Avaliacao>('/avaliacoes', avaliacaoData);
-    return response.data;
+    try {
+      const response = await api.post<Avaliacao>('/api/avaliacoes', avaliacaoData);
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao criar avaliação:', error);
+      throw error;
+    }
   },
 
   async atualizar(id: string, avaliacaoData: Omit<Avaliacao, 'id'>): Promise<Avaliacao> {
-    const response = await api.put<Avaliacao>(`/avaliacoes/${id}`, avaliacaoData);
-    return response.data;
+    try {
+      const response = await api.put<Avaliacao>(`/api/avaliacoes/${id}`, avaliacaoData);
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao atualizar avaliação:', error);
+      throw error;
+    }
   },
 
   async deletar(id: string): Promise<void> {
-    await api.delete(`/avaliacoes/${id}`);
+    try {
+      await api.delete(`/api/avaliacoes/${id}`);
+    } catch (error) {
+      console.error('Erro ao deletar avaliação:', error);
+      throw error;
+    }
   }
 };

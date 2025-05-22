@@ -11,12 +11,11 @@ export default defineConfig(({ mode }) => ({
     strictPort: true,
     open: true,
     proxy: {
-      '/password': {
+      '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false,
       },
-      // Adicione outras rotas de API se necessário
     },
   },
   plugins: [

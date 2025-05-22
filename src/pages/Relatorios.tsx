@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import { Card, CardContent } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { useAuth } from '../contexts/AuthContext';
+import useAuth from '@/hooks/useAuth';
 import FilterControls from '../components/dashboard/FilterControls';
 import { turmasService } from '../services/turmasService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';

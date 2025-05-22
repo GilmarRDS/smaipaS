@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import RadarChartComponent from '@/components/charts/RadarChart';
@@ -11,6 +10,9 @@ interface StudentDescriptor {
 
 interface StudentData {
   aluno: string;
+  alunoId: string;
+  turmaId: string;
+  turmaNome: string;
   descritores: StudentDescriptor[];
 }
 
@@ -46,7 +48,9 @@ const StudentDescriptorAnalysis: React.FC<StudentDescriptorAnalysisProps> = ({
               onChange={(e) => onStudentChange(e.target.value)}
             >
               {studentData.map(aluno => (
-                <option key={aluno.aluno} value={aluno.aluno}>{aluno.aluno}</option>
+                <option key={aluno.alunoId} value={aluno.aluno}>
+                  {aluno.aluno} - {aluno.turmaNome}
+                </option>
               ))}
             </select>
           </div>

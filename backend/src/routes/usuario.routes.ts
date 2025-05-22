@@ -9,7 +9,7 @@ const passwordController = new PasswordController();
 
 // Middleware para tratar funções assíncronas com RequestWithUsuario
 function asyncHandler(
-  fn: (req: RequestWithUsuario, res: Response, next: NextFunction) => Promise<unknown>
+  fn: (req: RequestWithUsuario, res: Response, next: NextFunction) => Promise<void | Response>
 ): RequestHandler {
   return (req, res, next) => {
     Promise.resolve(fn(req as RequestWithUsuario, res, next)).catch((error) => {
@@ -20,14 +20,37 @@ function asyncHandler(
 }
 
 // Rotas públicas
-usuarioRoutes.post('/login', asyncHandler((req, res) => usuarioController.login(req, res)));
-usuarioRoutes.post('/', asyncHandler((req, res) => usuarioController.criar(req, res)));
-usuarioRoutes.post('/recuperar-senha', asyncHandler((req, res) => passwordController.forgotPassword(req, res)));
-usuarioRoutes.get('/validar-token/:token', asyncHandler((req, res) => passwordController.validateResetToken(req, res)));
-usuarioRoutes.post('/resetar-senha', asyncHandler((req, res) => passwordController.resetPassword(req, res)));
+usuarioRoutes.post('/login', asyncHandler(async (req, res) => {
+  await usuarioController.login(req, res);
+}));
+
+usuarioRoutes.post('/', asyncHandler(async (req, res) => {
+  await usuarioController.criar(req, res);
+}));
+
+usuarioRoutes.post('/recuperar-senha', asyncHandler(async (req, res) => {
+  await passwordController.forgotPassword(req, res);
+}));
+
+usuarioRoutes.get('/validar-token/:token', asyncHandler(async (req, res) => {
+  await passwordController.validateResetToken(req, res);
+}));
+
+usuarioRoutes.post('/resetar-senha', asyncHandler(async (req, res) => {
+  await passwordController.resetPassword(req, res);
+}));
+
+// Rotas autenticadas
+usuarioRoutes.get('/', asyncHandler(authMiddleware), asyncHandler(async (req, res) => {
+  await usuarioController.listarTodos(req, res);
+}));
+
+usuarioRoutes.get('/:id', asyncHandler(authMiddleware), asyncHandler(async (req, res) => {
+  await usuarioController.buscarPorId(req, res);
+}));
 
 // Rota para obter informações do usuário atual
-usuarioRoutes.get('/me', authMiddleware, asyncHandler((req, res) => {
+usuarioRoutes.get('/me', asyncHandler(authMiddleware), asyncHandler(async (req, res) => {
   const usuario = (req as RequestWithUsuario).usuario;
   if (!usuario) {
     return res.status(401).json({ message: 'Usuário não autenticado' });
@@ -35,21 +58,12 @@ usuarioRoutes.get('/me', authMiddleware, asyncHandler((req, res) => {
   return res.json(usuario);
 }));
 
-// Rotas autenticadas
-usuarioRoutes.get('/', authMiddleware, asyncHandler((req: RequestWithUsuario, res) => 
-  usuarioController.listarTodos(req, res)
-));
+usuarioRoutes.put('/:id', asyncHandler(authMiddleware), asyncHandler(async (req, res) => {
+  await usuarioController.atualizar(req, res);
+}));
 
-usuarioRoutes.get('/:id', authMiddleware, asyncHandler((req: RequestWithUsuario, res) => 
-  usuarioController.buscarPorId(req, res)
-));
-
-usuarioRoutes.put('/:id', authMiddleware, asyncHandler((req: RequestWithUsuario, res) => 
-  usuarioController.atualizar(req, res)
-));
-
-usuarioRoutes.delete('/:id', authMiddleware, asyncHandler((req: RequestWithUsuario, res) => 
-  usuarioController.deletar(req, res)
-));
+usuarioRoutes.delete('/:id', asyncHandler(authMiddleware), asyncHandler(async (req, res) => {
+  await usuarioController.deletar(req, res);
+}));
 
 export { usuarioRoutes };

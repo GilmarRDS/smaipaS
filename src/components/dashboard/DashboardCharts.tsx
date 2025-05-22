@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import useAuth from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { alunosService } from '@/services/alunosService';
 import { avaliacoesService } from '@/services/avaliacoesService';
 import { turmasService } from '@/services/turmasService';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Aluno } from '@/types/alunos';
 import {
   LineChart,
   Line,
@@ -34,17 +35,6 @@ interface PresencaData {
   presenca: number;
 }
 
-interface Aluno {
-  id: string;
-  nome: string;
-  turmaId: string;
-}
-
-interface TurmaAlunos {
-  turmaId: string;
-  alunos: Aluno[];
-}
-
 const DashboardCharts: React.FC<DashboardChartsProps> = ({ isSecretaria }) => {
   const { user } = useAuth();
   const [desempenhoData, setDesempenhoData] = useState<DesempenhoData[]>([]);
@@ -56,16 +46,12 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ isSecretaria }) => {
       try {
         setIsLoading(true);
         
-        // Return early for secretaria users
-        if (isSecretaria) {
-          setDesempenhoData([]);
-          setPresencaData([]);
-          setIsLoading(false);
-          return;
-        }
-        
-        // Verificação de schoolId com mensagem de erro mais clara
-        if (!user?.schoolId) {
+        // Determinar o ID da escola a ser usado
+        const escolaId = isSecretaria && user?.schoolId
+          ? user.schoolId
+          : user?.schoolId;
+
+        if (!escolaId) {
           console.warn('Usuário não tem schoolId definido - não é possível carregar dados');
           setDesempenhoData([]);
           setPresencaData([]);
@@ -75,8 +61,8 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ isSecretaria }) => {
         
         // Buscar dados de uma vez para reduzir chamadas à API
         const [turmas, avaliacoes] = await Promise.all([
-          turmasService.listarPorEscola(user.schoolId),
-          avaliacoesService.listarPorEscola(user.schoolId)
+          turmasService.listar(escolaId),
+          avaliacoesService.listarPorEscola(escolaId)
         ]);
         
         // Verificação de dados vazios

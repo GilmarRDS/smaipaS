@@ -7,9 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { UploadCloud, FileType, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { turmasService } from '../../services/turmasService';
-import { avaliacoesService } from '../../services/avaliacoesService';
-
+import { turmasService } from '@/services/turmasService';
+import { avaliacoesService } from '@/services/avaliacoesService';
+import useAuth from '@/hooks/useAuth';
+import { Turma } from '@/types/turmas';
+import { Avaliacao } from '@/types/avaliacoes';
 
 interface ImportarGabaritoProps {
   turma: string;
@@ -28,24 +30,50 @@ const ImportarGabarito: React.FC<ImportarGabaritoProps> = ({
   avaliacao,
   setAvaliacao,
 }) => {
+  const { user } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [turmas, setTurmas] = useState<{id: string, nome: string}[]>([]);
-  const [avaliacoes, setAvaliacoes] = useState<{id: string, nome: string}[]>([]);
+  const [turmas, setTurmas] = useState<Turma[]>([]);
+  const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const carregarTurmas = async () => {
       try {
-        const turmasData = await turmasService.listarPorEscola('');
+        let turmasData: Turma[] = [];
+        if (user?.role === 'secretaria') {
+          toast.error('Selecione uma escola primeiro');
+          return;
+        } else if (user?.role === 'escola' && user.schoolId) {
+          turmasData = await turmasService.listar(user.schoolId);
+        }
         setTurmas(turmasData);
-        const avaliacoesData = await avaliacoesService.listarPorEscola('');
-        setAvaliacoes(avaliacoesData);
       } catch (error) {
-        console.error('Erro ao buscar dados para importação:', error);
+        console.error('Erro ao carregar turmas:', error);
+        toast.error('Erro ao carregar turmas');
+      } finally {
+        setLoading(false);
       }
     };
-    fetchData();
-  }, []);
+    carregarTurmas();
+  }, [user?.role, user?.schoolId]);
+
+  useEffect(() => {
+    const carregarAvaliacoes = async () => {
+      if (!turma) {
+        setAvaliacoes([]);
+        return;
+      }
+      try {
+        const avaliacoesData = await avaliacoesService.listarPorTurma(turma);
+        setAvaliacoes(avaliacoesData);
+      } catch (error) {
+        console.error('Erro ao carregar avaliações:', error);
+        toast.error('Erro ao carregar avaliações');
+      }
+    };
+    carregarAvaliacoes();
+  }, [turma]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -138,7 +166,8 @@ const ImportarGabarito: React.FC<ImportarGabaritoProps> = ({
                 <SelectValue placeholder="Selecione o componente" />
               </SelectTrigger>
               <SelectContent>
-                {/* Componente curricular não listado, manter vazio ou implementar serviço se existir */}
+                <SelectItem value="portugues">Língua Portuguesa</SelectItem>
+                <SelectItem value="matematica">Matemática</SelectItem>
               </SelectContent>
             </Select>
           </div>

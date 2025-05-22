@@ -43,7 +43,7 @@ router.put('/escolas/:id', asyncHandler((req: RequestWithUsuario, res: Response)
 router.delete('/escolas/:id', asyncHandler((req: RequestWithUsuario, res: Response) => escolaController.deletar(req, res)));
 
 // Rotas de turmas
-router.get('/escolas/:escolaId/turmas', asyncHandler((req: RequestWithUsuario, res: Response) => turmaController.listarTodas(req, res)));
+router.get('/escolas/:escolaId/turmas', asyncHandler((req: RequestWithUsuario, res: Response) => escolaController.listarTurmas(req, res)));
 router.get('/turmas/:id', asyncHandler((req: RequestWithUsuario, res: Response) => turmaController.buscarPorId(req, res)));
 router.post('/turmas', asyncHandler((req: RequestWithUsuario, res: Response) => turmaController.criar(req, res)));
 router.put('/turmas/:id', asyncHandler((req: RequestWithUsuario, res: Response) => turmaController.atualizar(req, res)));
@@ -71,10 +71,12 @@ router.delete('/alunos/:id', asyncHandler((req: RequestWithUsuario, res: Respons
 
 // Rotas de avaliações
 router.get('/escolas/:escolaId/avaliacoes', asyncHandler((req: RequestWithUsuario, res: Response) => avaliacaoController.listarTodas(req, res)));
+router.get('/avaliacoes/turma/:turmaId', asyncHandler((req: RequestWithUsuario, res: Response) => avaliacaoController.listarPorTurma(req, res)));
 router.get('/avaliacoes/:id', asyncHandler((req: RequestWithUsuario, res: Response) => avaliacaoController.buscarPorId(req, res)));
 router.post('/avaliacoes', asyncHandler((req: RequestWithUsuario, res: Response) => avaliacaoController.criar(req, res)));
 router.put('/avaliacoes/:id', asyncHandler((req: RequestWithUsuario, res: Response) => avaliacaoController.atualizar(req, res)));
 router.delete('/avaliacoes/:id', asyncHandler((req: RequestWithUsuario, res: Response) => avaliacaoController.deletar(req, res)));
+router.get('/avaliacoes/gabarito/:avaliacaoId', asyncHandler((req: RequestWithUsuario, res: Response) => avaliacaoController.obterGabarito(req, res)));
 
 // Rotas de descritores
 router.get('/descritores', asyncHandler((req: RequestWithUsuario, res: Response) => descritorController.listarTodos(req, res)));

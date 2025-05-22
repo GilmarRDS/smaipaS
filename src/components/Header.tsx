@@ -1,6 +1,6 @@
 import { Fragment } from 'react';
 import { Menu, Transition } from '@headlessui/react';
-import { useAuth } from '@/contexts/AuthContext';
+import useAuth from '@/hooks/useAuth';
 import { UserCircleIcon } from '@heroicons/react/24/outline';
 
 interface HeaderProps {

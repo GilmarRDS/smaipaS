@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import useAuth from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Loader2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Aluno } from '@/types/alunos';
 import { Turma } from '@/types/turmas';
+import { Escola } from '@/types/escolas';
 import { alunosService } from '@/services/alunosService';
 import { turmasService } from '@/services/turmasService';
 import { escolasService } from '@/services/escolasService';
@@ -23,7 +24,7 @@ const Alunos = () => {
   const { user } = useAuth();
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [turmas, setTurmas] = useState<Turma[]>([]);
-  const [escolas, setEscolas] = useState<{id: string, nome: string}[]>([]);
+  const [escolas, setEscolas] = useState<Escola[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedAluno, setSelectedAluno] = useState<Aluno | null>(null);
@@ -47,15 +48,18 @@ const Alunos = () => {
 
         // Se uma escola estiver selecionada, carregar alunos e turmas dessa escola
         if (selectedEscola && selectedEscola !== 'all') {
-          alunosData = await alunosService.listarPorEscola(selectedEscola);
-          turmasData = await turmasService.listarPorEscola(selectedEscola);
-        } else {
-          alunosData = await alunosService.listar();
-          turmasData = await turmasService.listar();
+          alunosData = await alunosService.listar(selectedEscola);
+          turmasData = await turmasService.listar(selectedEscola);
+        } else if (escolasData.length > 0) {
+          // Se não selecionou, pega da primeira escola
+          alunosData = await alunosService.listar(escolasData[0].id);
+          turmasData = await turmasService.listar(escolasData[0].id);
+          setSelectedEscola(escolasData[0].id);
         }
-      } else {
-        alunosData = await alunosService.listarPorEscola(user?.schoolId || '');
-        turmasData = await turmasService.listarPorEscola(user?.schoolId || '');
+      } else if (user?.schoolId) {
+        // Para usuários da escola, carregar apenas dados da própria escola
+        alunosData = await alunosService.listar(user.schoolId);
+        turmasData = await turmasService.listar(user.schoolId);
       }
 
       // Filtrar alunos por turma se uma turma específica estiver selecionada
@@ -100,6 +104,10 @@ const Alunos = () => {
 
   const handleSubmit = async (data: Partial<Aluno>) => {
     try {
+      // Forçar matrícula numérica se fornecida
+      if (data.matricula) {
+        data.matricula = String(Number(data.matricula));
+      }
       if (selectedAluno) {
         await alunosService.atualizar(selectedAluno.id, data);
         toast.success('Aluno atualizado com sucesso');

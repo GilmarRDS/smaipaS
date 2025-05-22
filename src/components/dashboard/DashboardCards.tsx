@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import useAuth from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { alunosService } from '@/services/alunosService';
 import { avaliacoesService } from '@/services/avaliacoesService';
@@ -63,7 +63,7 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({ isSecretaria }) => {
         }
         
         // Carregar turmas da escola
-        const turmas = await turmasService.listarPorEscola(user.schoolId);
+        const turmas = await turmasService.listar(user.schoolId);
         
         // Carregar alunos de todas as turmas
         const alunosPromises = turmas.map(turma => alunosService.listarPorTurma(turma.id));

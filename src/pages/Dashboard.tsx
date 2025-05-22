@@ -1,14 +1,13 @@
 import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import useAuth from '@/hooks/useAuth';
 import { Filter, Loader2 } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import FilterControls from '@/components/dashboard/FilterControls';
 import DashboardCards from '@/components/dashboard/DashboardCards';
-import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import PerformanceCharts from '@/components/dashboard/PerformanceCharts';
 import DifficultyAnalysis from '@/components/dashboard/DifficultyAnalysis';
 import StudentDescriptorAnalysis from '@/components/dashboard/StudentDescriptorAnalysis';
-import useDashboardData from '@/hooks/useDashboardData';
+import { useDashboardData } from '@/hooks/useDashboardData';
 
 const Dashboard: React.FC = () => {
   const { user, isSecretaria } = useAuth();
@@ -52,8 +51,6 @@ const Dashboard: React.FC = () => {
         ) : (
           <>
             <DashboardCards isSecretaria={isSecretaria} />
-            <DashboardCharts isSecretaria={isSecretaria} />
-
             <PerformanceCharts isSecretaria={isSecretaria} />
 
             <div className="grid gap-4 md:grid-cols-2">

@@ -20,9 +20,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Turma } from '@/types/turmas';
-import { useAuth } from '@/contexts/AuthContext';
+import useAuth from '@/hooks/useAuth';
 import { escolasService } from '@/services/escolasService';
-import { Escola } from '@/types/turmas';
+import { Escola } from '@/types/escolas';
 
 const formSchema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório'),

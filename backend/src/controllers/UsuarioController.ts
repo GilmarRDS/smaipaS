@@ -19,7 +19,11 @@ export class UsuarioController {
     }
 
     // Verificar se a escola existe, se for um usuário do tipo escola
-    if (role === 'escola' && escolaId) {
+    if (role === 'escola') {
+      if (!escolaId) {
+        return response.status(400).json({ error: 'Escola é obrigatória para usuários do tipo escola' });
+      }
+
       const escola = await prisma.escola.findUnique({
         where: { id: escolaId },
       });
@@ -37,7 +41,7 @@ export class UsuarioController {
         email,
         senha: senhaHash,
         role,
-        escolaId,
+        escolaId: role === 'escola' ? escolaId : null,
       },
       include: {
         escola: true,

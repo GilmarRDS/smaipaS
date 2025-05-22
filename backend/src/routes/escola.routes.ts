@@ -6,20 +6,37 @@ import { authMiddleware } from '../middlewares/auth';
 const escolaRoutes = Router();
 const escolaController = new EscolaController();
 
-function asyncHandler(fn: (req: RequestWithUsuario, res: Response, next: NextFunction) => Promise<unknown>): RequestHandler {
+function asyncHandler(fn: (req: RequestWithUsuario, res: Response, next: NextFunction) => Promise<void | Response>): RequestHandler {
   return (req, res, next) => {
     Promise.resolve(fn(req as RequestWithUsuario, res, next)).catch(next);
   };
 }
 
 // Aplicando o middleware de autenticação em todas as rotas
-escolaRoutes.use(authMiddleware);
+escolaRoutes.use(asyncHandler(authMiddleware));
 
-escolaRoutes.post('/', asyncHandler((req, res) => escolaController.criar(req, res)));
-escolaRoutes.get('/', asyncHandler((req, res) => escolaController.listarTodas(req, res)));
-escolaRoutes.get('/:id', asyncHandler((req, res) => escolaController.buscarPorId(req, res)));
-escolaRoutes.get('/:id/turmas', asyncHandler((req, res) => escolaController.listarTurmas(req, res)));
-escolaRoutes.put('/:id', asyncHandler((req, res) => escolaController.atualizar(req, res)));
-escolaRoutes.delete('/:id', asyncHandler((req, res) => escolaController.deletar(req, res)));
+escolaRoutes.post('/', asyncHandler(async (req, res) => {
+  await escolaController.criar(req, res);
+}));
+
+escolaRoutes.get('/', asyncHandler(async (req, res) => {
+  await escolaController.listarTodas(req, res);
+}));
+
+escolaRoutes.get('/:id', asyncHandler(async (req, res) => {
+  await escolaController.buscarPorId(req, res);
+}));
+
+escolaRoutes.get('/:id/turmas', asyncHandler(async (req, res) => {
+  await escolaController.listarTurmas(req, res);
+}));
+
+escolaRoutes.put('/:id', asyncHandler(async (req, res) => {
+  await escolaController.atualizar(req, res);
+}));
+
+escolaRoutes.delete('/:id', asyncHandler(async (req, res) => {
+  await escolaController.deletar(req, res);
+}));
 
 export { escolaRoutes };

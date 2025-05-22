@@ -20,14 +20,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Aluno } from '@/types/alunos';
-import { Turma, Escola } from '@/types/turmas';
-import { useAuth } from '@/contexts/AuthContext';
+import { Turma } from '@/types/turmas';
+import { Escola } from '@/types/escolas';
+import useAuth from '@/hooks/useAuth';
 import { escolasService } from '@/services/escolasService';
 import { turmasService } from '@/services/turmasService';
 
 const formSchema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório'),
-  matricula: z.string().optional(),
+  matricula: z.string().regex(/^\d*$/, 'A matrícula deve conter apenas números').optional(),
   escolaId: z.string().optional(),
   turmaId: z.string().min(1, 'Turma é obrigatória'),
   dataNascimento: z.string()
@@ -39,17 +40,18 @@ const formSchema = z.object({
 });
 
 interface AlunoFormProps {
-  aluno?: Aluno | null;
-  turmas: Turma[];
+  aluno?: Aluno;
+  turmas?: Turma[];
+  turmaId?: string;
   onSubmit: (data: Partial<Aluno>) => void;
-  onCancel: () => void;
+  onCancel?: () => void;
 }
 
-const AlunoForm = ({ aluno, turmas: turmasProp, onSubmit, onCancel }: AlunoFormProps) => {
+const AlunoForm = ({ aluno, turmas: turmasProp, turmaId, onSubmit, onCancel }: AlunoFormProps) => {
   const { user } = useAuth();
   const [escolas, setEscolas] = useState<Escola[]>([]);
   const [turmas, setTurmas] = useState<Turma[]>(turmasProp || []);
-  const [selectedEscolaId, setSelectedEscolaId] = useState<string>(aluno?.turma?.escola?.id || user?.schoolId || '');
+  const [selectedEscolaId, setSelectedEscolaId] = useState<string>(aluno?.turmaId ? aluno.turmaId : user?.schoolId || '');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -57,25 +59,42 @@ const AlunoForm = ({ aluno, turmas: turmasProp, onSubmit, onCancel }: AlunoFormP
       nome: aluno?.nome || '',
       matricula: aluno?.matricula || '',
       escolaId: selectedEscolaId,
-      turmaId: aluno?.turmaId || '',
+      turmaId: turmaId || aluno?.turmaId || '',
       dataNascimento: aluno?.dataNascimento || '',
     },
   });
 
   // Carregar escolas se for secretaria
   useEffect(() => {
-    if (user?.role === 'secretaria') {
-      escolasService.listar().then(setEscolas);
-    }
+    const carregarEscolas = async () => {
+      if (user?.role === 'secretaria') {
+        try {
+          const escolasData = await escolasService.listar();
+          setEscolas(escolasData);
+        } catch (error) {
+          console.error('Erro ao carregar escolas:', error);
+        }
+      }
+    };
+    carregarEscolas();
   }, [user?.role]);
 
-  // Carregar turmas ao selecionar escola
+  // Carregar turmas ao selecionar escola ou quando o usuário for da escola
   useEffect(() => {
-    if (user?.role === 'secretaria' && selectedEscolaId) {
-      turmasService.listarPorEscola(selectedEscolaId).then(setTurmas);
-    } else if (user?.role === 'escola' && user.schoolId) {
-      turmasService.listarPorEscola(user.schoolId).then(setTurmas);
-    }
+    const carregarTurmas = async () => {
+      try {
+        if (user?.role === 'secretaria' && selectedEscolaId) {
+          const turmasData = await turmasService.listar(selectedEscolaId);
+          setTurmas(turmasData);
+        } else if (user?.role === 'escola' && user.schoolId) {
+          const turmasData = await turmasService.listar(user.schoolId);
+          setTurmas(turmasData);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar turmas:', error);
+      }
+    };
+    carregarTurmas();
   }, [selectedEscolaId, user?.role, user?.schoolId]);
 
   // Atualizar turmaId ao mudar escola
@@ -83,7 +102,7 @@ const AlunoForm = ({ aluno, turmas: turmasProp, onSubmit, onCancel }: AlunoFormP
     if (user?.role === 'secretaria') {
       form.setValue('turmaId', '');
     }
-  }, [selectedEscolaId]);
+  }, [selectedEscolaId, form, user?.role]);
 
   const handleEscolaChange = (value: string) => {
     setSelectedEscolaId(value);
@@ -91,7 +110,7 @@ const AlunoForm = ({ aluno, turmas: turmasProp, onSubmit, onCancel }: AlunoFormP
   };
 
   const handleSubmit = (data: z.infer<typeof formSchema>) => {
-    const payload: any = {
+    const payload: Partial<Aluno> = {
       nome: data.nome,
       turmaId: data.turmaId,
       dataNascimento: new Date(data.dataNascimento).toISOString().split('T')[0],
@@ -111,7 +130,7 @@ const AlunoForm = ({ aluno, turmas: turmasProp, onSubmit, onCancel }: AlunoFormP
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Escola</FormLabel>
-                <Select onValueChange={(value) => { field.onChange(value); handleEscolaChange(value); }} value={field.value}>
+                <Select onValueChange={handleEscolaChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a escola" />
@@ -166,7 +185,7 @@ const AlunoForm = ({ aluno, turmas: turmasProp, onSubmit, onCancel }: AlunoFormP
             <FormItem>
               <FormLabel>Matrícula (opcional)</FormLabel>
               <FormControl>
-                <Input placeholder="Número de matrícula" {...field} />
+                <Input type="number" placeholder="Número de matrícula" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -186,7 +205,7 @@ const AlunoForm = ({ aluno, turmas: turmasProp, onSubmit, onCancel }: AlunoFormP
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {(turmas || []).map((turma) => (
+                  {turmas.map((turma) => (
                     <SelectItem key={turma.id} value={turma.id}>
                       {turma.nome}
                     </SelectItem>

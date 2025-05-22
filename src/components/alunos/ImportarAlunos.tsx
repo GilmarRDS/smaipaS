@@ -28,7 +28,7 @@ const ImportarAlunos: React.FC<ImportarAlunosProps> = ({
   React.useEffect(() => {
     const fetchTurmas = async () => {
       try {
-        const turmasData = await turmasService.listarPorEscola('');
+        const turmasData = await turmasService.listar(user.schoolId);
         setTurmas(turmasData);
       } catch (error) {
         console.error('Erro ao buscar turmas:', error);

@@ -13,9 +13,6 @@ function asyncHandler(fn: (req: RequestWithUsuario, res: Response) => Promise<un
 
 avaliacaoRoutes.post('/', asyncHandler((req, res) => avaliacaoController.criar(req, res)));
 avaliacaoRoutes.get('/', asyncHandler((req, res) => avaliacaoController.listarTodas(req, res)));
-avaliacaoRoutes.get('/:id', asyncHandler((req, res) => avaliacaoController.buscarPorId(req, res)));
-avaliacaoRoutes.put('/:id', asyncHandler((req, res) => avaliacaoController.atualizar(req, res)));
-avaliacaoRoutes.delete('/:id', asyncHandler((req, res) => avaliacaoController.deletar(req, res)));
 
 // Novas rotas para corrigir erros 404
 avaliacaoRoutes.get('/turma/:turmaId', asyncHandler((req, res) => avaliacaoController.listarPorTurma(req, res)));
@@ -28,5 +25,10 @@ avaliacaoRoutes.get('/dados-relatorios', asyncHandler((req, res) => avaliacaoCon
 
 // Rota para obter gabarito por avaliacaoId - método a ser criado no controller
 avaliacaoRoutes.get('/gabarito/:avaliacaoId', asyncHandler((req, res) => avaliacaoController.obterGabarito(req, res)));
+
+// Rotas com parâmetros dinâmicos devem vir por último
+avaliacaoRoutes.get('/:id', asyncHandler((req, res) => avaliacaoController.buscarPorId(req, res)));
+avaliacaoRoutes.put('/:id', asyncHandler((req, res) => avaliacaoController.atualizar(req, res)));
+avaliacaoRoutes.delete('/:id', asyncHandler((req, res) => avaliacaoController.deletar(req, res)));
 
 export { avaliacaoRoutes };

@@ -1,225 +1,187 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { avaliacoesService } from '@/services/avaliacoesService';
-import { alunosService } from '@/services/alunosService';
-import { turmasService } from '@/services/turmasService';
-import type { RespostaAluno } from '@/types/alunos';
-import type { DashboardFilters, PerformanceData, PresencaData, AlunoDescritores } from '@/types/dashboard';
+import useAuth from './useAuth';
+import api from '@/lib/api';
+import { toast } from 'sonner';
 
-const useDashboardData = () => {
+interface DashboardData {
+  performance: Array<{
+    avaliacao: string;
+    portugues: number;
+    matematica: number;
+  }>;
+  presenca: Array<{
+    turma: string;
+    presentes: number;
+    ausentes: number;
+  }>;
+  descritoresPorAluno: Array<{
+    alunoId: string;
+    aluno: string;
+    turmaId: string;
+    turmaNome: string;
+    descritores: Array<{
+      codigo: string;
+      nome: string;
+      percentual: number;
+    }>;
+  }>;
+}
+
+interface TurmaData {
+  turma: string;
+  portugues: number;
+  matematica: number;
+  presentes?: number;
+  ausentes?: number;
+}
+
+interface DescritorData {
+  alunoId: string;
+  aluno: string;
+  turmaId: string;
+  turmaNome: string;
+  codigo: string;
+  nome: string;
+  percentual: number;
+}
+
+interface FilterState {
+  escolaId?: string;
+  turmaId?: string;
+  periodo?: string;
+}
+
+interface ApiResponse {
+  evolucaoDesempenho: Array<{
+    avaliacao: string;
+    portugues: number;
+    matematica: number;
+  }>;
+  desempenhoTurmas: TurmaData[];
+  desempenhoDescritores: DescritorData[];
+}
+
+export function useDashboardData() {
   const { user } = useAuth();
-  const [selectedFilters, setSelectedFilters] = useState<DashboardFilters>({
-    escola: user?.schoolId || '',
-    turma: 'all_turmas',
-    turno: 'all_turnos',
-    componente: 'all_componentes',
-    avaliacao: 'all_avaliacoes'
+  const [data, setData] = useState<DashboardData>({
+    performance: [],
+    presenca: [],
+    descritoresPorAluno: []
   });
-  
-  const [selectedAluno, setSelectedAluno] = useState<string>('');
-  const [performanceData, setPerformanceData] = useState<PerformanceData[]>([]);
-  const [presencaData, setPresencaData] = useState<PresencaData[]>([]);
-  const [descritoresPorAluno, setDescritoresPorAluno] = useState<AlunoDescritores[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedFilters, setSelectedFilters] = useState<FilterState>({});
+  const [selectedAluno, setSelectedAluno] = useState<string | null>(null);
+  const [alunoHabilidades, setAlunoHabilidades] = useState<Array<{ codigo: string; nome: string; percentual: number }>>([]);
+
+  const handleFilterChange = (filters: FilterState) => {
+    setSelectedFilters(filters);
+  };
 
   useEffect(() => {
-    const carregarDados = async () => {
-      if (!user) {
-        console.log('Usuário não autenticado');
-        setIsLoading(false);
-        return;
-      }
-
-      if (user.role === 'escola' && !user.schoolId) {
-        console.log('Usuário do tipo escola não tem schoolId definido');
-        setIsLoading(false);
-        return;
-      }
-
+    const fetchData = async () => {
       try {
         setIsLoading(true);
+        setError(null);
 
-        // Carregar avaliações
-        const avaliacoes = user.role === 'secretaria' 
-          ? [] // Secretaria não carrega dados específicos de escola
-          : await avaliacoesService.obterDadosRelatorios({ escolaId: user.schoolId });
-        
-        // Carregar turmas
-        const turmas = user.role === 'secretaria'
-          ? [] // Secretaria não carrega dados específicos de escola
-          : await turmasService.listar(user.schoolId);
-        
-        // Processar dados de performance
-        const performanceMap: { [key: string]: { portugues: number; matematica: number; totalPortugues: number; totalMatematica: number } } = {};
-        
-        // Inicializar o mapa de performance
-        avaliacoes.forEach(avaliacao => {
-          if (avaliacao.status === 'concluida') {
-            if (!performanceMap[avaliacao.nome]) {
-              performanceMap[avaliacao.nome] = { 
-                portugues: 0, 
-                matematica: 0, 
-                totalPortugues: 0, 
-                totalMatematica: 0 
-              };
-            }
-          }
-        });
-        
-        // Calcular médias de performance
-        for (const avaliacao of avaliacoes) {
-          if (avaliacao.status === 'concluida') {
-            for (const turma of turmas) {
-              const alunos = await alunosService.listarPorTurma(turma.id);
-              
-              for (const aluno of alunos) {
-                try {
-                  const resposta = await alunosService.obterRespostas(aluno.id, avaliacao.id);
-                  
-                  if (resposta) {
-                    if (avaliacao.componente === 'portugues') {
-                      performanceMap[avaliacao.nome].portugues += resposta.respostas.filter(r => r.alternativa !== null).length;
-                      performanceMap[avaliacao.nome].totalPortugues++;
-                    } else if (avaliacao.componente === 'matematica') {
-                      performanceMap[avaliacao.nome].matematica += resposta.respostas.filter(r => r.alternativa !== null).length;
-                      performanceMap[avaliacao.nome].totalMatematica++;
-                    }
-                  }
-                } catch (error) {
-                  // Aluno não tem resposta para esta avaliação
-                  continue;
-                }
-              }
-            }
-          }
+        // Determinar o ID da escola a ser usado
+        const escolaId = selectedFilters.escolaId || user?.schoolId;
+        if (!escolaId) {
+          throw new Error('ID da escola não encontrado');
         }
-        
-        // Converter para array e calcular médias
-        const performance = Object.entries(performanceMap).map(([avaliacao, data]) => ({
-          avaliacao,
-          portugues: data.totalPortugues > 0 ? Math.round((data.portugues / data.totalPortugues) * 10) / 10 : 0,
-          matematica: data.totalMatematica > 0 ? Math.round((data.matematica / data.totalMatematica) * 10) / 10 : 0
-        }));
-        
-        setPerformanceData(performance);
-        
+
+        // Buscar dados dos relatórios
+        const response = await api.get<ApiResponse>(`/api/relatorios/dados?escolaId=${escolaId}`);
+        const dadosRelatorios = response.data;
+
+        console.log('Dados brutos da API:', dadosRelatorios);
+
+        // Processar dados de desempenho
+        const performance = dadosRelatorios.evolucaoDesempenho || [];
+
         // Processar dados de presença
-        const presencaPromises = turmas.map(async turma => {
-          const alunos = await alunosService.listarPorTurma(turma.id);
-          const totalAlunos = alunos.length;
-          
-          let presentes = 0;
-          
-          for (const avaliacao of avaliacoes) {
-            if (avaliacao.status === 'concluida') {
-              for (const aluno of alunos) {
-                try {
-                  const resposta = await alunosService.obterRespostas(aluno.id, avaliacao.id);
-                  if (resposta) {
-                    presentes++;
-                  }
-                } catch (error) {
-                  continue;
-                }
-              }
-            }
+        const presenca = dadosRelatorios.desempenhoTurmas?.map((turma: TurmaData) => ({
+          turma: turma.turma,
+          presentes: turma.presentes || 0,
+          ausentes: turma.ausentes || 0
+        })) || [];
+
+        // Processar dados de descritores por aluno
+        const descritoresPorAluno = dadosRelatorios.desempenhoDescritores?.reduce((acc: Array<{
+          alunoId: string;
+          aluno: string;
+          turmaId: string;
+          turmaNome: string;
+          descritores: Array<{
+            codigo: string;
+            nome: string;
+            percentual: number;
+          }>;
+        }>, desc: DescritorData) => {
+          const alunoIndex = acc.findIndex(a => a.alunoId === desc.alunoId);
+          if (alunoIndex === -1) {
+            acc.push({
+              alunoId: desc.alunoId,
+              aluno: desc.aluno,
+              turmaId: desc.turmaId,
+              turmaNome: desc.turmaNome,
+              descritores: [{
+                codigo: desc.codigo,
+                nome: desc.nome,
+                percentual: desc.percentual
+              }]
+            });
+          } else {
+            acc[alunoIndex].descritores.push({
+              codigo: desc.codigo,
+              nome: desc.nome,
+              percentual: desc.percentual
+            });
           }
-          
-          const totalAvaliacoes = avaliacoes.filter(a => a.status === 'concluida').length;
-          const totalPossivel = totalAlunos * totalAvaliacoes;
-          
-          return {
-            turma: turma.nome,
-            presentes: totalPossivel > 0 ? Math.round((presentes / totalPossivel) * 100) : 0,
-            ausentes: totalPossivel > 0 ? Math.round(((totalPossivel - presentes) / totalPossivel) * 100) : 0
-          };
-        });
-        
-        const presenca = await Promise.all(presencaPromises);
-        setPresencaData(presenca);
+          return acc;
+        }, []) || [];
 
-        // Carregar alunos e suas respostas
-        const alunosComDescritores = await Promise.all(
-          turmas.flatMap(async turma => {
-            const alunos = await alunosService.listarPorTurma(turma.id);
-            return Promise.all(
-              alunos.map(async aluno => {
-                const respostas = await Promise.all(
-                  avaliacoes
-                    .filter(a => a.status === 'concluida')
-                    .map(avaliacao => 
-                      alunosService.obterRespostas(aluno.id, avaliacao.id)
-                        .catch(() => null)
-                    )
-                );
-                return {
-                  aluno: aluno.nome,
-                  descritores: respostas
-                    .filter((resposta): resposta is RespostaAluno => resposta !== null)
-                    .map(resposta => {
-                      const avaliacao = avaliacoes.find(a => a.id === resposta.avaliacaoId);
-                      return {
-                        codigo: `D${avaliacao?.componente === 'portugues' ? 'PT' : 'MT'}${resposta.id}`,
-                        componente: avaliacao?.componente === 'portugues' ? 'Português' : 'Matemática',
-                        acertos: resposta.respostas.filter(r => r.alternativa !== null).length
-                      };
-                    })
-                };
-              })
-            );
-          })
-        );
-        setDescritoresPorAluno(alunosComDescritores.flat());
+        const processedData = {
+          performance,
+          presenca,
+          descritoresPorAluno
+        };
 
-      } catch (error) {
-        console.error('Erro ao carregar dados do dashboard:', error);
+        console.log('Dados processados:', processedData);
+        setData(processedData);
+      } catch (err) {
+        console.error('Erro ao carregar dados do dashboard:', err);
+        setError('Erro ao carregar dados do dashboard');
+        toast.error('Erro ao carregar dados do dashboard');
       } finally {
         setIsLoading(false);
       }
     };
 
-    carregarDados();
-  }, [user]);
-  
-  const handleFilterChange = (filterType: string, value: string) => {
-    setSelectedFilters(prev => {
-      if (filterType === 'turma') {
-        return {
-          ...prev,
-          [filterType]: value,
-          avaliacao: 'all_avaliacoes'
-        };
+    fetchData();
+  }, [user?.schoolId, selectedFilters]);
+
+  // Atualizar habilidades do aluno selecionado
+  useEffect(() => {
+    if (selectedAluno) {
+      const aluno = data.descritoresPorAluno.find(a => a.alunoId === selectedAluno);
+      if (aluno) {
+        setAlunoHabilidades(aluno.descritores);
       }
-      return {
-        ...prev,
-        [filterType]: value
-      };
-    });
-  };
-  
-  const getHabilidadesAluno = (alunoNome: string) => {
-    const aluno = descritoresPorAluno.find(a => a.aluno === alunoNome);
-    if (!aluno) return [];
-    
-    return aluno.descritores.map(d => ({
-      descritor: d.codigo,
-      percentual: d.acertos
-    }));
-  };
-  
-  const alunoHabilidades = selectedAluno ? getHabilidadesAluno(selectedAluno) : [];
-  
+    } else {
+      setAlunoHabilidades([]);
+    }
+  }, [selectedAluno, data.descritoresPorAluno]);
+
   return {
+    data,
+    isLoading,
+    error,
     selectedFilters,
     handleFilterChange,
-    performanceData,
-    presencaData,
-    descritoresPorAluno,
+    descritoresPorAluno: data.descritoresPorAluno,
     selectedAluno,
     setSelectedAluno,
-    alunoHabilidades,
-    isLoading
+    alunoHabilidades
   };
-};
-
-export default useDashboardData;
+}

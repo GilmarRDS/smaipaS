@@ -23,19 +23,23 @@
 // export default api;
 
 
-import axios from 'axios';
+import axios, { AxiosHeaders } from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api',
+  baseURL: 'http://localhost:3000',
+  headers: {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json'
+  }
 });
 
 // Lista de rotas que não precisam de autenticação
 const publicRoutes = [
-  '/usuarios/login',
-  '/usuarios/recuperar-senha',
-  '/usuarios/resetar-senha',
-  '/usuarios/validar-token',
-  '/redefinir-senha',
+  '/api/usuarios/login',
+  '/api/usuarios/recuperar-senha',
+  '/api/usuarios/resetar-senha',
+  '/api/usuarios/validar-token',
+  '/api/redefinir-senha',
   '/favicon.ico'
 ];
 
@@ -56,8 +60,10 @@ api.interceptors.request.use((config) => {
     if (!isPublicRoute && typeof window !== 'undefined' && window.localStorage) {
       const token = localStorage.getItem('smaipa_token');
       if (token) {
-        config.headers = config.headers || {};
-        config.headers['Authorization'] = `Bearer ${token.trim()}`;
+        if (!config.headers) {
+          config.headers = new AxiosHeaders();
+        }
+        config.headers.set('Authorization', `Bearer ${token.trim()}`);
         console.log('Token adicionado:', token);
       } else {
         console.log('Token não encontrado no localStorage');
