@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
-import { prisma } from '../lib/prisma';
-import { Prisma, Turno } from '@prisma/client';
+import { PrismaClient, Prisma, Turno } from '@prisma/client';
+import { RequestWithUsuario } from '../middlewares/auth';
+
+const prisma = new PrismaClient();
 
 // Estender a interface Request do Express
 declare module 'express' {
@@ -81,12 +83,53 @@ export class TurmaController {
   }
 
   async listarTodas(request: Request, response: Response) {
-    const { escolaId } = request.query;
+    try {
+      const req = request as RequestWithUsuario;
+      
+      if (!req.usuario) {
+        return response.status(401).json({ error: 'Usuário não autenticado' });
+      }
 
-    // Se for um usuário da escola, só pode ver turmas da própria escola
-    if (request.usuario.role === 'escola') {
+      const { escolaId } = request.query;
+
+      // Se for um usuário da escola, só pode ver turmas da própria escola
+      if (req.usuario.role === 'escola') {
+        const turmas = await prisma.turma.findMany({
+          where: { escolaId: req.usuario.escolaId },
+          orderBy: {
+            ano: 'asc'
+          },
+          include: {
+            alunos: {
+              select: {
+                id: true,
+                nome: true,
+                matricula: true,
+              },
+            },
+            escola: {
+              select: {
+                id: true,
+                nome: true,
+              },
+            },
+          },
+        });
+
+        return response.json(turmas);
+      }
+
+      // Se for um usuário da secretaria, pode filtrar por escola
+      const where: Prisma.TurmaWhereInput = {};
+      if (escolaId) {
+        where.escolaId = escolaId as string;
+      }
+
       const turmas = await prisma.turma.findMany({
-        where: { escolaId: request.usuario.escolaId },
+        where,
+        orderBy: {
+          ano: 'asc'
+        },
         include: {
           alunos: {
             select: {
@@ -95,50 +138,20 @@ export class TurmaController {
               matricula: true,
             },
           },
-          avaliacoes: {
+          escola: {
             select: {
               id: true,
               nome: true,
-              tipo: true,
-              disciplina: true,
-              dataAplicacao: true,
             },
           },
         },
       });
 
       return response.json(turmas);
+    } catch (error) {
+      console.error('Erro ao listar turmas:', error);
+      return response.status(500).json({ error: 'Erro interno do servidor' });
     }
-
-    // Se for um usuário da secretaria, pode filtrar por escola
-    const where: Prisma.TurmaWhereInput = {};
-    if (escolaId) {
-      where.escolaId = escolaId as string;
-    }
-
-    const turmas = await prisma.turma.findMany({
-      where,
-      include: {
-        alunos: {
-          select: {
-            id: true,
-            nome: true,
-            matricula: true,
-          },
-        },
-        avaliacoes: {
-          select: {
-            id: true,
-            nome: true,
-            tipo: true,
-            disciplina: true,
-            dataAplicacao: true,
-          },
-        },
-      },
-    });
-
-    return response.json(turmas);
   }
 
   async buscarPorId(request: Request, response: Response) {
@@ -153,14 +166,14 @@ export class TurmaController {
             nome: true,
             matricula: true,
           },
+          orderBy: {
+            nome: 'asc'
+          }
         },
-        avaliacoes: {
+        escola: {
           select: {
             id: true,
             nome: true,
-            tipo: true,
-            disciplina: true,
-            dataAplicacao: true,
           },
         },
       },
@@ -240,13 +253,10 @@ export class TurmaController {
               matricula: true,
             },
           },
-          avaliacoes: {
+          escola: {
             select: {
               id: true,
               nome: true,
-              tipo: true,
-              disciplina: true,
-              dataAplicacao: true,
             },
           },
         },

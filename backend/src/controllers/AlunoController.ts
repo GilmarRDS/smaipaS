@@ -3,31 +3,20 @@ import { Request as ExpressRequest, Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { Prisma } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
-import { RequestWithUsuario } from '../middlewares/auth';
+import { RequestWithUsuario } from '../types/express';
 import * as XLSX from 'xlsx';
 import path from 'path';
 import fs from 'fs';
 
-interface CustomRequest extends ExpressRequest {
-  usuario: {
-    id: string;
-    role: string;
-    escolaId?: string;
-  };
-  params: {
-    id?: string;
-  };
-  file?: Express.Multer.File;
-}
-
 interface AlunoRow {
-  nome: string;
+  nome?: string;
+  Nome?: string;
   matricula?: string;
-  dataNascimento?: string;
+  dataNascimento?: string | null | undefined;
 }
 
 export class AlunoController {
-  async criar(request: CustomRequest, response: Response) {
+  async criar(request: RequestWithUsuario, response: Response) {
     const { nome, matricula, dataNascimento, turmaId } = request.body;
 
     // Verificar se a turma existe
@@ -67,7 +56,7 @@ export class AlunoController {
       data: {
         nome,
         matricula: matriculaFinal,
-        dataNascimento: new Date(dataNascimento),
+        dataNascimento: dataNascimento ? new Date(dataNascimento) : null,
         turmaId,
       },
     });
@@ -75,8 +64,9 @@ export class AlunoController {
     return response.status(201).json(aluno);
   }
 
-  async listarTodos(request: CustomRequest, response: Response) {
+  async listarTodos(request: RequestWithUsuario, response: Response) {
     const { turmaId } = request.query;
+    const { escolaId } = request.params;
 
     // Se for um usuário da escola, só pode ver alunos das turmas da própria escola
     if (request.usuario === undefined) {
@@ -117,11 +107,22 @@ export class AlunoController {
       return response.json(alunos);
     }
 
-    // Se for um usuário da secretaria, pode filtrar por turma
+    // Se for um usuário da secretaria, pode filtrar por turma ou escola
     // Usando Prisma.AlunoWhereInput ao invés de any
     const where: Prisma.AlunoWhereInput = {};
+    
     if (turmaId) {
       where.turmaId = turmaId as string;
+    } else if (escolaId) {
+      // Buscar todas as turmas da escola
+      const turmas = await prisma.turma.findMany({
+        where: { escolaId },
+        select: { id: true },
+      });
+  
+      where.turmaId = {
+        in: turmas.map(turma => turma.id),
+      };
     }
 
     const alunos = await prisma.aluno.findMany({
@@ -146,7 +147,7 @@ export class AlunoController {
     return response.json(alunos);
   }
 
-  async buscarPorId(request: CustomRequest, response: Response) {
+  async buscarPorId(request: RequestWithUsuario, response: Response) {
     const { id } = request.params;
 
     const aluno = await prisma.aluno.findUnique({
@@ -200,7 +201,7 @@ export class AlunoController {
     return response.json(aluno);
   }
 
-  async atualizar(request: CustomRequest, response: Response) {
+  async atualizar(request: RequestWithUsuario, response: Response) {
     const { id } = request.params;
     const { nome, matricula, dataNascimento, turmaId } = request.body;
 
@@ -265,7 +266,7 @@ export class AlunoController {
       data: {
         nome,
         matricula,
-        dataNascimento: dataNascimento ? new Date(dataNascimento) : undefined,
+        dataNascimento: dataNascimento ? new Date(dataNascimento) : null,
         turmaId,
       },
     });
@@ -273,7 +274,7 @@ export class AlunoController {
     return response.json(aluno);
   }
 
-  async deletar(request: CustomRequest, response: Response) {
+  async deletar(request: RequestWithUsuario, response: Response) {
     const { id } = request.params;
 
     // Verificar se o aluno existe
@@ -308,14 +309,32 @@ export class AlunoController {
     return response.status(204).send();
   }
 
-  async importarAlunos(request: CustomRequest, response: Response) {
+  async importarAlunos(request: RequestWithUsuario, response: Response) {
+    // LOGS DE DEPURAÇÃO
+    console.log('Body recebido:', request.body);
+    console.log('Arquivo recebido:', request.file);
+    console.log('Headers recebidos:', request.headers);
+    console.log('Content-Type:', request.headers['content-type']);
+    console.log('Form data:', request.body);
+
     if (!request.file) {
+      console.log('Erro: Nenhum arquivo enviado');
       return response.status(400).json({ error: 'Nenhum arquivo enviado' });
     }
 
     const { turmaId } = request.body;
+    console.log('TurmaId recebido:', turmaId);
 
     if (!turmaId) {
+      console.log('Erro: ID da turma não fornecido');
+      // Remover o arquivo temporário se existir
+      if (request.file && request.file.path) {
+        try {
+          fs.unlinkSync(request.file.path);
+        } catch (error) {
+          console.error('Erro ao remover arquivo temporário:', error);
+        }
+      }
       return response.status(400).json({ error: 'ID da turma não fornecido' });
     }
 
@@ -325,6 +344,15 @@ export class AlunoController {
     });
 
     if (!turma) {
+      console.log('Erro: Turma não encontrada');
+      // Remover o arquivo temporário se existir
+      if (request.file && request.file.path) {
+        try {
+          fs.unlinkSync(request.file.path);
+        } catch (error) {
+          console.error('Erro ao remover arquivo temporário:', error);
+        }
+      }
       return response.status(400).json({ error: 'Turma não encontrada' });
     }
 
@@ -334,23 +362,43 @@ export class AlunoController {
     } else if (request.usuario.role !== 'escola') {
       // continue normally
     } else if (turma.escolaId !== request.usuario.escolaId) {
+      console.log('Erro: Acesso negado - Usuário não tem permissão para esta turma');
+      // Remover o arquivo temporário se existir
+      if (request.file && request.file.path) {
+        try {
+          fs.unlinkSync(request.file.path);
+        } catch (error) {
+          console.error('Erro ao remover arquivo temporário:', error);
+        }
+      }
       return response.status(403).json({ error: 'Acesso negado' });
     }
 
     try {
+      console.log('Tentando ler o arquivo:', request.file.path);
       const workbook = XLSX.readFile(request.file.path);
+      console.log('Arquivo lido com sucesso');
+      
       const sheetName = workbook.SheetNames[0];
+      console.log('Nome da planilha:', sheetName);
+      
       const worksheet = workbook.Sheets[sheetName];
       const data = XLSX.utils.sheet_to_json<AlunoRow>(worksheet);
+      console.log('Dados lidos da planilha:', data);
 
       const alunos = await Promise.all(
         data.map(async (row) => {
           const matricula = row.matricula || uuidv4().slice(0, 8);
-          const dataNascimento = row.dataNascimento ? new Date(row.dataNascimento) : new Date();
+          const dataNascimento = row.dataNascimento ? new Date(row.dataNascimento) : null;
+          const nome = row.Nome || row.nome;
+
+          if (!nome) {
+            throw new Error('Nome é obrigatório');
+          }
 
           return prisma.aluno.create({
             data: {
-              nome: row.nome,
+              nome,
               matricula,
               dataNascimento,
               turmaId,
@@ -360,25 +408,48 @@ export class AlunoController {
       );
 
       // Remover o arquivo após a importação
-      fs.unlinkSync(request.file.path);
+      try {
+        fs.unlinkSync(request.file.path);
+        console.log('Arquivo temporário removido com sucesso');
+      } catch (error) {
+        console.error('Erro ao remover arquivo temporário:', error);
+      }
 
       return response.status(201).json(alunos);
     } catch (error) {
+      console.error('Erro detalhado na importação:', error);
       // Remover o arquivo em caso de erro
-      if (request.file.path) {
-        fs.unlinkSync(request.file.path);
+      if (request.file && request.file.path) {
+        try {
+          fs.unlinkSync(request.file.path);
+          console.log('Arquivo temporário removido após erro');
+        } catch (error) {
+          console.error('Erro ao remover arquivo temporário:', error);
+        }
       }
-      return response.status(400).json({ error: 'Erro ao importar alunos' });
+      return response.status(400).json({ 
+        error: 'Erro ao importar alunos. Verifique o formato do arquivo.',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
     }
   }
 
-  async downloadTemplate(request: CustomRequest, response: Response) {
-    const templatePath = path.join(__dirname, '..', 'templates', 'alunos_template.xlsx');
+  async downloadTemplate(request: RequestWithUsuario, response: Response) {
+    try {
+      const workbook = XLSX.utils.book_new();
+      const worksheetData = [['Nome', 'Matricula', 'DataNascimento']]; // Headers
+      const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
 
-    if (!fs.existsSync(templatePath)) {
-      return response.status(404).json({ error: 'Template não encontrado' });
+      const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+      response.setHeader('Content-Disposition', 'attachment; filename=alunos_template.xlsx');
+      response.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      response.send(buffer);
+
+    } catch (error) {
+      console.error('Erro ao gerar template de alunos:', error);
+      response.status(500).json({ error: 'Erro ao gerar template' });
     }
-
-    response.download(templatePath);
   }
 }

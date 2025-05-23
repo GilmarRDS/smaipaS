@@ -52,7 +52,7 @@ model Aluno {
   id              String     @id @default(uuid())
   nome            String
   matricula       String
-  dataNascimento  DateTime
+  dataNascimento  DateTime?
   turmaId         String
   dataCriacao     DateTime   @default(now())
   dataAtualizacao DateTime   @updatedAt

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import useAuth from '@/hooks/useAuth';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Loader2, Search } from 'lucide-react';
+import { Plus, Loader2, Search, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Aluno } from '@/types/alunos';
 import { Turma } from '@/types/turmas';
@@ -29,46 +29,83 @@ const Alunos = () => {
   const [showForm, setShowForm] = useState(false);
   const [selectedAluno, setSelectedAluno] = useState<Aluno | null>(null);
   const [selectedTurma, setSelectedTurma] = useState<string>('all');
-  const [selectedEscola, setSelectedEscola] = useState<string>('all');
+  const [selectedEscola, setSelectedEscola] = useState<string | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (escolaIdParam?: string) => {
     try {
       setLoading(true);
       let alunosData = [];
       let turmasData = [];
       let escolasData = [];
+      let idParaListarAlunos: string | undefined = escolaIdParam;
+      let idParaListarTurmas: string | undefined = escolaIdParam;
 
       if (user?.role === 'secretaria') {
-        // Carregar escolas para o filtro
         escolasData = await escolasService.listar();
         setEscolas(escolasData);
 
-        // Se uma escola estiver selecionada, carregar alunos e turmas dessa escola
-        if (selectedEscola && selectedEscola !== 'all') {
-          alunosData = await alunosService.listar(selectedEscola);
-          turmasData = await turmasService.listar(selectedEscola);
-        } else if (escolasData.length > 0) {
-          // Se não selecionou, pega da primeira escola
-          alunosData = await alunosService.listar(escolasData[0].id);
-          turmasData = await turmasService.listar(escolasData[0].id);
-          setSelectedEscola(escolasData[0].id);
+        if (escolaIdParam === undefined) {
+          idParaListarAlunos = selectedEscola;
+          idParaListarTurmas = selectedEscola;
+
+          if (selectedEscola === undefined && escolasData.length > 0) {
+            const primeiraEscolaId = escolasData[0].id;
+            setSelectedEscola(primeiraEscolaId);
+            idParaListarAlunos = primeiraEscolaId;
+            idParaListarTurmas = primeiraEscolaId;
+            console.log('Secretaria: Definindo escola padrão na montagem inicial:', primeiraEscolaId);
+          } else if (selectedEscola === 'all') {
+            idParaListarAlunos = undefined;
+            idParaListarTurmas = undefined;
+            console.log('Secretaria: selectedEscola é "all", listando todos.');
+          } else {
+            console.log('Secretaria: Usando escola selecionada do estado:', selectedEscola);
+          }
+        } else {
+          console.log('Secretaria: Usando escolaId do parâmetro:', escolaIdParam);
         }
       } else if (user?.schoolId) {
-        // Para usuários da escola, carregar apenas dados da própria escola
-        alunosData = await alunosService.listar(user.schoolId);
-        turmasData = await turmasService.listar(user.schoolId);
+        console.log('Usuário da Escola: Carregando alunos e turmas para escola do usuário:', user.schoolId);
+        idParaListarAlunos = user.schoolId;
+        idParaListarTurmas = user.schoolId;
+        if (selectedEscola === undefined) {
+          setSelectedEscola(user.schoolId);
+        }
+      } else {
+        console.log('Usuário sem role ou schoolId, limpando dados.');
+        setAlunos([]);
+        setTurmas([]);
+        setLoading(false);
+        return;
       }
 
-      // Filtrar alunos por turma se uma turma específica estiver selecionada
+      if (idParaListarAlunos !== undefined) {
+        console.log('Chamando alunosService.listar com ID:', idParaListarAlunos);
+        alunosData = await alunosService.listar(idParaListarAlunos === 'all' ? undefined : idParaListarAlunos) as (Aluno & { turma: Turma & { escola: Escola } })[];
+      } else {
+        console.log('Chamando alunosService.listar sem ID (para secretaria listar todos)');
+        alunosData = await alunosService.listar() as (Aluno & { turma: Turma & { escola: Escola } })[];
+      }
+
+      if (idParaListarTurmas !== undefined && idParaListarTurmas !== 'all') {
+        console.log('Chamando turmasService.listar com ID:', idParaListarTurmas);
+        turmasData = await turmasService.listar(idParaListarTurmas);
+      } else {
+        console.log('Chamando turmasService.listar sem ID (para secretaria listar todas)');
+        turmasData = await turmasService.listar();
+      }
+
       if (selectedTurma && selectedTurma !== 'all') {
+        console.log('Filtrando alunos por turma localmente:', selectedTurma);
         alunosData = alunosData.filter(aluno => aluno.turmaId === selectedTurma);
       }
 
       setAlunos(alunosData);
       setTurmas(turmasData);
+      console.log('Dados carregados e filtrados - Alunos:', alunosData.length, 'Turmas:', turmasData.length);
     } catch (error) {
       toast.error('Erro ao carregar dados');
       console.error(error);
@@ -83,12 +120,12 @@ const Alunos = () => {
 
   const handleCreate = () => {
     setSelectedAluno(null);
-    setShowForm(true);
+    setIsDialogOpen(true);
   };
 
   const handleEdit = (aluno: Aluno) => {
     setSelectedAluno(aluno);
-    setShowForm(true);
+    setIsDialogOpen(true);
   };
 
   const handleDelete = async (aluno: Aluno) => {
@@ -104,7 +141,6 @@ const Alunos = () => {
 
   const handleSubmit = async (data: Partial<Aluno>) => {
     try {
-      // Forçar matrícula numérica se fornecida
       if (data.matricula) {
         data.matricula = String(Number(data.matricula));
       }
@@ -112,15 +148,24 @@ const Alunos = () => {
         await alunosService.atualizar(selectedAluno.id, data);
         toast.success('Aluno atualizado com sucesso');
       } else {
+        if (user?.role === 'escola' && user?.schoolId) {
+          data.escolaId = user.schoolId;
+        } else if (user?.role === 'secretaria' && selectedEscola && selectedEscola !== 'all') {
+          data.escolaId = selectedEscola;
+        } else {
+          console.warn('Tentativa de criar aluno sem escola associada para secretaria.');
+          toast.error('Selecione uma escola antes de criar um aluno.');
+          return;
+        }
+
         await alunosService.criar({
           ...data,
-          escolaId: user?.schoolId || '',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         } as Omit<Aluno, 'id'>);
         toast.success('Aluno criado com sucesso');
       }
-      setShowForm(false);
+      setIsDialogOpen(false);
       loadData();
     } catch (error) {
       toast.error('Erro ao salvar aluno');
@@ -150,8 +195,8 @@ const Alunos = () => {
           <div>
             <h1 className="text-3xl font-bold">Alunos</h1>
             <p className="text-muted-foreground">
-              {user?.role === 'secretaria' 
-                ? 'Gerenciamento de alunos de todas as escolas' 
+              {user?.role === 'secretaria'
+                ? 'Gerenciamento de alunos de todas as escolas'
                 : `Gerenciamento de alunos da ${user?.schoolName || 'sua escola'}`}
             </p>
           </div>
@@ -166,9 +211,7 @@ const Alunos = () => {
                 <DialogHeader>
                   <DialogTitle>Importar Alunos</DialogTitle>
                 </DialogHeader>
-                <ImportarAlunos 
-                  turma={selectedTurma}
-                  setTurma={setSelectedTurma}
+                <ImportarAlunos
                   onImportSuccess={() => {
                     setIsImportDialogOpen(false);
                     loadData();
@@ -178,7 +221,7 @@ const Alunos = () => {
             </Dialog>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button>
+                <Button onClick={() => setIsDialogOpen(true)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Novo Aluno
                 </Button>
@@ -191,11 +234,10 @@ const Alunos = () => {
                 </DialogHeader>
                 <AlunoForm
                   turmaId={selectedTurma}
+                  escolaId={user?.role === 'secretaria' ? selectedEscola : user?.schoolId}
                   aluno={selectedAluno}
-                  onSubmit={selectedAluno ? 
-                    (data) => handleSubmit(data) : 
-                    handleSubmit
-                  }
+                  onSubmit={handleSubmit}
+                  onCancel={() => setIsDialogOpen(false)}
                 />
               </DialogContent>
             </Dialog>
@@ -219,7 +261,7 @@ const Alunos = () => {
           {user?.role === 'secretaria' && (
             <div className="w-[300px]">
               <Label htmlFor="escola">Escola</Label>
-              <Select value={selectedEscola} onValueChange={setSelectedEscola}>
+              <Select value={selectedEscola} onValueChange={(value: string | undefined) => setSelectedEscola(value)}>
                 <SelectTrigger id="escola">
                   <SelectValue placeholder="Selecione uma escola" />
                 </SelectTrigger>
@@ -236,13 +278,14 @@ const Alunos = () => {
           )}
           <div className="w-[300px]">
             <Label htmlFor="turma">Turma</Label>
-            <Select value={selectedTurma} onValueChange={setSelectedTurma}>
+            <Select value={selectedTurma} onValueChange={setSelectedTurma} disabled={user?.role === 'secretaria' && selectedEscola === 'all'}>
               <SelectTrigger id="turma">
                 <SelectValue placeholder="Selecione uma turma" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas as turmas</SelectItem>
-                {turmas.map(turma => (
+                {turmas
+                  .filter(turma => user?.role !== 'secretaria' || selectedEscola === 'all' || turma.escolaId === selectedEscola)
+                  .map(turma => (
                   <SelectItem key={turma.id} value={turma.id}>
                     {turma.nome}
                   </SelectItem>
@@ -252,67 +295,57 @@ const Alunos = () => {
           </div>
         </div>
 
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : (
-          <div className="border rounded-lg">
+        <Card>
+          <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>Matrícula</TableHead>
-                  <TableHead>Data de Nascimento</TableHead>
                   <TableHead>Turma</TableHead>
-                  <TableHead className="w-[100px]">Ações</TableHead>
+                  <TableHead>Escola</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredAlunos.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
-                      Nenhum aluno encontrado
-                    </TableCell>
-                  </TableRow>
-                ) : (
+                {filteredAlunos.length > 0 ? (
                   filteredAlunos.map((aluno) => (
                     <TableRow key={aluno.id}>
-                      <TableCell>{aluno.nome}</TableCell>
+                      <TableCell className="font-medium">{aluno.nome}</TableCell>
                       <TableCell>{aluno.matricula}</TableCell>
-                      <TableCell>
-                        {new Date(aluno.dataNascimento).toLocaleDateString()}
-                      </TableCell>
                       <TableCell>{aluno.turma?.nome}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
+                      <TableCell>{aluno.turma?.escola?.nome}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
                           <Button
                             variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedAluno(aluno);
-                              setIsDialogOpen(true);
-                            }}
+                            size="icon"
+                            onClick={() => handleEdit(aluno)}
                           >
-                            Editar
+                            <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700"
+                            size="icon"
                             onClick={() => handleDelete(aluno)}
                           >
-                            Excluir
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>
                     </TableRow>
                   ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center">
+                      Nenhum aluno encontrado.
+                    </TableCell>
+                  </TableRow>
                 )}
               </TableBody>
             </Table>
-          </div>
-        )}
+          </CardContent>
+        </Card>
       </div>
     </MainLayout>
   );

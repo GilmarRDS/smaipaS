@@ -3,12 +3,15 @@ import { Turma } from '@/types/turmas';
 import { AxiosError } from 'axios';
 
 export const turmasService = {
-  async listar(escolaId: string) {
+  async listar(escolaId?: string) {
     try {
       if (!escolaId) {
-        throw new Error('ID da escola é obrigatório');
+        // Se não tiver escolaId, lista todas as turmas
+        const response = await api.get('/turmas');
+        return response.data;
       }
-      const response = await api.get(`/api/escolas/${escolaId}/turmas`);
+      
+      const response = await api.get(`/escolas/${escolaId}/turmas`);
       const turmas = response.data;
       const turmasFiltradas = Array.isArray(turmas)
         ? turmas.filter((turma: Turma) => turma.escolaId === escolaId)
@@ -22,7 +25,7 @@ export const turmasService = {
 
   async obterPorId(id: string) {
     try {
-      const response = await api.get(`/api/turmas/${id}`);
+      const response = await api.get(`/turmas/${id}`);
       return response.data;
     } catch (error) {
       console.error('Erro ao obter turma:', error);
@@ -33,7 +36,7 @@ export const turmasService = {
   async criar(turma: Omit<Turma, 'id'>) {
     try {
       console.log('Enviando dados para criar turma:', turma);
-      const response = await api.post('/api/turmas', turma);
+      const response = await api.post('/turmas', turma);
       return response.data;
     } catch (error) {
       if (error instanceof AxiosError) {
@@ -51,7 +54,7 @@ export const turmasService = {
 
   async atualizar(id: string, turma: Partial<Turma>) {
     try {
-      const response = await api.put(`/api/turmas/${id}`, turma);
+      const response = await api.put(`/turmas/${id}`, turma);
       return response.data;
     } catch (error) {
       console.error('Erro ao atualizar turma:', error);
@@ -61,7 +64,7 @@ export const turmasService = {
 
   async deletar(id: string) {
     try {
-      await api.delete(`/api/turmas/${id}`);
+      await api.delete(`/turmas/${id}`);
     } catch (error) {
       console.error('Erro ao deletar turma:', error);
       throw error;

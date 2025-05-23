@@ -14,7 +14,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const token = localStorage.getItem('smaipa_token');
         if (token) {
-          const response = await api.get('/api/usuarios/me');
+          const response = await api.get('/usuarios/me');
           setUser(response.data);
         }
       } catch (error) {
@@ -31,7 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await api.post('/api/usuarios/login', { 
+      const response = await api.post('/usuarios/login', { 
         email, 
         senha: password 
       });

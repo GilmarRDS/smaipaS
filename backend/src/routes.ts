@@ -10,6 +10,7 @@ import { GabaritoController } from './controllers/GabaritoController';
 // Importar o novo PasswordController
 import { PasswordController } from './controllers/PasswordController';
 import { prisma } from './lib/prisma';
+import { upload } from './server';
 
 const router = Router();
 
@@ -52,22 +53,12 @@ router.put('/turmas/:id', asyncHandler((req: RequestWithUsuario, res: Response) 
 router.delete('/turmas/:id', asyncHandler((req: RequestWithUsuario, res: Response) => turmaController.deletar(req, res)));
 
 // Rotas de alunos
+router.get('/alunos/template', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.downloadTemplate(req, res)));
+router.post('/alunos/importar', upload.single('file'), asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.importarAlunos(req, res)));
 router.get('/turmas/:turmaId/alunos', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.listarTodos(req, res)));
+router.get('/escolas/:escolaId/alunos', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.listarTodos(req, res)));
 router.get('/alunos/:id', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.buscarPorId(req, res)));
 router.post('/alunos', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.criar(req, res)));
-// Nova rota para listar todos os alunos de uma escola
-router.get('/escolas/:escolaId/alunos', asyncHandler(async (req: RequestWithUsuario, res: Response) => {
-  const { escolaId } = req.params;
-  // Buscar todas as turmas da escola
-  const turmas = await prisma.turma.findMany({ where: { escolaId }, select: { id: true } });
-  const turmaIds = turmas.map((t: { id: string }) => t.id);
-  // Buscar todos os alunos dessas turmas
-  const alunos = await prisma.aluno.findMany({
-    where: { turmaId: { in: turmaIds } },
-    include: { turma: { select: { id: true, nome: true } } }
-  });
-  res.json(alunos);
-}));
 router.put('/alunos/:id', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.atualizar(req, res)));
 router.delete('/alunos/:id', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.deletar(req, res)));
 

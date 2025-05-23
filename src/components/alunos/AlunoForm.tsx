@@ -43,15 +43,16 @@ interface AlunoFormProps {
   aluno?: Aluno;
   turmas?: Turma[];
   turmaId?: string;
+  escolaId?: string;
   onSubmit: (data: Partial<Aluno>) => void;
   onCancel?: () => void;
 }
 
-const AlunoForm = ({ aluno, turmas: turmasProp, turmaId, onSubmit, onCancel }: AlunoFormProps) => {
+const AlunoForm = ({ aluno, turmas: turmasProp, turmaId, escolaId, onSubmit, onCancel }: AlunoFormProps) => {
   const { user } = useAuth();
   const [escolas, setEscolas] = useState<Escola[]>([]);
   const [turmas, setTurmas] = useState<Turma[]>(turmasProp || []);
-  const [selectedEscolaId, setSelectedEscolaId] = useState<string>(aluno?.turmaId ? aluno.turmaId : user?.schoolId || '');
+  const [selectedEscolaId, setSelectedEscolaId] = useState<string>(aluno?.turmaId ? aluno.turmaId : escolaId || '');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

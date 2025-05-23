@@ -26,7 +26,7 @@
 import axios, { AxiosHeaders } from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:3000',
+  baseURL: 'http://localhost:3000/api',
   headers: {
     'Accept': 'application/json',
     'Content-Type': 'application/json'
@@ -35,11 +35,11 @@ const api = axios.create({
 
 // Lista de rotas que não precisam de autenticação
 const publicRoutes = [
-  '/api/usuarios/login',
-  '/api/usuarios/recuperar-senha',
-  '/api/usuarios/resetar-senha',
-  '/api/usuarios/validar-token',
-  '/api/redefinir-senha',
+  '/usuarios/login',
+  '/usuarios/recuperar-senha',
+  '/usuarios/resetar-senha',
+  '/usuarios/validar-token',
+  '/redefinir-senha',
   '/favicon.ico'
 ];
 

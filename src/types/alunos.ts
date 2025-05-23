@@ -1,3 +1,5 @@
+import { Turma } from './turmas';
+
 export interface Aluno {
   id: string;
   nome: string;
@@ -5,10 +7,7 @@ export interface Aluno {
   dataNascimento: string;
   turmaId: string;
   escolaId?: string;
-  turma?: {
-    id: string;
-    nome: string;
-  };
+  turma?: Turma;
   createdAt: string;
   updatedAt: string;
 }

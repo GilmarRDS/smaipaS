@@ -66,6 +66,9 @@ export class EscolaController {
                 nome: true,
                 ano: true,
               },
+              orderBy: {
+                ano: 'asc'
+              }
             },
           },
         });
@@ -97,6 +100,9 @@ export class EscolaController {
               nome: true,
               ano: true,
             },
+            orderBy: {
+              ano: 'asc'
+            }
           },
         },
       });
@@ -279,6 +285,9 @@ export class EscolaController {
 
       const turmas = await prisma.turma.findMany({
         where: { escolaId: id },
+        orderBy: {
+          ano: 'asc'
+        },
         include: {
           alunos: {
             select: {
@@ -286,6 +295,9 @@ export class EscolaController {
               nome: true,
               matricula: true,
             },
+            orderBy: {
+              nome: 'asc'
+            }
           },
         },
       });
