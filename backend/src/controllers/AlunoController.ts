@@ -383,22 +383,74 @@ export class AlunoController {
       console.log('Nome da planilha:', sheetName);
       
       const worksheet = workbook.Sheets[sheetName];
-      const data = XLSX.utils.sheet_to_json<AlunoRow>(worksheet);
-      console.log('Dados lidos da planilha:', data);
+      console.log('Conteúdo bruto da planilha:', JSON.stringify(worksheet, null, 2));
+      
+      // Configurar opções de leitura para aceitar datas
+      const data = XLSX.utils.sheet_to_json<AlunoRow>(worksheet, {
+        raw: true, // Mantém os tipos originais (incluindo datas)
+        defval: null, // Valor padrão para células vazias
+        header: ['nome', 'matricula', 'dataNascimento'], // Força os nomes das colunas
+        range: 1 // Pula a primeira linha (cabeçalho)
+      });
+      console.log('Dados lidos da planilha:', JSON.stringify(data, null, 2));
+
+      if (data.length === 0) {
+        throw new Error('O arquivo está vazio ou não contém dados válidos');
+      }
+
+      // Validar se todos os dados necessários estão presentes
+      data.forEach((row, index) => {
+        if (!row.nome) {
+          throw new Error(`Linha ${index + 2}: Nome é obrigatório`);
+        }
+        if (!row.dataNascimento) {
+          throw new Error(`Linha ${index + 2}: Data de nascimento é obrigatória para o aluno ${row.nome}`);
+        }
+      });
 
       const alunos = await Promise.all(
-        data.map(async (row) => {
+        data.map(async (row, index) => {
+          console.log(`\nProcessando linha ${index + 2}:`, JSON.stringify(row, null, 2));
           const matricula = row.matricula || uuidv4().slice(0, 8);
-          const dataNascimento = row.dataNascimento ? new Date(row.dataNascimento) : null;
-          const nome = row.Nome || row.nome;
+          
+          // Tratamento da data de nascimento
+          let dataNascimento = null;
+          if (row.dataNascimento) {
+            // Se já for uma data, usa diretamente
+            if (row.dataNascimento instanceof Date) {
+              dataNascimento = row.dataNascimento;
+            } else {
+              // Se for string, tenta converter
+              const dataStr = String(row.dataNascimento).trim();
+              console.log(`Data original (linha ${index + 2}):`, dataStr, 'Tipo:', typeof dataStr);
+              
+              // Tenta converter a data
+              const dataConvertida = new Date(dataStr);
+              if (isNaN(dataConvertida.getTime())) {
+                throw new Error(`Linha ${index + 2}: Data de nascimento inválida para o aluno ${row.nome}. Use uma data válida`);
+              }
+              dataNascimento = dataConvertida;
+            }
+            console.log(`Data processada (linha ${index + 2}):`, dataNascimento);
+          }
+
+          const nome = row.nome;
+          console.log(`Nome do aluno (linha ${index + 2}):`, nome);
 
           if (!nome) {
-            throw new Error('Nome é obrigatório');
+            throw new Error(`Linha ${index + 2}: Nome é obrigatório`);
           }
+
+          console.log(`Dados finais para criação (linha ${index + 2}):`, {
+            nome,
+            matricula,
+            dataNascimento,
+            turmaId
+          });
 
           return prisma.aluno.create({
             data: {
-              nome,
+              nome: nome,
               matricula,
               dataNascimento,
               turmaId,
@@ -428,8 +480,8 @@ export class AlunoController {
         }
       }
       return response.status(400).json({ 
-        error: 'Erro ao importar alunos. Verifique o formato do arquivo.',
-        details: error instanceof Error ? error.message : 'Erro desconhecido'
+        error: 'Erro ao importar alunos',
+        details: error instanceof Error ? error.message : 'Verifique se o arquivo está no formato correto e se todos os campos obrigatórios estão preenchidos'
       });
     }
   }
@@ -437,8 +489,45 @@ export class AlunoController {
   async downloadTemplate(request: RequestWithUsuario, response: Response) {
     try {
       const workbook = XLSX.utils.book_new();
-      const worksheetData = [['Nome', 'Matricula', 'DataNascimento']]; // Headers
+      const worksheetData = [
+        ['Nome', 'Matricula', 'DataNascimento'], // Headers
+        ['João da Silva', '', '15/03/2010'], // Exemplo com matrícula em branco
+        ['', '', 'IMPORTANTE:'], // Instrução de formato
+        ['', '', '1. Formato da data deve ser DD/MM/AAAA'], // Instrução 1
+        ['', '', '2. Use barras (/) como separador'], // Instrução 2
+        ['', '', '3. Não deixe espaços extras'], // Instrução 3
+        ['', '', '4. Exemplos válidos:'], // Exemplos
+        ['', '', '   15/03/2010'], // Exemplo 1
+        ['', '', '   01/01/2000'], // Exemplo 2
+        ['', '', '   31/12/2015'] // Exemplo 3
+      ];
       const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+
+      // Configurar a largura das colunas
+      const colWidths = [
+        { wch: 30 }, // Nome
+        { wch: 15 }, // Matricula
+        { wch: 40 }  // DataNascimento
+      ];
+      worksheet['!cols'] = colWidths;
+
+      // Adicionar estilo para as células de instrução
+      for (let i = 2; i <= 9; i++) {
+        const cellRef = XLSX.utils.encode_cell({ r: i, c: 2 }); // Coluna C
+        if (!worksheet[cellRef]) {
+          worksheet[cellRef] = { v: worksheetData[i][2] };
+        }
+        worksheet[cellRef].s = { font: { color: { rgb: "FF0000" } } }; // Texto em vermelho
+      }
+
+      // Forçar todas as células da coluna de data como texto
+      for (let i = 1; i < worksheetData.length; i++) {
+        const cellRef = XLSX.utils.encode_cell({ r: i, c: 2 }); // Coluna C
+        if (worksheet[cellRef]) {
+          worksheet[cellRef].t = 's'; // Tipo string
+        }
+      }
+
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
 
       const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });

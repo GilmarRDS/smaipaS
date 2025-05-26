@@ -82,20 +82,40 @@ const Alunos = () => {
         return;
       }
 
-      if (idParaListarAlunos !== undefined) {
-        console.log('Chamando alunosService.listar com ID:', idParaListarAlunos);
-        alunosData = await alunosService.listar(idParaListarAlunos === 'all' ? undefined : idParaListarAlunos) as (Aluno & { turma: Turma & { escola: Escola } })[];
-      } else {
+      if (user?.role === 'secretaria' && selectedEscola === 'all') {
         console.log('Chamando alunosService.listar sem ID (para secretaria listar todos)');
         alunosData = await alunosService.listar() as (Aluno & { turma: Turma & { escola: Escola } })[];
+      } else {
+        const escolaId = idParaListarAlunos || user?.schoolId;
+        if (escolaId && escolaId !== 'all') {
+          console.log('Chamando alunosService.listar com ID:', escolaId);
+          alunosData = await alunosService.listar(escolaId) as (Aluno & { turma: Turma & { escola: Escola } })[];
+          
+          alunosData = alunosData.filter(aluno => 
+            aluno.turma?.escola?.id === escolaId
+          );
+        } else {
+          console.log('Nenhum ID de escola disponível para listar alunos');
+          alunosData = [];
+        }
       }
 
-      if (idParaListarTurmas !== undefined && idParaListarTurmas !== 'all') {
-        console.log('Chamando turmasService.listar com ID:', idParaListarTurmas);
-        turmasData = await turmasService.listar(idParaListarTurmas);
-      } else {
+      if (user?.role === 'secretaria' && selectedEscola === 'all') {
         console.log('Chamando turmasService.listar sem ID (para secretaria listar todas)');
         turmasData = await turmasService.listar();
+      } else {
+        const escolaId = idParaListarTurmas || user?.schoolId;
+        if (escolaId && escolaId !== 'all') {
+          console.log('Chamando turmasService.listar com ID:', escolaId);
+          turmasData = await turmasService.listar(escolaId);
+          
+          turmasData = turmasData.filter(turma => 
+            turma.escolaId === escolaId
+          );
+        } else {
+          console.log('Nenhum ID de escola disponível para listar turmas');
+          turmasData = [];
+        }
       }
 
       if (selectedTurma && selectedTurma !== 'all') {

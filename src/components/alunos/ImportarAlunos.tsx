@@ -12,10 +12,22 @@ import { alunosService } from '@/services/alunosService';
 import useAuth from '@/hooks/useAuth';
 import { escolasService } from '@/services/escolasService';
 import { Escola } from '@/types/escolas';
+import { AxiosError } from 'axios';
 
 interface ImportarAlunosProps {
   onImportSuccess?: () => void;
 }
+
+interface ApiError {
+  error?: string;
+  details?: string;
+}
+
+type ApiErrorResponse = {
+  response: {
+    data: ApiError;
+  };
+};
 
 const ImportarAlunos: React.FC<ImportarAlunosProps> = ({
   onImportSuccess
@@ -47,7 +59,7 @@ const ImportarAlunos: React.FC<ImportarAlunosProps> = ({
       }
     };
     fetchEscolas();
-  }, [user?.role]);
+  }, [user?.role, selectedEscolaId]);
 
   // Efeito para carregar turmas
   React.useEffect(() => {
@@ -177,7 +189,23 @@ const ImportarAlunos: React.FC<ImportarAlunosProps> = ({
       }
     } catch (error) {
       console.error('Erro ao importar alunos:', error);
-      toast.error('Erro ao importar alunos');
+      
+      const apiError = error as AxiosError<ApiError>;
+      
+      // Tratamento específico para erros de validação
+      if (apiError.response?.data?.error) {
+        toast.error('Erro ao importar alunos', {
+          description: apiError.response.data.error
+        });
+      } else if (apiError.response?.data?.details) {
+        toast.error('Erro ao importar alunos', {
+          description: apiError.response.data.details
+        });
+      } else {
+        toast.error('Erro ao importar alunos', {
+          description: 'Verifique se o arquivo está no formato correto e se todos os campos obrigatórios estão preenchidos'
+        });
+      }
     } finally {
       setIsUploading(false);
     }
