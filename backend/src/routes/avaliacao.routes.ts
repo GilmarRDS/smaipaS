@@ -20,6 +20,7 @@ avaliacaoRoutes.delete('/:id', asyncHandler((req: RequestWithUsuario, res) => av
 // Rotas específicas
 avaliacaoRoutes.get('/turma/:turmaId', asyncHandler((req: RequestWithUsuario, res) => avaliacaoController.listarPorTurma(req, res)) as RequestHandler);
 avaliacaoRoutes.get('/ano/:ano', asyncHandler((req: RequestWithUsuario, res) => avaliacaoController.listarPorAno(req, res)) as RequestHandler);
+avaliacaoRoutes.get('/ano/:ano/componente/:componente', asyncHandler((req: RequestWithUsuario, res) => avaliacaoController.listarPorAnoEComponente(req, res)) as RequestHandler);
 avaliacaoRoutes.get('/relatorios/dados', asyncHandler((req: RequestWithUsuario, res) => avaliacaoController.obterDadosRelatorios(req, res)) as RequestHandler);
 
 // Rotas de gabarito

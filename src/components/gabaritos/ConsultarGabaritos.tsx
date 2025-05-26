@@ -39,12 +39,12 @@ const ConsultarGabaritos: React.FC<ConsultarGabaritosProps> = ({
   // Carregar avaliações quando o ano for selecionado
   useEffect(() => {
     const carregarAvaliacoes = async () => {
-      if (!ano) {
+      if (!ano || !componente) {
         setAvaliacoes([]);
         return;
       }
       try {
-        const avaliacoesData = await avaliacoesService.listarPorAno(ano);
+        const avaliacoesData = await avaliacoesService.listarPorAnoEComponente(ano, componente);
         setAvaliacoes(avaliacoesData);
       } catch (error) {
         console.error('Erro ao carregar avaliações:', error);
@@ -52,7 +52,7 @@ const ConsultarGabaritos: React.FC<ConsultarGabaritosProps> = ({
       }
     };
     carregarAvaliacoes();
-  }, [ano]);
+  }, [ano, componente]);
 
   // Carregar descritores quando o componente for selecionado
   useEffect(() => {

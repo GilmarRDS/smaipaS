@@ -1,10 +1,8 @@
 import api from '@/lib/api';
 import { Avaliacao } from '@/types/avaliacoes';
-
-interface ListarTodasParams {
-  ano?: string;
-  disciplina?: string;
-}
+import { ListarTodasParams } from '@/types/avaliacoes';
+import { AxiosError } from 'axios';
+import { toast } from 'sonner';
 
 export const avaliacoesService = {
   async listarPorTurma(turmaId: string): Promise<Avaliacao[]> {
@@ -30,11 +28,22 @@ export const avaliacoesService = {
   async listarPorAno(ano: string): Promise<Avaliacao[]> {
     try {
       const anoNumerico = ano.match(/\d+/)?.[0] || ano;
-      const response = await api.get<Avaliacao[]>(`/avaliacoes/ano/${anoNumerico}`);
+      const response = await api.get<Avaliacao[]>(`/avaliacoes/ano/${encodeURIComponent(anoNumerico)}`);
       return response.data;
     } catch (error) {
       console.error('Erro ao listar avaliações por ano:', error);
-      throw error;
+      throw error as AxiosError;
+    }
+  },
+
+  async listarPorAnoEComponente(ano: string, componente: string): Promise<Avaliacao[]> {
+    try {
+      const anoNumerico = ano.match(/\d+/)?.[0] || ano;
+      const response = await api.get<Avaliacao[]>(`/avaliacoes/ano/${encodeURIComponent(anoNumerico)}/componente/${encodeURIComponent(componente)}`);
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao listar avaliações por ano e componente:', error);
+      throw error as AxiosError;
     }
   },
 
@@ -90,7 +99,7 @@ export const avaliacoesService = {
   async listarTodas(params: ListarTodasParams = {}): Promise<Avaliacao[]> {
     const queryParams = new URLSearchParams();
     if (params.ano) queryParams.append('ano', params.ano);
-    if (params.disciplina) queryParams.append('disciplina', params.disciplina);
+    if (params.componente) queryParams.append('disciplina', params.componente);
 
     const response = await api.get(`/avaliacoes?${queryParams.toString()}`);
     return response.data;

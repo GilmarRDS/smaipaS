@@ -38,6 +38,13 @@ export interface Avaliacao {
   updatedAt: string;
 }
 
+export interface ListarTodasParams {
+  escolaId?: string;
+  turmaId?: string;
+  componente?: string;
+  ano?: string;
+}
+
 // Helper function to get status badge color
 export const getStatusColor = (status: Avaliacao['status']) => {
   switch (status) {

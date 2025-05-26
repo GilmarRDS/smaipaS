@@ -547,50 +547,80 @@ export class AvaliacaoController {
     return response.json(gabarito);
   }
 
+  /**
+   * Lista avaliações por ano
+   */
   async listarPorAno(request: CustomRequest, response: Response) {
     try {
       const { ano } = request.params;
 
-      if (!request.usuario) {
-        return response.status(401).json({ error: 'Usuário não autenticado' });
-      }
-
-      // Validar se o ano é válido
-      if (!['1', '2', '3', '4', '5', '6', '7', '8', '9'].includes(ano)) {
-        return response.status(400).json({ error: 'Ano inválido' });
+      // Validação básica do ano
+      if (!ano || !/^[1-9]$/.test(ano)) {
+        return response.status(400).json({ error: 'Ano inválido.' });
       }
 
       const avaliacoes = await prisma.avaliacao.findMany({
         where: {
-          ano
+          ano,
         },
         include: {
           gabarito: {
-            select: {
-              id: true,
-              itens: {
-                select: {
-                  id: true,
-                  numero: true,
-                  resposta: true,
-                  descritor: {
-                    select: {
-                      id: true,
-                      codigo: true,
-                      descricao: true,
-                    },
-                  },
-                },
-              },
+            include: {
+              itens: true, // Incluir itens do gabarito
             },
           },
+        },
+        orderBy: {
+          nome: 'asc',
         },
       });
 
       return response.json(avaliacoes);
     } catch (error) {
       console.error('Erro ao listar avaliações por ano:', error);
-      return response.status(500).json({ error: 'Erro interno do servidor' });
+      return response.status(500).json({ error: 'Erro interno do servidor ao listar avaliações por ano.' });
+    }
+  }
+
+  /**
+   * Lista avaliações por ano e componente
+   */
+  async listarPorAnoEComponente(request: CustomRequest, response: Response) {
+    try {
+      const { ano, componente } = request.params;
+
+      // Validação básica do ano e componente
+      if (!ano || !/^[1-9]$/.test(ano)) {
+        return response.status(400).json({ error: 'Ano inválido.' });
+      }
+      
+      // Validar e converter o componente para o tipo Disciplina
+      const disciplina = componente?.toUpperCase() as Disciplina | undefined;
+      if (!disciplina || !['PORTUGUES', 'MATEMATICA'].includes(disciplina)) {
+         return response.status(400).json({ error: 'Componente (disciplina) inválido.' });
+      }
+
+      const avaliacoes = await prisma.avaliacao.findMany({
+        where: {
+          ano,
+          disciplina, // Usando 'disciplina' em vez de 'componente'
+        },
+        include: {
+          gabarito: {
+            include: {
+              itens: true,
+            },
+          },
+        },
+        orderBy: {
+          nome: 'asc',
+        },
+      });
+
+      return response.json(avaliacoes);
+    } catch (error) {
+      console.error('Erro ao listar avaliações por ano e componente:', error);
+      return response.status(500).json({ error: 'Erro interno do servidor ao listar avaliações por ano e componente.' });
     }
   }
 }

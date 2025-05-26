@@ -5,11 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { UploadCloud, FileType, AlertCircle } from 'lucide-react';
+import { Upload, CheckCircle2, Loader2, Save } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { avaliacoesService } from '@/services/avaliacoesService';
-import { descritoresService } from '@/services/descritoresService';
+import { gabaritosService } from '@/services/gabaritosService';
 import { Avaliacao } from '@/types/avaliacoes';
+import * as XLSX from 'xlsx';
+import DownloadTemplateGabarito from './DownloadTemplateGabarito';
+import { useToast } from '@/components/ui/use-toast';
+import { descritoresService } from '@/services/descritoresService';
 import { Descritor } from '@/types/gabaritos';
 
 interface ImportarGabaritoProps {
@@ -19,6 +23,16 @@ interface ImportarGabaritoProps {
   setAno: (value: string) => void;
   avaliacao: string;
   setAvaliacao: (value: string) => void;
+  numQuestoes: string;
+  setNumQuestoes: (value: string) => void;
+  gabarito: { resposta: string, codigoDescritor: string }[];
+  setGabarito: (value: { resposta: string, codigoDescritor: string }[]) => void;
+}
+
+interface RespostaRow {
+  Questão: string;
+  Resposta: string;
+  'Descritor Código': string;
 }
 
 const anos = ['1º ano', '2º ano', '3º ano', '4º ano', '5º ano', '6º ano', '7º ano', '8º ano', '9º ano'];
@@ -30,29 +44,34 @@ const ImportarGabarito: React.FC<ImportarGabaritoProps> = ({
   setAno,
   avaliacao,
   setAvaliacao,
+  numQuestoes,
+  setNumQuestoes,
+  gabarito,
+  setGabarito,
 }) => {
-  const [file, setFile] = useState<File | null>(null);
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
   const [descritores, setDescritores] = useState<Descritor[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const { toast } = useToast();
 
-  // Carregar avaliações quando o ano for selecionado
+  // Carregar avaliações quando o ano E componente forem selecionados
   useEffect(() => {
     const carregarAvaliacoes = async () => {
-      if (!ano) {
+      if (!ano || !componente) {
         setAvaliacoes([]);
         return;
       }
       try {
-        const avaliacoesData = await avaliacoesService.listarPorAno(ano);
+        const avaliacoesData = await avaliacoesService.listarPorAnoEComponente(ano, componente);
         setAvaliacoes(avaliacoesData);
       } catch (error) {
         console.error('Erro ao carregar avaliações:', error);
-        toast.error('Erro ao carregar avaliações');
+        toast({ title: 'Erro ao carregar avaliações', description: 'Não foi possível carregar as avaliações. Tente novamente.' });
       }
     };
     carregarAvaliacoes();
-  }, [ano]);
+  }, [ano, componente, toast]);
 
   // Carregar descritores quando o componente for selecionado
   useEffect(() => {
@@ -66,75 +85,140 @@ const ImportarGabarito: React.FC<ImportarGabaritoProps> = ({
         setDescritores(descritoresData);
       } catch (error) {
         console.error('Erro ao carregar descritores:', error);
-        toast.error('Erro ao carregar descritores');
+        toast({ title: 'Erro ao carregar descritores', description: 'Não foi possível carregar os descritores. Tente novamente.' });
       }
     };
     carregarDescritores();
-  }, [componente]);
+  }, [componente, toast]);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0];
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      if (selectedFile.type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' &&
-          selectedFile.type !== 'application/vnd.ms-excel') {
-        toast.error('Formato de arquivo inválido', {
-          description: 'Por favor, selecione um arquivo Excel (.xlsx ou .xls)'
-        });
-        return;
-      }
       setFile(selectedFile);
     }
   };
 
-  const handleUpload = async () => {
-    if (!file) {
-      toast.error('Nenhum arquivo selecionado');
+  const handleImport = async () => {
+    if (!file) return;
+
+    setIsLoading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = e.target?.result;
+          const workbook = XLSX.read(data, { type: 'binary' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json<RespostaRow>(worksheet);
+
+          // Validar dados
+          if (!Array.isArray(jsonData) || jsonData.length === 0) {
+            throw new Error('O arquivo não contém dados válidos');
+          }
+
+          // Extrair respostas e códigos dos descritores
+          const gabaritoImportado = jsonData.map((row) => {
+            const resposta = row.Resposta?.toString().toUpperCase();
+            const codigoDescritor = row['Descritor Código']?.toString().trim();
+
+            if (!resposta || !['A', 'B', 'C', 'D', 'E'].includes(resposta)) {
+              throw new Error(`Resposta inválida na questão ${row.Questão}`);
+            }
+            if (!codigoDescritor) {
+               throw new Error(`Código do descritor ausente na questão ${row.Questão}`);
+            }
+            // Opcional: Validar se o código do descritor existe na lista carregada
+            // const descritorExistente = descritores.find(d => d.codigo === codigoDescritor);
+            // if (!descritorExistente) {
+            //   throw new Error(`Código do descritor ${codigoDescritor} na questão ${row.Questão} não encontrado.`);
+            // }
+
+            return { resposta, codigoDescritor }; // Armazenar resposta e código
+          });
+
+          setGabarito(gabaritoImportado);
+          setNumQuestoes(gabaritoImportado.length.toString());
+          toast({ title: 'Gabarito importado com sucesso!', description: `Foram importadas ${gabaritoImportado.length} questões.` });
+        } catch (error) {
+          toast({ title: 'Erro na importação', description: error instanceof Error ? error.message : 'Erro ao processar o arquivo' });
+        }
+      };
+
+      reader.onerror = () => {
+        toast({ title: 'Erro ao ler o arquivo', description: 'Não foi possível ler o arquivo. Tente novamente mais tarde.' });
+      };
+
+      reader.readAsBinaryString(file);
+    } catch (error) {
+      toast({ title: 'Erro ao processar o arquivo', description: 'Não foi possível processar o arquivo. Tente novamente mais tarde.' });
+    } finally {
+      setIsLoading(false);
+      setFile(null);
+    }
+  };
+
+  const handleSalvarGabaritoImportado = async () => {
+    if (!avaliacao) {
+      toast({ title: 'Selecione uma avaliação' });
       return;
     }
 
-    if (!componente || !ano || !avaliacao) {
-      toast.error('Preencha todos os campos obrigatórios', {
-        description: 'Componente curricular, ano e avaliação são obrigatórios'
+    if (gabarito.length === 0) {
+      toast({ title: 'Importe um gabarito primeiro' });
+      return;
+    }
+     // Validar se todos os descritores importados existem antes de salvar
+    const descritoresInvalidos = gabarito.filter(item => 
+      !descritores.find(d => d.codigo === item.codigoDescritor)
+    );
+    if (descritoresInvalidos.length > 0) {
+      toast({ 
+        title: 'Códigos de descritores inválidos', 
+        description: `Os códigos dos descritores para as questões ${descritoresInvalidos.map(item => item.codigoDescritor).join(', ')} não foram encontrados.` 
       });
       return;
     }
 
-    setIsUploading(true);
-
+    setIsLoading(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('componente', componente);
-      formData.append('ano', ano);
-      formData.append('avaliacaoId', avaliacao);
-
-      // TODO: Implementar upload do arquivo
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulação de upload
-      
-      toast.success('Gabarito importado com sucesso!');
-      setFile(null);
+      await gabaritosService.criar({
+        avaliacaoId: avaliacao,
+        itens: gabarito.map((item, index) => {
+          // Encontrar o descritor correspondente pelo código importado
+          const descritor = descritores.find(d => d.codigo === item.codigoDescritor);
+          return {
+            numero: index + 1,
+            resposta: item.resposta,
+            descritorId: descritor?.id || '' // Usar o ID encontrado ou string vazia (embora a validação acima evite isso)
+          }
+        }),
+      });
+      toast({ title: 'Gabarito importado salvo com sucesso!' });
+      setGabarito([]);
+      setNumQuestoes('');
     } catch (error) {
-      console.error('Erro ao importar gabarito:', error);
-      toast.error('Erro ao importar gabarito');
+      console.error('Erro ao salvar gabarito importado:', error);
+      toast({ title: 'Erro ao salvar gabarito importado', description: 'Não foi possível salvar o gabarito importado. Tente novamente mais tarde.' });
     } finally {
-      setIsUploading(false);
+      setIsLoading(false);
     }
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Importar Gabarito via Excel</CardTitle>
+        <CardTitle>Importar Gabarito</CardTitle>
         <CardDescription>
-          Faça upload de uma planilha Excel contendo o gabarito da avaliação
+          Importe o gabarito através de uma planilha Excel
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="componente-import">Componente Curricular</Label>
+            <Label htmlFor="componente-importacao">Componente Curricular</Label>
             <Select value={componente} onValueChange={setComponente}>
-              <SelectTrigger id="componente-import">
+              <SelectTrigger id="componente-importacao">
                 <SelectValue placeholder="Selecione o componente" />
               </SelectTrigger>
               <SelectContent>
@@ -145,9 +229,9 @@ const ImportarGabarito: React.FC<ImportarGabaritoProps> = ({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="ano-import">Ano</Label>
+            <Label htmlFor="ano-importacao">Ano</Label>
             <Select value={ano} onValueChange={setAno}>
-              <SelectTrigger id="ano-import">
+              <SelectTrigger id="ano-importacao">
                 <SelectValue placeholder="Selecione o ano" />
               </SelectTrigger>
               <SelectContent>
@@ -159,9 +243,9 @@ const ImportarGabarito: React.FC<ImportarGabaritoProps> = ({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="avaliacao-import">Avaliação</Label>
+            <Label htmlFor="avaliacao-importacao">Avaliação</Label>
             <Select value={avaliacao} onValueChange={setAvaliacao}>
-              <SelectTrigger id="avaliacao-import">
+              <SelectTrigger id="avaliacao-importacao">
                 <SelectValue placeholder="Selecione a avaliação" />
               </SelectTrigger>
               <SelectContent>
@@ -173,76 +257,77 @@ const ImportarGabarito: React.FC<ImportarGabaritoProps> = ({
           </div>
         </div>
 
-        <div className="border-2 border-dashed rounded-lg p-6">
-          <div className="flex flex-col items-center justify-center gap-4">
-            <div className="flex flex-col items-center justify-center gap-2">
-              <UploadCloud className="h-10 w-10 text-muted-foreground" />
-              <div className="text-center">
-                <p className="text-sm font-medium">Arraste e solte seu arquivo aqui</p>
-                <p className="text-xs text-muted-foreground">ou</p>
-              </div>
-            </div>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="numQuestoes">Número de Questões</Label>
+            <Input
+              id="numQuestoes"
+              type="number"
+              value={numQuestoes}
+              onChange={(e) => setNumQuestoes(e.target.value)}
+              placeholder="Digite o número de questões"
+            />
+          </div>
+
+          <DownloadTemplateGabarito numQuestoes={numQuestoes} descritores={descritores} />
+
+          <div className="space-y-2">
+            <Label htmlFor="file">Arquivo Excel</Label>
             <div className="flex items-center gap-2">
               <Input
+                id="file"
                 type="file"
                 accept=".xlsx,.xls"
                 onChange={handleFileChange}
-                className="hidden"
-                id="file-upload"
+                disabled={isLoading}
               />
-              <Label
-                htmlFor="file-upload"
-                className="cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium"
+              <Button
+                onClick={handleImport}
+                disabled={!file || isLoading}
               >
-                Selecionar arquivo
-              </Label>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Importando...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Importar
+                  </>
+                )}
+              </Button>
             </div>
-            {file && (
-              <div className="flex items-center gap-2 text-sm">
-                <FileType className="h-4 w-4" />
-                <span>{file.name}</span>
-              </div>
-            )}
           </div>
         </div>
 
-        {file && (
-          <Alert variant="default" className="bg-blue-50 text-blue-800 border-blue-200">
-            <AlertCircle className="h-4 w-4 text-blue-800" />
-            <AlertDescription className="text-blue-800">
-              <div className="space-y-2">
-                <p>Arquivo selecionado: {file.name}</p>
-                <p className="text-sm">O arquivo deve conter as seguintes colunas:</p>
-                <ul className="list-disc list-inside text-sm space-y-1">
-                  <li>Número da questão</li>
-                  <li>Resposta (A, B, C, D ou E)</li>
-                  <li>Código do descritor</li>
-                </ul>
-                <p className="text-sm mt-2">Descritores disponíveis:</p>
-                <ul className="list-disc list-inside text-sm space-y-1">
-                  {descritores.map(d => (
-                    <li key={d.id}>{d.codigo} - {d.descricao}</li>
-                  ))}
-                </ul>
-              </div>
+        {gabarito.length > 0 && (
+          <Alert>
+            <CheckCircle2 className="h-4 w-4" />
+            <AlertDescription>
+              Gabarito importado com {gabarito.length} questões
             </AlertDescription>
           </Alert>
         )}
 
         <Button
-          onClick={handleUpload}
+          onClick={handleSalvarGabaritoImportado}
           className="w-full"
-          disabled={!file || !componente || !ano || !avaliacao || isUploading}
+          disabled={gabarito.length === 0 || !avaliacao || isLoading}
         >
-          {isUploading ? (
-            <>Importando...</>
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Salvar Gabarito Importado
+            </>
           ) : (
             <>
-              <UploadCloud className="mr-2 h-4 w-4" />
-              Importar Gabarito
+              <Save className="h-4 w-4 mr-2" />
+              Salvar Gabarito Importado
             </>
           )}
         </Button>
+
       </CardContent>
     </Card>
   );

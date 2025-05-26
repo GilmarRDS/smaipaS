@@ -10,7 +10,7 @@ const Gabaritos = () => {
   const [ano, setAno] = useState('');
   const [avaliacao, setAvaliacao] = useState('');
   const [numQuestoes, setNumQuestoes] = useState('');
-  const [gabarito, setGabarito] = useState<string[]>([]);
+  const [gabarito, setGabarito] = useState<{ resposta: string, codigoDescritor: string }[]>([]);
 
   return (
     <MainLayout>
@@ -37,10 +37,6 @@ const Gabaritos = () => {
               setAno={setAno}
               avaliacao={avaliacao}
               setAvaliacao={setAvaliacao}
-              numQuestoes={numQuestoes}
-              setNumQuestoes={setNumQuestoes}
-              gabarito={gabarito}
-              setGabarito={setGabarito}
             />
           </TabsContent>
           
@@ -52,6 +48,10 @@ const Gabaritos = () => {
               setAno={setAno}
               avaliacao={avaliacao}
               setAvaliacao={setAvaliacao}
+              numQuestoes={numQuestoes}
+              setNumQuestoes={setNumQuestoes}
+              gabarito={gabarito}
+              setGabarito={setGabarito}
             />
           </TabsContent>
           
