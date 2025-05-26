@@ -181,7 +181,7 @@ const Respostas: React.FC = () => {
       await alunosService.salvarRespostas({
         alunoId: aluno.id,
         avaliacaoId: avaliacao,
-        compareceu: !aluno.ausente,
+        compareceu: !aluno.ausente && !aluno.transferido,
         transferido: aluno.transferido,
         itens: (!aluno.ausente && !aluno.transferido)
           ? aluno.respostas.map((resposta, index) => ({

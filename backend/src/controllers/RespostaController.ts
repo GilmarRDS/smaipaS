@@ -42,7 +42,6 @@ export class RespostaController {
       select: {
         id: true,
         nome: true,
-        escolaId: true,
       },
     });
 
@@ -53,7 +52,14 @@ export class RespostaController {
     }
 
     // Se for um usuário da escola, só pode criar respostas para avaliações da própria escola
-    if (request.usuario.role === 'escola' && avaliacao.escolaId !== request.usuario.escolaId) {
+    if (!request.usuario) {
+      console.log('Acesso negado: request.usuario não definido');
+      return response.status(403).json({ error: 'Acesso negado' });
+    }
+    console.log('Usuário da requisição:', request.usuario);
+    console.log('Escola do aluno:', aluno?.turma?.escola?.id);
+    if (request.usuario.role === 'escola' && aluno?.turma?.escola?.id !== request.usuario.escolaId) {
+      console.log('Acesso negado: escolaId do usuário não corresponde à escola do aluno');
       return response.status(403).json({ error: 'Acesso negado' });
     }
 
@@ -127,8 +133,10 @@ export class RespostaController {
     if (request.usuario.role === 'escola') {
       const respostas = await prisma.resposta.findMany({
         where: {
-          avaliacao: {
-            escolaId: request.usuario.escolaId,
+          aluno: {
+            turma: {
+              escolaId: request.usuario.escolaId,
+            },
           },
           ...(avaliacaoId ? { avaliacaoId: avaliacaoId as string } : {}),
           ...(alunoId ? { alunoId: alunoId as string } : {}),
@@ -144,6 +152,11 @@ export class RespostaController {
                   id: true,
                   nome: true,
                   ano: true,
+                  escola: {
+                    select: {
+                      id: true,
+                    },
+                  },
                 },
               },
             },
@@ -152,7 +165,6 @@ export class RespostaController {
             select: {
               id: true,
               nome: true,
-              escolaId: true,
             },
           },
           itens: true,
@@ -201,16 +213,6 @@ export class RespostaController {
     const resposta = await prisma.resposta.findUnique({
       where: { id },
       include: {
-        avaliacao: {
-          select: {
-            id: true,
-            escola: {
-              select: {
-                id: true,
-              },
-            },
-          },
-        },
         aluno: {
           select: {
             id: true,
@@ -221,8 +223,19 @@ export class RespostaController {
                 id: true,
                 nome: true,
                 ano: true,
+                escola: {
+                  select: {
+                    id: true,
+                  },
+                },
               },
             },
+          },
+        },
+        avaliacao: {
+          select: {
+            id: true,
+            nome: true,
           },
         },
         itens: true,
@@ -234,7 +247,7 @@ export class RespostaController {
     }
 
     // Se for um usuário da escola, só pode ver respostas de avaliações da própria escola
-    if (request.usuario.role === 'escola' && resposta.avaliacao.escola.id !== request.usuario.escolaId) {
+    if (request.usuario.role === 'escola' && resposta.aluno.turma.escola.id !== request.usuario.escolaId) {
       return response.status(403).json({ error: 'Acesso negado' });
     }
 
@@ -249,12 +262,15 @@ export class RespostaController {
     const respostaExistente = await prisma.resposta.findUnique({
       where: { id },
       include: {
-        avaliacao: {
+        aluno: {
           select: {
-            id: true,
-            escola: {
+            turma: {
               select: {
-                id: true,
+                escola: {
+                  select: {
+                    id: true,
+                  },
+                },
               },
             },
           },
@@ -267,7 +283,7 @@ export class RespostaController {
     }
 
     // Se for um usuário da escola, só pode atualizar respostas de avaliações da própria escola
-    if (request.usuario.role === 'escola' && respostaExistente.avaliacao.escola.id !== request.usuario.escolaId) {
+    if (request.usuario.role === 'escola' && respostaExistente.aluno.turma.escola.id !== request.usuario.escolaId) {
       return response.status(403).json({ error: 'Acesso negado' });
     }
 
@@ -330,12 +346,15 @@ export class RespostaController {
     const respostaExistente = await prisma.resposta.findUnique({
       where: { id },
       include: {
-        avaliacao: {
+        aluno: {
           select: {
-            id: true,
-            escola: {
+            turma: {
               select: {
-                id: true,
+                escola: {
+                  select: {
+                    id: true,
+                  },
+                },
               },
             },
           },
@@ -348,7 +367,7 @@ export class RespostaController {
     }
 
     // Se for um usuário da escola, só pode deletar respostas de avaliações da própria escola
-    if (request.usuario.role === 'escola' && respostaExistente.avaliacao.escola.id !== request.usuario.escolaId) {
+    if (request.usuario.role === 'escola' && respostaExistente.aluno.turma.escola.id !== request.usuario.escolaId) {
       return response.status(403).json({ error: 'Acesso negado' });
     }
 

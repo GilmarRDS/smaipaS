@@ -86,6 +86,9 @@ export const authMiddleware = async (
       escolaId: usuario.escolaId ?? undefined,
     };
 
+    // Log para debug do objeto usuario no request
+    console.log('Objeto usuario no request:', req.usuario);
+
     console.log('Autenticação bem-sucedida para usuário:', {
       id: usuario.id,
       role: usuario.role,

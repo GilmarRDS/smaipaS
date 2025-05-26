@@ -93,8 +93,8 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({ isSecretaria }) => {
                   if (resposta) {
                     // Calcular nota baseada nas respostas corretas
                     const nota = resposta.respostas.reduce((total, item) => {
-                      const itemGabarito = avaliacao.gabarito?.itens.find(i => i.numero === item.questao);
-                      if (itemGabarito && item.alternativa === itemGabarito.resposta) {
+                      const itemGabarito = avaliacao.gabarito?.itens.find(i => i.numero === item.numero);
+                      if (itemGabarito && item.resposta === itemGabarito.resposta) {
                         return total + 1;
                       }
                       return total;
@@ -157,10 +157,10 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({ isSecretaria }) => {
                     if (resposta) {
                       // Calcular nota baseada nas respostas corretas
                       const nota = resposta.respostas.reduce((total, item) => {
-                        const itemGabarito = avaliacao.gabarito?.itens.find(i => i.numero === item.questao);
-                        if (itemGabarito && item.alternativa === itemGabarito.resposta) {
-                          return total + 1;
-                        }
+                      const itemGabarito = avaliacao.gabarito?.itens.find(i => i.numero === item.numero);
+                      if (itemGabarito && item.resposta === itemGabarito.resposta) {
+                        return total + 1;
+                      }
                         return total;
                       }, 0) / resposta.respostas.length * 10;
 
