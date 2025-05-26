@@ -18,12 +18,11 @@ interface ItemGabarito {
 interface CriarGabaritoParams {
   avaliacaoId: string;
   itens: ItemGabarito[];
-  turno: string;
 }
 
 export class GabaritoController {
   async criar(request: CustomRequest, response: Response) {
-    const { avaliacaoId, itens, turno } = request.body as CriarGabaritoParams;
+    const { avaliacaoId, itens } = request.body as CriarGabaritoParams;
 
     // Verificar se a avaliação existe
     const avaliacao = await prisma.avaliacao.findUnique({
@@ -34,16 +33,10 @@ export class GabaritoController {
       return response.status(404).json({ error: 'Avaliação não encontrada' });
     }
 
-    // Validar turno
-    if (!turno || !['matutino', 'vespertino', 'noturno', 'integral'].includes(turno)) {
-      return response.status(400).json({ error: 'Turno inválido' });
-    }
-
     // Criar o gabarito com seus itens
     const gabarito = await prisma.gabarito.create({
       data: {
         avaliacaoId,
-        turno,
         itens: {
           create: itens.map((item: ItemGabarito) => ({
             numero: item.numero,
@@ -157,5 +150,30 @@ export class GabaritoController {
     });
 
     return response.status(204).send();
+  }
+
+  async listarPorAvaliacao(request: CustomRequest, response: Response) {
+    const { avaliacaoId } = request.params;
+
+    if (!avaliacaoId) {
+      return response.status(400).json({ error: 'ID da avaliação é obrigatório' });
+    }
+
+    const gabarito = await prisma.gabarito.findFirst({
+      where: { avaliacaoId },
+      include: {
+        itens: {
+          include: {
+            descritor: true,
+          },
+        },
+      },
+    });
+
+    if (!gabarito) {
+      return response.json([]);
+    }
+
+    return response.json([gabarito]);
   }
 }

@@ -19,6 +19,10 @@ descritorRoutes.get('/', asyncHandler(async (req, res) => {
   await descritorController.listarTodos(req, res);
 }));
 
+descritorRoutes.get('/componente/:componente', asyncHandler(async (req, res) => {
+  await descritorController.listarPorComponente(req, res);
+}));
+
 descritorRoutes.get('/:id', asyncHandler(async (req, res) => {
   await descritorController.buscarPorId(req, res);
 }));

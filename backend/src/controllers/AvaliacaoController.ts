@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
+import { RequestWithUsuario } from '../middlewares/auth';
+import { Disciplina, TipoAvaliacao } from '@prisma/client';
 
 // Definir os tipos manualmente
 type TipoAvaliacao = 'DIAGNOSTICA_INICIAL' | 'DIAGNOSTICA_FINAL';
@@ -542,5 +544,53 @@ export class AvaliacaoController {
     });
 
     return response.json(gabarito);
+  }
+
+  async listarPorAno(request: Request, response: Response) {
+    try {
+      const req = request as RequestWithUsuario;
+      const { ano } = request.params;
+
+      if (!req.usuario) {
+        return response.status(401).json({ error: 'Usuário não autenticado' });
+      }
+
+      // Validar se o ano é válido
+      if (!['1', '2', '3', '4', '5', '6', '7', '8', '9'].includes(ano)) {
+        return response.status(400).json({ error: 'Ano inválido' });
+      }
+
+      const avaliacoes = await prisma.avaliacao.findMany({
+        where: {
+          ano
+        },
+        include: {
+          gabarito: {
+            select: {
+              id: true,
+              itens: {
+                select: {
+                  id: true,
+                  numero: true,
+                  resposta: true,
+                  descritor: {
+                    select: {
+                      id: true,
+                      codigo: true,
+                      descricao: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return response.json(avaliacoes);
+    } catch (error) {
+      console.error('Erro ao listar avaliações por ano:', error);
+      return response.status(500).json({ error: 'Erro interno do servidor' });
+    }
   }
 }

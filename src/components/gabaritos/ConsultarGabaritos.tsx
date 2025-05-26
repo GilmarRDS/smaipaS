@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Search, Download, Trash2 } from 'lucide-react';
+import { FileDown, Trash2, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { avaliacoesService } from '@/services/avaliacoesService';
 import { gabaritosService } from '@/services/gabaritosService';
 import { descritoresService } from '@/services/descritoresService';
 import { Avaliacao } from '@/types/avaliacoes';
-import { Gabarito, Descritor } from '@/types/gabaritos';
+import { Descritor, Gabarito } from '@/types/gabaritos';
 
 interface ConsultarGabaritosProps {
   componente: string;
@@ -126,15 +125,15 @@ const ConsultarGabaritos: React.FC<ConsultarGabaritosProps> = ({
       <CardHeader>
         <CardTitle>Consultar Gabaritos</CardTitle>
         <CardDescription>
-          Visualize, exporte e exclua gabaritos cadastrados
+          Selecione os filtros para visualizar os gabaritos
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="componente-consult">Componente Curricular</Label>
+            <Label htmlFor="componente-consulta">Componente Curricular</Label>
             <Select value={componente} onValueChange={setComponente}>
-              <SelectTrigger id="componente-consult">
+              <SelectTrigger id="componente-consulta">
                 <SelectValue placeholder="Selecione o componente" />
               </SelectTrigger>
               <SelectContent>
@@ -145,9 +144,9 @@ const ConsultarGabaritos: React.FC<ConsultarGabaritosProps> = ({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="ano-consult">Ano</Label>
+            <Label htmlFor="ano-consulta">Ano</Label>
             <Select value={ano} onValueChange={setAno}>
-              <SelectTrigger id="ano-consult">
+              <SelectTrigger id="ano-consulta">
                 <SelectValue placeholder="Selecione o ano" />
               </SelectTrigger>
               <SelectContent>
@@ -159,9 +158,9 @@ const ConsultarGabaritos: React.FC<ConsultarGabaritosProps> = ({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="avaliacao-consult">Avaliação</Label>
+            <Label htmlFor="avaliacao-consulta">Avaliação</Label>
             <Select value={avaliacao} onValueChange={setAvaliacao}>
-              <SelectTrigger id="avaliacao-consult">
+              <SelectTrigger id="avaliacao-consulta">
                 <SelectValue placeholder="Selecione a avaliação" />
               </SelectTrigger>
               <SelectContent>
@@ -174,57 +173,69 @@ const ConsultarGabaritos: React.FC<ConsultarGabaritosProps> = ({
         </div>
 
         {isLoading ? (
-          <div className="text-center py-4">Carregando gabaritos...</div>
-        ) : gabaritos.length === 0 ? (
-          <div className="text-center py-4 text-muted-foreground">
-            Nenhum gabarito encontrado para esta avaliação
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        ) : (
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Questão</TableHead>
-                  <TableHead>Resposta</TableHead>
-                  <TableHead>Descritor</TableHead>
-                  <TableHead className="w-[100px]">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {gabaritos.map(gabarito => (
-                  <TableRow key={gabarito.id}>
-                    <TableCell>{gabarito.itens.map(item => item.numero).join(', ')}</TableCell>
-                    <TableCell>{gabarito.itens.map(item => item.resposta).join(', ')}</TableCell>
-                    <TableCell>
-                      {gabarito.itens.map(item => {
-                        const descritor = descritores.find(d => d.id === item.descritorId);
-                        return descritor ? `${descritor.codigo} - ${descritor.descricao}` : 'Descritor não encontrado';
-                      }).join(', ')}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleExportar(gabarito.id)}
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleExcluir(gabarito.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+        ) : gabaritos.length > 0 ? (
+          <div className="space-y-4">
+            {gabaritos.map((gabarito) => (
+              <Card key={gabarito.id} className="bg-gray-50">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium">Gabarito #{gabarito.id.slice(0, 8)}</h3>
+                      <p className="text-sm text-gray-500">
+                        Criado em {new Date(gabarito.dataCriacao).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleExportar(gabarito.id)}
+                      >
+                        <FileDown className="h-4 w-4 mr-2" />
+                        Exportar
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleExcluir(gabarito.id)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Excluir
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {gabarito.itens.map((item) => (
+                      <div key={item.id} className="bg-white p-3 rounded-md border">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">Questão {item.numero}</span>
+                          <span className="text-sm bg-primary/10 text-primary px-2 py-1 rounded">
+                            {item.resposta}
+                          </span>
+                        </div>
+                        {item.descritor && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            {item.descritor.codigo} - {item.descritor.descricao}
+                          </p>
+                        )}
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        )}
+        ) : avaliacao ? (
+          <Alert>
+            <AlertDescription>
+              Nenhum gabarito encontrado para esta avaliação.
+            </AlertDescription>
+          </Alert>
+        ) : null}
       </CardContent>
     </Card>
   );

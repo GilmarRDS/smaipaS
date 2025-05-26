@@ -1,9 +1,14 @@
 import { Router, RequestHandler, Response, NextFunction } from 'express';
 import { RequestWithUsuario } from '../types/express';
 import { AvaliacaoController } from '../controllers/AvaliacaoController';
+import { authMiddleware } from '../middlewares/auth';
+import { asyncHandler } from '../utils/asyncHandler';
 
 const avaliacaoRoutes = Router();
 const avaliacaoController = new AvaliacaoController();
+
+// Aplicando o middleware de autenticação em todas as rotas
+avaliacaoRoutes.use(authMiddleware);
 
 function asyncHandler(fn: (req: RequestWithUsuario, res: Response) => Promise<unknown>): RequestHandler {
   return (req, res, next) => {
@@ -22,6 +27,7 @@ avaliacaoRoutes.get('/escola/:escolaId', asyncHandler((req, res) => {
   return avaliacaoController.listarTodas(req, res);
 }));
 avaliacaoRoutes.get('/dados-relatorios', asyncHandler((req, res) => avaliacaoController.obterDadosRelatorios(req, res)));
+avaliacaoRoutes.get('/ano/:ano', asyncHandler((req, res) => avaliacaoController.listarPorAno(req, res)));
 
 // Rota para obter gabarito por avaliacaoId - método a ser criado no controller
 avaliacaoRoutes.get('/gabarito/:avaliacaoId', asyncHandler((req, res) => avaliacaoController.obterGabarito(req, res)));

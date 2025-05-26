@@ -76,7 +76,6 @@ model Avaliacao {
 model Gabarito {
   id              String         @id @default(uuid())
   avaliacaoId     String         @unique
-  turno           Turno
   dataCriacao     DateTime       @default(now())
   dataAtualizacao DateTime       @updatedAt
   avaliacao       Avaliacao      @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)

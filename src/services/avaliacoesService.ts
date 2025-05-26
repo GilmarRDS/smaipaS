@@ -28,8 +28,14 @@ export const avaliacoesService = {
   },
 
   async listarPorAno(ano: string): Promise<Avaliacao[]> {
-    const response = await api.get(`/avaliacoes/ano/${encodeURIComponent(ano)}`);
-    return response.data;
+    try {
+      const anoNumerico = ano.match(/\d+/)?.[0] || ano;
+      const response = await api.get<Avaliacao[]>(`/avaliacoes/ano/${anoNumerico}`);
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao listar avaliações por ano:', error);
+      throw error;
+    }
   },
 
   async obterDadosRelatorios(params: { escolaId?: string; turmaId?: string; componente?: string }) {
