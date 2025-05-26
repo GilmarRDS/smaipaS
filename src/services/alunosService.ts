@@ -105,5 +105,24 @@ export const alunosService = {
       console.error('Erro ao baixar template:', error);
       throw error;
     }
+  },
+
+  async salvarRespostas(params: {
+    alunoId: string;
+    avaliacaoId: string;
+    compareceu: boolean;
+    transferido: boolean;
+    itens: Array<{
+      numero: number;
+      resposta: string;
+    }>;
+  }): Promise<RespostaAluno> {
+    try {
+      const response = await api.post<RespostaAluno>('/respostas', params);
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao salvar respostas:', error);
+      throw error;
+    }
   }
 }; 

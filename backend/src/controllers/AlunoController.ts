@@ -65,7 +65,7 @@ export class AlunoController {
   }
 
   async listarTodos(request: RequestWithUsuario, response: Response) {
-    const { turmaId } = request.query;
+    const { turmaId } = request.params;
     const { escolaId } = request.params;
 
     // Se for um usuário da escola, só pode ver alunos das turmas da própria escola

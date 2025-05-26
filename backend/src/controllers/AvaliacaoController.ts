@@ -128,8 +128,13 @@ export class AvaliacaoController {
     }
 
     // Buscar avaliações pelo ano da turma
+    console.log('Buscando avaliações para o ano da turma:', turma.ano);
+    // Extrair apenas o dígito do ano da turma para a busca
+    const anoNumerico = turma.ano ? turma.ano.replace(/\D/g, '') : '';
+    console.log('Ano numérico para busca:', anoNumerico);
+
     const avaliacoes = await prisma.avaliacao.findMany({
-      where: { ano: turma.ano },
+      where: { ano: anoNumerico },
       include: {
         respostas: {
           include: {
@@ -149,6 +154,7 @@ export class AvaliacaoController {
       },
     });
 
+    console.log('Resultado da busca de avaliações:', avaliacoes);
     return response.json(avaliacoes);
   }
 

@@ -13,6 +13,11 @@ import { toast } from 'sonner';
 import { alunosService } from '../services/alunosService';
 import { avaliacoesService } from '../services/avaliacoesService';
 import { turmasService } from '../services/turmasService';
+import { escolasService } from '../services/escolasService';
+import useAuth from '@/hooks/useAuth';
+import { Escola } from '@/types/escolas';
+import { Turma } from '@/types/turmas';
+import { Avaliacao } from '@/types/avaliacoes';
 
 const alternativas = ['A', 'B', 'C', 'D', 'E'];
 
@@ -26,10 +31,38 @@ const Respostas: React.FC = () => {
   const [respostas, setRespostas] = useState<string[]>(Array(10).fill(''));
   const [ausente, setAusente] = useState(false);
   const [transferido, setTransferido] = useState(false);
+  const [escola, setEscola] = useState('');
 
   const [alunos, setAlunos] = useState([]);
   const [avaliacoes, setAvaliacoes] = useState([]);
   const [turmas, setTurmas] = useState([]);
+  const [escolas, setEscolas] = useState<Escola[]>([]);
+
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user?.role === 'secretaria') {
+      escolasService.listar()
+        .then(data => setEscolas(data))
+        .catch(() => toast.error('Erro ao carregar escolas'));
+    } else if (user?.schoolId) {
+      setEscola(user.schoolId);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const escolaIdParaCarregarTurmas = user?.role === 'secretaria' ? escola : user?.schoolId;
+    if (escolaIdParaCarregarTurmas) {
+      turmasService.listar(escolaIdParaCarregarTurmas)
+        .then(data => { setTurmas(data); })
+        .catch(() => toast.error('Erro ao carregar turmas'));
+    } else {
+      setTurmas([]);
+    }
+    setTurma('');
+    setAvaliacao('');
+    setAluno('');
+  }, [escola, user]);
 
   useEffect(() => {
     if (turma) {
@@ -44,7 +77,7 @@ const Respostas: React.FC = () => {
   useEffect(() => {
     if (turma) {
       avaliacoesService.listarPorTurma(turma)
-        .then(data => setAvaliacoes(data))
+        .then(data => { setAvaliacoes(data); console.log('Avaliações carregadas:', data); })
         .catch(() => toast.error('Erro ao carregar avaliações'));
     } else {
       setAvaliacoes([]);
@@ -81,6 +114,10 @@ const Respostas: React.FC = () => {
   };
 
   const handleRespostaChange = (index: number, value: string) => {
+    if (!['A', 'B', 'C', 'D', 'E'].includes(value)) {
+      toast.error('Resposta inválida. Use apenas A, B, C, D ou E.');
+      return;
+    }
     const newRespostas = [...respostas];
     newRespostas[index] = value;
     setRespostas(newRespostas);
@@ -102,22 +139,51 @@ const Respostas: React.FC = () => {
     }
   };
 
-  const handleSalvarRespostas = () => {
+  const handleSalvarRespostas = async () => {
     if (!turma || !avaliacao || !aluno) {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
 
-    if (!ausente && !transferido && respostas.some(resp => resp === '')) {
-      toast.error('Preencha todas as respostas do aluno ou marque como ausente/transferido');
-      return;
+    if (!ausente && !transferido) {
+      if (respostas.some(resp => !resp)) {
+        toast.error('Preencha todas as respostas do aluno ou marque como ausente/transferido');
+        return;
+      }
+
+      if (respostas.length !== numQuestoes) {
+        toast.error(`O número de respostas (${respostas.length}) não corresponde ao número de questões (${numQuestoes})`);
+        return;
+      }
+
+      const respostasInvalidas = respostas.filter(resp => !['A', 'B', 'C', 'D', 'E'].includes(resp));
+      if (respostasInvalidas.length > 0) {
+        toast.error('Todas as respostas devem ser A, B, C, D ou E');
+        return;
+      }
     }
 
-    toast.success('Respostas cadastradas com sucesso!');
-    setRespostas(Array(numQuestoes).fill(''));
-    setAusente(false);
-    setTransferido(false);
-    setAluno('');
+    try {
+      await alunosService.salvarRespostas({
+        alunoId: aluno,
+        avaliacaoId: avaliacao,
+        compareceu: !ausente,
+        transferido,
+        itens: respostas.map((resposta, index) => ({
+          numero: index + 1,
+          resposta
+        }))
+      });
+      
+      toast.success('Respostas cadastradas com sucesso!');
+      setRespostas(Array(numQuestoes).fill(''));
+      setAusente(false);
+      setTransferido(false);
+      setAluno('');
+    } catch (error) {
+      console.error('Erro ao salvar respostas:', error);
+      toast.error('Erro ao salvar respostas. Tente novamente.');
+    }
   };
 
   return (
@@ -146,6 +212,24 @@ const Respostas: React.FC = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {user?.role === 'secretaria' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="escola-individual">Escola</Label>
+                      <Select value={escola} onValueChange={setEscola}>
+                        <SelectTrigger id="escola-individual">
+                          <SelectValue placeholder="Selecione a escola" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {escolas.map(esc => (
+                            <SelectItem key={esc.id} value={esc.id}>
+                              {esc.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <Label htmlFor="turma-individual">Turma</Label>
                     <Select value={turma} onValueChange={setTurma}>

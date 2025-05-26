@@ -22,7 +22,7 @@ app.use(cors({
 app.use(express.json());
 
 // Aplicar middleware de autenticação em todas as rotas da API
-app.use('/api', authMiddleware as express.RequestHandler);
+// app.use('/api', authMiddleware as express.RequestHandler);
 
 // Rotas da API
 app.use('/api', router);

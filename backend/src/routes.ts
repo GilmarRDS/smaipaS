@@ -10,7 +10,7 @@ import { GabaritoController } from './controllers/GabaritoController';
 // Importar o novo PasswordController
 import { PasswordController } from './controllers/PasswordController';
 import { prisma } from './lib/prisma';
-import { upload } from './server';
+import { upload } from './config/multer';
 
 const router = Router();
 
@@ -55,7 +55,6 @@ router.delete('/turmas/:id', asyncHandler((req: RequestWithUsuario, res: Respons
 // Rotas de alunos
 router.get('/alunos/template', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.downloadTemplate(req, res)));
 router.post('/alunos/importar', upload.single('file'), asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.importarAlunos(req, res)));
-router.get('/turmas/:turmaId/alunos', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.listarTodos(req, res)));
 router.get('/escolas/:escolaId/alunos', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.listarTodos(req, res)));
 router.get('/alunos/:id', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.buscarPorId(req, res)));
 router.post('/alunos', asyncHandler((req: RequestWithUsuario, res: Response) => alunoController.criar(req, res)));

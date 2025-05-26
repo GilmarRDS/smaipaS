@@ -20,8 +20,8 @@ export interface RespostaAluno {
   transferido: boolean;
   nota: number;
   respostas: Array<{
-    questao: number;
-    alternativa: string | null;
+    numero: number;
+    resposta: string;
   }>;
   createdAt: string;
   updatedAt: string;
