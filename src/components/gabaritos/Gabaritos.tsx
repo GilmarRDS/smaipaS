@@ -14,6 +14,8 @@ const Gabaritos: React.FC = () => {
   const [componente, setComponente] = useState('');
   const [ano, setAno] = useState('');
   const [avaliacao, setAvaliacao] = useState('');
+  const [numQuestoes, setNumQuestoes] = useState('');
+  const [gabarito, setGabarito] = useState<string[]>([]);
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -98,6 +100,10 @@ const Gabaritos: React.FC = () => {
             setAno={setAno}
             avaliacao={avaliacao}
             setAvaliacao={setAvaliacao}
+            numQuestoes={numQuestoes}
+            setNumQuestoes={setNumQuestoes}
+            gabarito={gabarito}
+            setGabarito={setGabarito}
           />
         </TabsContent>
       </Tabs>

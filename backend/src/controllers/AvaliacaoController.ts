@@ -1,13 +1,14 @@
-import { Request, Response } from 'express';
+import { Request as ExpressRequest, Response } from 'express';
 import { prisma } from '../lib/prisma';
+import { Prisma } from '@prisma/client';
+import { Disciplina as PrismaDisciplina, TipoAvaliacao as PrismaTipoAvaliacao } from '@prisma/client';
 import { RequestWithUsuario } from '../middlewares/auth';
-import { Disciplina, TipoAvaliacao } from '@prisma/client';
 
 // Definir os tipos manualmente
 type TipoAvaliacao = 'DIAGNOSTICA_INICIAL' | 'DIAGNOSTICA_FINAL';
 type Disciplina = 'PORTUGUES' | 'MATEMATICA';
 
-interface CustomRequest extends Request {
+interface CustomRequest extends ExpressRequest {
   usuario: {
     id: string;
     role: string;
@@ -523,7 +524,7 @@ export class AvaliacaoController {
             descritorId: item.descritor?.id,
           })),
         },
-      },
+      } as unknown as Prisma.GabaritoUncheckedCreateInput,
       update: {
         itens: {
           deleteMany: {},
@@ -546,12 +547,11 @@ export class AvaliacaoController {
     return response.json(gabarito);
   }
 
-  async listarPorAno(request: Request, response: Response) {
+  async listarPorAno(request: CustomRequest, response: Response) {
     try {
-      const req = request as RequestWithUsuario;
       const { ano } = request.params;
 
-      if (!req.usuario) {
+      if (!request.usuario) {
         return response.status(401).json({ error: 'Usuário não autenticado' });
       }
 

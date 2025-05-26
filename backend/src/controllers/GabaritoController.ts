@@ -1,5 +1,6 @@
 import { Request as ExpressRequest, Response } from 'express';
 import { prisma } from '../lib/prisma';
+import { Prisma } from '@prisma/client';
 
 interface CustomRequest extends ExpressRequest {
   usuario: {
@@ -44,7 +45,7 @@ export class GabaritoController {
             descritorId: item.descritorId,
           })),
         },
-      },
+      } as unknown as Prisma.GabaritoUncheckedCreateInput,
       include: {
         itens: {
           include: {

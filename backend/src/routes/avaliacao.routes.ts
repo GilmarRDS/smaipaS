@@ -1,40 +1,29 @@
-import { Router, RequestHandler, Response, NextFunction } from 'express';
-import { RequestWithUsuario } from '../types/express';
+import { Router, RequestHandler } from 'express';
 import { AvaliacaoController } from '../controllers/AvaliacaoController';
 import { authMiddleware } from '../middlewares/auth';
 import { asyncHandler } from '../utils/asyncHandler';
+import { RequestWithUsuario } from '../types/express';
 
 const avaliacaoRoutes = Router();
 const avaliacaoController = new AvaliacaoController();
 
-// Aplicando o middleware de autenticação em todas as rotas
-avaliacaoRoutes.use(authMiddleware);
+// Aplicar middleware de autenticação em todas as rotas
+avaliacaoRoutes.use(authMiddleware as RequestHandler);
 
-function asyncHandler(fn: (req: RequestWithUsuario, res: Response) => Promise<unknown>): RequestHandler {
-  return (req, res, next) => {
-    Promise.resolve(fn(req as RequestWithUsuario, res)).catch(next);
-  };
-}
+// Rotas de avaliação
+avaliacaoRoutes.post('/', asyncHandler((req: RequestWithUsuario, res) => avaliacaoController.criar(req, res)) as RequestHandler);
+avaliacaoRoutes.get('/', asyncHandler((req: RequestWithUsuario, res) => avaliacaoController.listarTodas(req, res)) as RequestHandler);
+avaliacaoRoutes.get('/:id', asyncHandler((req: RequestWithUsuario, res) => avaliacaoController.buscarPorId(req, res)) as RequestHandler);
+avaliacaoRoutes.put('/:id', asyncHandler((req: RequestWithUsuario, res) => avaliacaoController.atualizar(req, res)) as RequestHandler);
+avaliacaoRoutes.delete('/:id', asyncHandler((req: RequestWithUsuario, res) => avaliacaoController.deletar(req, res)) as RequestHandler);
 
-avaliacaoRoutes.post('/', asyncHandler((req, res) => avaliacaoController.criar(req, res)));
-avaliacaoRoutes.get('/', asyncHandler((req, res) => avaliacaoController.listarTodas(req, res)));
+// Rotas específicas
+avaliacaoRoutes.get('/turma/:turmaId', asyncHandler((req: RequestWithUsuario, res) => avaliacaoController.listarPorTurma(req, res)) as RequestHandler);
+avaliacaoRoutes.get('/ano/:ano', asyncHandler((req: RequestWithUsuario, res) => avaliacaoController.listarPorAno(req, res)) as RequestHandler);
+avaliacaoRoutes.get('/relatorios/dados', asyncHandler((req: RequestWithUsuario, res) => avaliacaoController.obterDadosRelatorios(req, res)) as RequestHandler);
 
-// Novas rotas para corrigir erros 404
-avaliacaoRoutes.get('/turma/:turmaId', asyncHandler((req, res) => avaliacaoController.listarPorTurma(req, res)));
-// Corrigir rota para listar avaliações por escola usando listarTodas com filtro escolaId
-avaliacaoRoutes.get('/escola/:escolaId', asyncHandler((req, res) => {
-  req.query.escolaId = req.params.escolaId;
-  return avaliacaoController.listarTodas(req, res);
-}));
-avaliacaoRoutes.get('/dados-relatorios', asyncHandler((req, res) => avaliacaoController.obterDadosRelatorios(req, res)));
-avaliacaoRoutes.get('/ano/:ano', asyncHandler((req, res) => avaliacaoController.listarPorAno(req, res)));
-
-// Rota para obter gabarito por avaliacaoId - método a ser criado no controller
-avaliacaoRoutes.get('/gabarito/:avaliacaoId', asyncHandler((req, res) => avaliacaoController.obterGabarito(req, res)));
-
-// Rotas com parâmetros dinâmicos devem vir por último
-avaliacaoRoutes.get('/:id', asyncHandler((req, res) => avaliacaoController.buscarPorId(req, res)));
-avaliacaoRoutes.put('/:id', asyncHandler((req, res) => avaliacaoController.atualizar(req, res)));
-avaliacaoRoutes.delete('/:id', asyncHandler((req, res) => avaliacaoController.deletar(req, res)));
+// Rotas de gabarito
+avaliacaoRoutes.get('/:id/gabarito', asyncHandler((req: RequestWithUsuario, res) => avaliacaoController.obterGabarito(req, res)) as RequestHandler);
+avaliacaoRoutes.put('/:id/gabarito', asyncHandler((req: RequestWithUsuario, res) => avaliacaoController.atualizarGabarito(req, res)) as RequestHandler);
 
 export { avaliacaoRoutes };

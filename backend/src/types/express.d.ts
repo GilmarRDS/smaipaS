@@ -12,3 +12,11 @@ declare module 'express' {
     files?: Express.Multer.File[] | { [fieldname: string]: Express.Multer.File[] };
   }
 }
+
+export interface RequestWithUsuario extends Request {
+  usuario: {
+    id: string;
+    role: string;
+    escolaId?: string;
+  };
+}
