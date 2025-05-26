@@ -127,6 +127,7 @@ model Descritor {
   descricao       String
   disciplina      Disciplina
   tipo            TipoAvaliacao
+  ano             String         // Ano/série do descritor (ex: "1º ano", "2º ano", etc)
   dataCriacao     DateTime       @default(now())
   dataAtualizacao DateTime       @updatedAt
   itensGabarito   ItemGabarito[]

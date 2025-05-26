@@ -51,7 +51,7 @@ export class DescritorController {
   async criar(request: Request, response: Response) {
     try {
       const req = request as RequestWithUsuario;
-      const { codigo, descricao, disciplina, tipo } = request.body;
+      const { codigo, descricao, disciplina, tipo, ano } = request.body;
 
       if (!req.usuario) {
         return response.status(401).json({ error: 'Usuário não autenticado' });
@@ -63,7 +63,7 @@ export class DescritorController {
       }
 
       // Validação básica dos campos obrigatórios
-      if (!codigo || !descricao || !disciplina || !tipo) {
+      if (!codigo || !descricao || !disciplina || !tipo || !ano) {
         return response.status(400).json({ error: 'Todos os campos são obrigatórios' });
       }
 
@@ -72,7 +72,8 @@ export class DescritorController {
           codigo,
           descricao,
           disciplina,
-          tipo
+          tipo,
+          ano
         }
       });
 
@@ -87,7 +88,7 @@ export class DescritorController {
     try {
       const req = request as RequestWithUsuario;
       const { id } = request.params;
-      const { codigo, descricao, disciplina, tipo } = request.body;
+      const { codigo, descricao, disciplina, tipo, ano } = request.body;
 
       if (!req.usuario) {
         return response.status(401).json({ error: 'Usuário não autenticado' });
@@ -99,7 +100,7 @@ export class DescritorController {
       }
 
       // Validação básica dos campos obrigatórios
-      if (!codigo || !descricao || !disciplina || !tipo) {
+      if (!codigo || !descricao || !disciplina || !tipo || !ano) {
         return response.status(400).json({ error: 'Todos os campos são obrigatórios' });
       }
 
@@ -118,7 +119,8 @@ export class DescritorController {
           codigo,
           descricao,
           disciplina,
-          tipo
+          tipo,
+          ano
         }
       });
 

@@ -19,6 +19,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const userData = JSON.parse(storedUser);
           
           try {
+            api.defaults.headers.common['Authorization'] = `Bearer ${token.trim()}`;
             await api.get('/usuarios/me');
             setUser(userData);
             setIsAuthenticated(true);
@@ -76,6 +77,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('smaipa_token', token);
       localStorage.setItem('smaipa_user', JSON.stringify(userData));
       
+      api.defaults.headers.common['Authorization'] = `Bearer ${token.trim()}`;
+      
       setUser(userData);
       setIsAuthenticated(true);
       toast.success(`Bem-vindo(a), ${userData.name}!`);
@@ -94,6 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAuthenticated(false);
     localStorage.removeItem('smaipa_user');
     localStorage.removeItem('smaipa_token');
+    delete api.defaults.headers.common['Authorization'];
     toast.info('Sessão encerrada');
     console.log('Logout concluído');
   };

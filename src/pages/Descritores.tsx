@@ -6,8 +6,11 @@ import { DescritorForm } from '@/components/descritores/DescritorForm';
 import { descritoresService } from '@/services/descritoresService';
 import { Descritor } from '@/types/descritores';
 import { toast } from 'sonner';
+import useAuth from '@/hooks/useAuth';
+import { Navigate } from 'react-router-dom';
 
 const Descritores: React.FC = () => {
+  const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState('listar');
   const [descritores, setDescritores] = useState<Descritor[]>([]);
   const [editingDescritor, setEditingDescritor] = useState<Descritor | null>(null);
@@ -15,6 +18,8 @@ const Descritores: React.FC = () => {
 
   useEffect(() => {
     const fetchDescritores = async () => {
+      if (!isAuthenticated) return;
+      
       try {
         setIsLoading(true);
         const data = await descritoresService.listarDescritores();
@@ -28,7 +33,11 @@ const Descritores: React.FC = () => {
     };
 
     fetchDescritores();
-  }, []);
+  }, [isAuthenticated]);
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
 
   const handleEdit = (descritor: Descritor) => {
     setEditingDescritor(descritor);
