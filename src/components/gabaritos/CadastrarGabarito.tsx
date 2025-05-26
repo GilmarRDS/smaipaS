@@ -4,82 +4,61 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Save, CheckCircle, AlertCircle } from 'lucide-react';
+import { Save, CheckCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { turmasService } from '@/services/turmasService';
 import { avaliacoesService } from '@/services/avaliacoesService';
 import { gabaritosService } from '@/services/gabaritosService';
-import useAuth from '@/hooks/useAuth';
-import { Turma } from '@/types/turmas';
+import { descritoresService } from '@/services/descritoresService';
 import { Avaliacao } from '@/types/avaliacoes';
-import { Gabarito } from '@/types/gabaritos';
+import { Descritor } from '@/types/gabaritos';
 
 interface CadastrarGabaritoProps {
-  turma: string;
-  setTurma: (value: string) => void;
   componente: string;
   setComponente: (value: string) => void;
+  ano: string;
+  setAno: (value: string) => void;
   avaliacao: string;
   setAvaliacao: (value: string) => void;
   numQuestoes: string;
   setNumQuestoes: (value: string) => void;
   gabarito: string[];
   setGabarito: (value: string[]) => void;
-  turno: 'matutino' | 'vespertino' | 'noturno' | 'integral';
-  setTurno: (value: 'matutino' | 'vespertino' | 'noturno' | 'integral') => void;
+}
+
+interface QuestaoGabarito {
+  resposta: string;
+  descritorId: string;
 }
 
 const alternativas = ['A', 'B', 'C', 'D', 'E'];
+const anos = ['1º ano', '2º ano', '3º ano', '4º ano', '5º ano', '6º ano', '7º ano', '8º ano', '9º ano'];
 
 const CadastrarGabarito: React.FC<CadastrarGabaritoProps> = ({
-  turma,
-  setTurma,
   componente,
   setComponente,
+  ano,
+  setAno,
   avaliacao,
   setAvaliacao,
   numQuestoes,
   setNumQuestoes,
   gabarito,
   setGabarito,
-  turno,
-  setTurno,
 }) => {
-  const { user } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
-  const [turmas, setTurmas] = useState<Turma[]>([]);
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [descritores, setDescritores] = useState<Descritor[]>([]);
+  const [questoes, setQuestoes] = useState<QuestaoGabarito[]>([]);
 
-  // Carregar turmas
-  useEffect(() => {
-    const carregarTurmas = async () => {
-      try {
-        let turmasData: Turma[] = [];
-        if (user?.role === 'secretaria') {
-          toast.error('Selecione uma escola primeiro');
-          return;
-        } else if (user?.role === 'escola' && user.schoolId) {
-          turmasData = await turmasService.listar(user.schoolId);
-        }
-        setTurmas(turmasData);
-      } catch (error) {
-        console.error('Erro ao carregar turmas:', error);
-        toast.error('Erro ao carregar turmas');
-      }
-    };
-    carregarTurmas();
-  }, [user?.role, user?.schoolId]);
-
-  // Carregar avaliações quando a turma for selecionada
+  // Carregar avaliações quando o ano for selecionado
   useEffect(() => {
     const carregarAvaliacoes = async () => {
-      if (!turma) {
+      if (!ano) {
         setAvaliacoes([]);
         return;
       }
       try {
-        const avaliacoesData = await avaliacoesService.listarPorTurma(turma);
+        const avaliacoesData = await avaliacoesService.listarPorAno(ano);
         setAvaliacoes(avaliacoesData);
       } catch (error) {
         console.error('Erro ao carregar avaliações:', error);
@@ -87,31 +66,60 @@ const CadastrarGabarito: React.FC<CadastrarGabaritoProps> = ({
       }
     };
     carregarAvaliacoes();
-  }, [turma]);
+  }, [ano]);
+
+  // Carregar descritores quando o componente for selecionado
+  useEffect(() => {
+    const carregarDescritores = async () => {
+      if (!componente) {
+        setDescritores([]);
+        return;
+      }
+      try {
+        const descritoresData = await descritoresService.listarPorComponente(componente);
+        setDescritores(descritoresData);
+      } catch (error) {
+        console.error('Erro ao carregar descritores:', error);
+        toast.error('Erro ao carregar descritores');
+      }
+    };
+    carregarDescritores();
+  }, [componente]);
 
   const handleNumQuestoesChange = (value: string) => {
     const num = parseInt(value, 10);
     setNumQuestoes(value);
     setGabarito(Array(num).fill(''));
+    setQuestoes(Array(num).fill({ resposta: '', descritorId: '' }));
   };
   
   const handleAlternativaChange = (index: number, value: string) => {
     const newGabarito = [...gabarito];
     newGabarito[index] = value;
     setGabarito(newGabarito);
+
+    const newQuestoes = [...questoes];
+    newQuestoes[index] = { ...newQuestoes[index], resposta: value };
+    setQuestoes(newQuestoes);
+  };
+
+  const handleDescritorChange = (index: number, value: string) => {
+    const newQuestoes = [...questoes];
+    newQuestoes[index] = { ...newQuestoes[index], descritorId: value };
+    setQuestoes(newQuestoes);
   };
   
   const handleSalvarGabarito = async () => {
-    if (!turma || !componente || !avaliacao) {
+    if (!componente || !ano || !avaliacao) {
       toast.error('Preencha todos os campos obrigatórios', {
-        description: 'Turma, componente curricular e avaliação são obrigatórios'
+        description: 'Componente curricular, ano e avaliação são obrigatórios'
       });
       return;
     }
     
-    if (gabarito.some(alt => alt === '')) {
-      toast.error('Preencha todas as alternativas do gabarito', {
-        description: 'Todas as questões precisam ter uma alternativa selecionada'
+    if (questoes.some(q => !q.resposta || !q.descritorId)) {
+      toast.error('Preencha todas as questões do gabarito', {
+        description: 'Todas as questões precisam ter uma alternativa e um descritor selecionados'
       });
       return;
     }
@@ -119,20 +127,20 @@ const CadastrarGabarito: React.FC<CadastrarGabaritoProps> = ({
     setIsSaving(true);
     
     try {
-      const itens = gabarito.map((resposta, index) => ({
+      const itens = questoes.map((questao, index) => ({
         numero: index + 1,
-        resposta,
-        descritorId: '' // TODO: Implementar seleção de descritor
+        resposta: questao.resposta,
+        descritorId: questao.descritorId
       }));
 
       await gabaritosService.criar({
         avaliacaoId: avaliacao,
-        turno,
         itens
       });
       
       toast.success('Gabarito cadastrado com sucesso!');
       setGabarito(Array(parseInt(numQuestoes, 10)).fill(''));
+      setQuestoes(Array(parseInt(numQuestoes, 10)).fill({ resposta: '', descritorId: '' }));
     } catch (error) {
       console.error('Erro ao salvar gabarito:', error);
       toast.error('Erro ao salvar gabarito');
@@ -142,9 +150,9 @@ const CadastrarGabarito: React.FC<CadastrarGabaritoProps> = ({
   };
 
   const getCompletionPercentage = (): number => {
-    if (gabarito.length === 0) return 0;
-    const filled = gabarito.filter(alt => alt !== '').length;
-    return Math.round((filled / gabarito.length) * 100);
+    if (questoes.length === 0) return 0;
+    const filled = questoes.filter(q => q.resposta && q.descritorId).length;
+    return Math.round((filled / questoes.length) * 100);
   };
 
   const completionPercentage = getCompletionPercentage();
@@ -158,21 +166,7 @@ const CadastrarGabarito: React.FC<CadastrarGabaritoProps> = ({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="turma-manual">Turma</Label>
-            <Select value={turma} onValueChange={setTurma}>
-              <SelectTrigger id="turma-manual">
-                <SelectValue placeholder="Selecione a turma" />
-              </SelectTrigger>
-              <SelectContent>
-                {turmas.map(t => (
-                  <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label htmlFor="componente-manual">Componente Curricular</Label>
             <Select value={componente} onValueChange={setComponente}>
@@ -187,16 +181,15 @@ const CadastrarGabarito: React.FC<CadastrarGabaritoProps> = ({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="turno-manual">Turno</Label>
-            <Select value={turno} onValueChange={(value: 'matutino' | 'vespertino' | 'noturno' | 'integral') => setTurno(value)}>
-              <SelectTrigger id="turno-manual">
-                <SelectValue placeholder="Selecione o turno" />
+            <Label htmlFor="ano-manual">Ano</Label>
+            <Select value={ano} onValueChange={setAno}>
+              <SelectTrigger id="ano-manual">
+                <SelectValue placeholder="Selecione o ano" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="matutino">Matutino</SelectItem>
-                <SelectItem value="vespertino">Vespertino</SelectItem>
-                <SelectItem value="noturno">Noturno</SelectItem>
-                <SelectItem value="integral">Integral</SelectItem>
+                {anos.map(ano => (
+                  <SelectItem key={ano} value={ano}>{ano}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -232,7 +225,7 @@ const CadastrarGabarito: React.FC<CadastrarGabaritoProps> = ({
           </div>
         </div>
         
-        {gabarito.length > 0 && (
+        {questoes.length > 0 && (
           <div className="border rounded-md p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-medium">Preencha o gabarito:</h3>
@@ -254,23 +247,48 @@ const CadastrarGabarito: React.FC<CadastrarGabaritoProps> = ({
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-              {gabarito.map((alt, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <span className="font-medium w-8 text-sm">Q{index + 1}:</span>
-                  <Select 
-                    value={alt} 
-                    onValueChange={(value) => handleAlternativaChange(index, value)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="?" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {alternativas.map(letra => (
-                        <SelectItem key={letra} value={letra}>{letra}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            <div className="grid grid-cols-1 gap-4">
+              {questoes.map((questao, index) => (
+                <div key={index} className="flex flex-col gap-2 p-3 border rounded-md">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">Questão {index + 1}</span>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor={`resposta-${index}`} className="text-sm">Resposta:</Label>
+                        <Select 
+                          value={questao.resposta} 
+                          onValueChange={(value) => handleAlternativaChange(index, value)}
+                        >
+                          <SelectTrigger id={`resposta-${index}`} className="w-20">
+                            <SelectValue placeholder="?" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {alternativas.map(letra => (
+                              <SelectItem key={letra} value={letra}>{letra}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor={`descritor-${index}`} className="text-sm">Descritor:</Label>
+                        <Select 
+                          value={questao.descritorId} 
+                          onValueChange={(value) => handleDescritorChange(index, value)}
+                        >
+                          <SelectTrigger id={`descritor-${index}`} className="w-64">
+                            <SelectValue placeholder="Selecione o descritor" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {descritores.map(d => (
+                              <SelectItem key={d.id} value={d.id}>
+                                {d.codigo} - {d.descricao}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -289,7 +307,7 @@ const CadastrarGabarito: React.FC<CadastrarGabaritoProps> = ({
         <Button 
           onClick={handleSalvarGabarito} 
           className="w-full"
-          disabled={!turma || !componente || !avaliacao || gabarito.some(alt => alt === '') || isSaving}
+          disabled={!componente || !ano || !avaliacao || questoes.some(q => !q.resposta || !q.descritorId) || isSaving}
         >
           {isSaving ? (
             <>Salvando...</>

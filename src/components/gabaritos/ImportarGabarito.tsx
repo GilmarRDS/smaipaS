@@ -7,65 +7,44 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { UploadCloud, FileType, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { turmasService } from '@/services/turmasService';
 import { avaliacoesService } from '@/services/avaliacoesService';
-import useAuth from '@/hooks/useAuth';
-import { Turma } from '@/types/turmas';
+import { descritoresService } from '@/services/descritoresService';
 import { Avaliacao } from '@/types/avaliacoes';
+import { Descritor } from '@/types/gabaritos';
 
 interface ImportarGabaritoProps {
-  turma: string;
-  setTurma: (value: string) => void;
   componente: string;
   setComponente: (value: string) => void;
+  ano: string;
+  setAno: (value: string) => void;
   avaliacao: string;
   setAvaliacao: (value: string) => void;
 }
 
+const anos = ['1º ano', '2º ano', '3º ano', '4º ano', '5º ano', '6º ano', '7º ano', '8º ano', '9º ano'];
+
 const ImportarGabarito: React.FC<ImportarGabaritoProps> = ({
-  turma,
-  setTurma,
   componente,
   setComponente,
+  ano,
+  setAno,
   avaliacao,
   setAvaliacao,
 }) => {
-  const { user } = useAuth();
   const [file, setFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [turmas, setTurmas] = useState<Turma[]>([]);
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [descritores, setDescritores] = useState<Descritor[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
-  useEffect(() => {
-    const carregarTurmas = async () => {
-      try {
-        let turmasData: Turma[] = [];
-        if (user?.role === 'secretaria') {
-          toast.error('Selecione uma escola primeiro');
-          return;
-        } else if (user?.role === 'escola' && user.schoolId) {
-          turmasData = await turmasService.listar(user.schoolId);
-        }
-        setTurmas(turmasData);
-      } catch (error) {
-        console.error('Erro ao carregar turmas:', error);
-        toast.error('Erro ao carregar turmas');
-      } finally {
-        setLoading(false);
-      }
-    };
-    carregarTurmas();
-  }, [user?.role, user?.schoolId]);
-
+  // Carregar avaliações quando o ano for selecionado
   useEffect(() => {
     const carregarAvaliacoes = async () => {
-      if (!turma) {
+      if (!ano) {
         setAvaliacoes([]);
         return;
       }
       try {
-        const avaliacoesData = await avaliacoesService.listarPorTurma(turma);
+        const avaliacoesData = await avaliacoesService.listarPorAno(ano);
         setAvaliacoes(avaliacoesData);
       } catch (error) {
         console.error('Erro ao carregar avaliações:', error);
@@ -73,66 +52,73 @@ const ImportarGabarito: React.FC<ImportarGabaritoProps> = ({
       }
     };
     carregarAvaliacoes();
-  }, [turma]);
+  }, [ano]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
-      const validExtensions = ['.xlsx', '.xls', '.csv'];
-      const fileExtension = selectedFile.name.substring(selectedFile.name.lastIndexOf('.')).toLowerCase();
-      
-      if (!validExtensions.includes(fileExtension)) {
-        toast.error('Formato de arquivo inválido', {
-          description: 'Por favor, selecione um arquivo Excel (.xlsx, .xls) ou CSV (.csv)'
-        });
-        e.target.value = '';
+  // Carregar descritores quando o componente for selecionado
+  useEffect(() => {
+    const carregarDescritores = async () => {
+      if (!componente) {
+        setDescritores([]);
         return;
       }
-      
+      try {
+        const descritoresData = await descritoresService.listarPorComponente(componente);
+        setDescritores(descritoresData);
+      } catch (error) {
+        console.error('Erro ao carregar descritores:', error);
+        toast.error('Erro ao carregar descritores');
+      }
+    };
+    carregarDescritores();
+  }, [componente]);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    if (selectedFile) {
+      if (selectedFile.type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' &&
+          selectedFile.type !== 'application/vnd.ms-excel') {
+        toast.error('Formato de arquivo inválido', {
+          description: 'Por favor, selecione um arquivo Excel (.xlsx ou .xls)'
+        });
+        return;
+      }
       setFile(selectedFile);
-      toast.success('Arquivo selecionado com sucesso', {
-        description: `${selectedFile.name} (${(selectedFile.size / 1024).toFixed(2)} KB)`
-      });
     }
   };
-  
-  const handleImportar = () => {
+
+  const handleUpload = async () => {
     if (!file) {
-      toast.error('Selecione um arquivo para importar');
+      toast.error('Nenhum arquivo selecionado');
       return;
     }
-    
-    if (!turma || !componente || !avaliacao) {
+
+    if (!componente || !ano || !avaliacao) {
       toast.error('Preencha todos os campos obrigatórios', {
-        description: 'Turma, componente curricular e avaliação são obrigatórios'
+        description: 'Componente curricular, ano e avaliação são obrigatórios'
       });
       return;
     }
-    
-    // Simulação de importação
+
     setIsUploading(true);
-    
-    const promise = () => new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          success: true,
-          message: 'Gabarito importado com sucesso!'
-        });
-      }, 2000);
-    });
-    
-    toast.promise(promise, {
-      loading: 'Importando gabarito...',
-      success: (data) => {
-        setIsUploading(false);
-        setFile(null);
-        // Reset file input
-        const fileInput = document.getElementById('file-upload') as HTMLInputElement;
-        if (fileInput) fileInput.value = '';
-        return 'Gabarito importado com sucesso!';
-      },
-      error: 'Erro ao importar gabarito',
-    });
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('componente', componente);
+      formData.append('ano', ano);
+      formData.append('avaliacaoId', avaliacao);
+
+      // TODO: Implementar upload do arquivo
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulação de upload
+      
+      toast.success('Gabarito importado com sucesso!');
+      setFile(null);
+    } catch (error) {
+      console.error('Erro ao importar gabarito:', error);
+      toast.error('Erro ao importar gabarito');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -146,20 +132,6 @@ const ImportarGabarito: React.FC<ImportarGabaritoProps> = ({
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="turma-import">Turma</Label>
-            <Select value={turma} onValueChange={setTurma}>
-              <SelectTrigger id="turma-import">
-                <SelectValue placeholder="Selecione a turma" />
-              </SelectTrigger>
-              <SelectContent>
-                {turmas.map(t => (
-                  <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
             <Label htmlFor="componente-import">Componente Curricular</Label>
             <Select value={componente} onValueChange={setComponente}>
               <SelectTrigger id="componente-import">
@@ -168,6 +140,20 @@ const ImportarGabarito: React.FC<ImportarGabaritoProps> = ({
               <SelectContent>
                 <SelectItem value="portugues">Língua Portuguesa</SelectItem>
                 <SelectItem value="matematica">Matemática</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="ano-import">Ano</Label>
+            <Select value={ano} onValueChange={setAno}>
+              <SelectTrigger id="ano-import">
+                <SelectValue placeholder="Selecione o ano" />
+              </SelectTrigger>
+              <SelectContent>
+                {anos.map(ano => (
+                  <SelectItem key={ano} value={ano}>{ano}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -186,55 +172,77 @@ const ImportarGabarito: React.FC<ImportarGabaritoProps> = ({
             </Select>
           </div>
         </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="file-upload">Arquivo do Gabarito (Excel)</Label>
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <Input 
-                id="file-upload" 
-                type="file" 
-                accept=".xlsx,.xls,.csv" 
-                onChange={handleFileChange}
-                className="cursor-pointer"
-              />
+
+        <div className="border-2 border-dashed rounded-lg p-6">
+          <div className="flex flex-col items-center justify-center gap-4">
+            <div className="flex flex-col items-center justify-center gap-2">
+              <UploadCloud className="h-10 w-10 text-muted-foreground" />
+              <div className="text-center">
+                <p className="text-sm font-medium">Arraste e solte seu arquivo aqui</p>
+                <p className="text-xs text-muted-foreground">ou</p>
+              </div>
             </div>
-            <Button 
-              onClick={handleImportar}
-              disabled={!file || !turma || !componente || !avaliacao || isUploading}
-              className="whitespace-nowrap"
-            >
-              {isUploading ? (
-                <>Importando...</>
-              ) : (
-                <>
-                  <UploadCloud className="mr-2 h-4 w-4" />
-                  Importar Gabarito
-                </>
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileChange}
+                className="hidden"
+                id="file-upload"
+              />
+              <Label
+                htmlFor="file-upload"
+                className="cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium"
+              >
+                Selecionar arquivo
+              </Label>
+            </div>
+            {file && (
+              <div className="flex items-center gap-2 text-sm">
+                <FileType className="h-4 w-4" />
+                <span>{file.name}</span>
+              </div>
+            )}
           </div>
-          {file && (
-            <p className="text-sm text-muted-foreground flex items-center">
-              <FileType className="h-4 w-4 mr-1" />
-              Arquivo selecionado: {file.name} ({(file.size / 1024).toFixed(2)} KB)
-            </p>
-          )}
         </div>
-        
-        <Alert variant="default" className="bg-blue-50 text-blue-800 border-blue-200">
-          <AlertCircle className="h-4 w-4 text-blue-800" />
-          <AlertDescription className="text-blue-800">
-            <h3 className="text-sm font-medium mb-2">Instruções para importação:</h3>
-            <ul className="list-disc list-inside text-sm space-y-1">
-              <li>O arquivo deve estar no formato Excel (.xlsx, .xls) ou CSV (.csv)</li>
-              <li>A primeira coluna deve conter o número da questão</li>
-              <li>A segunda coluna deve conter a alternativa correta (A, B, C, D ou E)</li>
-              <li>Caso a questão tenha descritor, inclua na terceira coluna</li>
-              <li>Utilize a planilha modelo disponível para <Button variant="link" className="p-0 h-auto text-blue-600 font-medium">download</Button></li>
-            </ul>
-          </AlertDescription>
-        </Alert>
+
+        {file && (
+          <Alert variant="default" className="bg-blue-50 text-blue-800 border-blue-200">
+            <AlertCircle className="h-4 w-4 text-blue-800" />
+            <AlertDescription className="text-blue-800">
+              <div className="space-y-2">
+                <p>Arquivo selecionado: {file.name}</p>
+                <p className="text-sm">O arquivo deve conter as seguintes colunas:</p>
+                <ul className="list-disc list-inside text-sm space-y-1">
+                  <li>Número da questão</li>
+                  <li>Resposta (A, B, C, D ou E)</li>
+                  <li>Código do descritor</li>
+                </ul>
+                <p className="text-sm mt-2">Descritores disponíveis:</p>
+                <ul className="list-disc list-inside text-sm space-y-1">
+                  {descritores.map(d => (
+                    <li key={d.id}>{d.codigo} - {d.descricao}</li>
+                  ))}
+                </ul>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <Button
+          onClick={handleUpload}
+          className="w-full"
+          disabled={!file || !componente || !ano || !avaliacao || isUploading}
+        >
+          {isUploading ? (
+            <>Importando...</>
+          ) : (
+            <>
+              <UploadCloud className="mr-2 h-4 w-4" />
+              Importar Gabarito
+            </>
+          )}
+        </Button>
       </CardContent>
     </Card>
   );

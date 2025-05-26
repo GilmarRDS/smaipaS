@@ -5,23 +5,33 @@ export interface GabaritoMock {
   questoes: number;
 }
 
+export interface Descritor {
+  id: string;
+  codigo: string;
+  descricao: string;
+}
+
 export interface ItemGabarito {
   id: string;
   numero: number;
   resposta: string;
-  descritorId?: string;
-  descritor?: {
-    id: string;
-    codigo: string;
-    descricao: string;
-  };
+  descritorId: string;
+  descritor: Descritor;
 }
 
 export interface Gabarito {
   id: string;
   avaliacaoId: string;
-  turno: 'matutino' | 'vespertino' | 'noturno' | 'integral';
   itens: ItemGabarito[];
   dataCriacao: string;
   dataAtualizacao: string;
+}
+
+export interface CriarGabaritoParams {
+  avaliacaoId: string;
+  itens: {
+    numero: number;
+    resposta: string;
+    descritorId: string;
+  }[];
 }

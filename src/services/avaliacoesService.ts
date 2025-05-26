@@ -9,7 +9,7 @@ interface ListarTodasParams {
 export const avaliacoesService = {
   async listarPorTurma(turmaId: string): Promise<Avaliacao[]> {
     try {
-      const response = await api.get<Avaliacao[]>(`/api/avaliacoes/turma/${turmaId}`);
+      const response = await api.get<Avaliacao[]>(`/avaliacoes/turma/${turmaId}`);
       return response.data;
     } catch (error) {
       console.error('Erro ao listar avaliações da turma:', error);
@@ -19,7 +19,7 @@ export const avaliacoesService = {
 
   async listarPorEscola(escolaId: string): Promise<Avaliacao[]> {
     try {
-      const response = await api.get<Avaliacao[]>(`/api/escolas/${escolaId}/avaliacoes`);
+      const response = await api.get<Avaliacao[]>(`/avaliacoes/escola/${escolaId}`);
       return response.data;
     } catch (error) {
       console.error('Erro ao listar avaliações da escola:', error);
@@ -27,9 +27,14 @@ export const avaliacoesService = {
     }
   },
 
+  async listarPorAno(ano: string): Promise<Avaliacao[]> {
+    const response = await api.get(`/avaliacoes/ano/${encodeURIComponent(ano)}`);
+    return response.data;
+  },
+
   async obterDadosRelatorios(params: { escolaId?: string; turmaId?: string; componente?: string }) {
     try {
-      const response = await api.get('/api/relatorios/dados', { params });
+      const response = await api.get('/relatorios/dados', { params });
       return response.data;
     } catch (error) {
       console.error('Erro ao obter dados dos relatórios:', error);
@@ -39,7 +44,7 @@ export const avaliacoesService = {
 
   async obterGabarito(avaliacaoId: string) {
     try {
-      const response = await api.get(`/api/avaliacoes/gabarito/${avaliacaoId}`);
+      const response = await api.get(`/avaliacoes/gabarito/${avaliacaoId}`);
       return response.data;
     } catch (error) {
       console.error('Erro ao obter gabarito:', error);
@@ -49,7 +54,7 @@ export const avaliacoesService = {
 
   async criar(avaliacaoData: Omit<Avaliacao, 'id'>): Promise<Avaliacao> {
     try {
-      const response = await api.post<Avaliacao>('/api/avaliacoes', avaliacaoData);
+      const response = await api.post<Avaliacao>('/avaliacoes', avaliacaoData);
       return response.data;
     } catch (error) {
       console.error('Erro ao criar avaliação:', error);
@@ -59,7 +64,7 @@ export const avaliacoesService = {
 
   async atualizar(id: string, avaliacaoData: Omit<Avaliacao, 'id'>): Promise<Avaliacao> {
     try {
-      const response = await api.put<Avaliacao>(`/api/avaliacoes/${id}`, avaliacaoData);
+      const response = await api.put<Avaliacao>(`/avaliacoes/${id}`, avaliacaoData);
       return response.data;
     } catch (error) {
       console.error('Erro ao atualizar avaliação:', error);
@@ -81,7 +86,7 @@ export const avaliacoesService = {
     if (params.ano) queryParams.append('ano', params.ano);
     if (params.disciplina) queryParams.append('disciplina', params.disciplina);
 
-    const response = await api.get(`/api/avaliacoes?${queryParams.toString()}`);
+    const response = await api.get(`/avaliacoes?${queryParams.toString()}`);
     return response.data;
   }
 };

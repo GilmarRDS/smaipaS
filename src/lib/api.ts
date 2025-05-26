@@ -67,6 +67,10 @@ api.interceptors.request.use((config) => {
         console.log('Token adicionado:', token);
       } else {
         console.log('Token não encontrado no localStorage');
+        // Redireciona para o login se não houver token em rotas não públicas
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
       }
     }
   } catch (error) {
