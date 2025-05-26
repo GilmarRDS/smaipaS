@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Checkbox } from '../components/ui/checkbox';
 import { toast } from 'sonner';
+import { AxiosError } from 'axios';
 
 import { alunosService } from '../services/alunosService';
 import { avaliacoesService } from '../services/avaliacoesService';
@@ -18,22 +19,26 @@ import useAuth from '@/hooks/useAuth';
 import { Escola } from '@/types/escolas';
 import { Turma } from '@/types/turmas';
 import { Avaliacao } from '@/types/avaliacoes';
+import { Aluno, RespostaAluno } from '@/types/alunos';
 
 const alternativas = ['A', 'B', 'C', 'D', 'E'];
+
+interface AlunoComRespostas extends Aluno {
+  numero: number;
+  respostas: string[];
+  ausente: boolean;
+  transferido: boolean;
+}
 
 const Respostas: React.FC = () => {
   const [activeTab, setActiveTab] = useState('individual');
   const [file, setFile] = useState<File | null>(null);
   const [turma, setTurma] = useState('');
   const [avaliacao, setAvaliacao] = useState('');
-  const [aluno, setAluno] = useState('');
   const [numQuestoes, setNumQuestoes] = useState(10);
-  const [respostas, setRespostas] = useState<string[]>(Array(10).fill(''));
-  const [ausente, setAusente] = useState(false);
-  const [transferido, setTransferido] = useState(false);
   const [escola, setEscola] = useState('');
 
-  const [alunos, setAlunos] = useState([]);
+  const [alunos, setAlunos] = useState<AlunoComRespostas[]>([]);
   const [avaliacoes, setAvaliacoes] = useState([]);
   const [turmas, setTurmas] = useState([]);
   const [escolas, setEscolas] = useState<Escola[]>([]);
@@ -61,18 +66,25 @@ const Respostas: React.FC = () => {
     }
     setTurma('');
     setAvaliacao('');
-    setAluno('');
   }, [escola, user]);
 
   useEffect(() => {
     if (turma) {
       alunosService.listarPorTurma(turma)
-        .then(data => setAlunos(data))
+        .then(data => {
+          const alunosComRespostas = data.map((aluno: Aluno) => ({
+            ...aluno,
+            respostas: Array(numQuestoes).fill(''),
+            ausente: false,
+            transferido: false,
+          }));
+          setAlunos(alunosComRespostas);
+        })
         .catch(() => toast.error('Erro ao carregar alunos'));
     } else {
       setAlunos([]);
     }
-  }, [turma]);
+  }, [turma, numQuestoes]);
 
   useEffect(() => {
     if (turma) {
@@ -106,84 +118,164 @@ const Respostas: React.FC = () => {
     setFile(null);
   };
 
-  const handleAlunoChange = (value: string) => {
-    setAluno(value);
-    setAusente(false);
-    setTransferido(false);
-    setRespostas(Array(numQuestoes).fill(''));
-  };
-
-  const handleRespostaChange = (index: number, value: string) => {
+  const handleRespostaChange = (alunoId: string, questaoIndex: number, value: string) => {
     if (!['A', 'B', 'C', 'D', 'E'].includes(value)) {
       toast.error('Resposta inválida. Use apenas A, B, C, D ou E.');
       return;
     }
-    const newRespostas = [...respostas];
-    newRespostas[index] = value;
-    setRespostas(newRespostas);
+    setAlunos(prevAlunos =>
+      prevAlunos.map(aluno =>
+        aluno.id === alunoId
+          ? { ...aluno, respostas: aluno.respostas.map((resp, i) => (i === questaoIndex ? value : resp)) }
+          : aluno
+      )
+    );
   };
 
-  const handleAusenteChange = (checked: boolean) => {
-    setAusente(checked);
-    if (checked) {
-      setTransferido(false);
-      setRespostas(Array(numQuestoes).fill(''));
-    }
+  const handleAusenteChange = (alunoId: string, checked: boolean) => {
+    setAlunos(prevAlunos =>
+      prevAlunos.map(aluno =>
+        aluno.id === alunoId
+          ? { ...aluno, ausente: checked, transferido: checked ? false : aluno.transferido, respostas: checked ? Array(numQuestoes).fill('') : aluno.respostas }
+          : aluno
+      )
+    );
   };
 
-  const handleTransferidoChange = (checked: boolean) => {
-    setTransferido(checked);
-    if (checked) {
-      setAusente(false);
-      setRespostas(Array(numQuestoes).fill(''));
-    }
+  const handleTransferidoChange = (alunoId: string, checked: boolean) => {
+    setAlunos(prevAlunos =>
+      prevAlunos.map(aluno =>
+        aluno.id === alunoId
+          ? { ...aluno, transferido: checked, ausente: checked ? false : aluno.ausente, respostas: checked ? Array(numQuestoes).fill('') : aluno.respostas }
+          : aluno
+      )
+    );
   };
 
-  const handleSalvarRespostas = async () => {
-    if (!turma || !avaliacao || !aluno) {
-      toast.error('Preencha todos os campos obrigatórios');
+  const handleSalvarRespostaAluno = async (aluno: AlunoComRespostas) => {
+    if (!turma || !avaliacao) {
+      toast.error('Selecione a Turma e a Avaliação antes de salvar.');
       return;
     }
 
-    if (!ausente && !transferido) {
-      if (respostas.some(resp => !resp)) {
-        toast.error('Preencha todas as respostas do aluno ou marque como ausente/transferido');
+    if (!aluno.ausente && !aluno.transferido) {
+      if (aluno.respostas.some(resp => !resp)) {
+        toast.error(`Preencha todas as respostas para o aluno ${aluno.numero} - ${aluno.nome} ou marque como ausente/transferido.`);
         return;
       }
 
-      if (respostas.length !== numQuestoes) {
-        toast.error(`O número de respostas (${respostas.length}) não corresponde ao número de questões (${numQuestoes})`);
+      if (aluno.respostas.length !== numQuestoes) {
+        toast.error(`O número de respostas (${aluno.respostas.length}) não corresponde ao número de questões (${numQuestoes}) para o aluno ${aluno.numero} - ${aluno.nome}.`);
         return;
       }
 
-      const respostasInvalidas = respostas.filter(resp => !['A', 'B', 'C', 'D', 'E'].includes(resp));
+      const respostasInvalidas = aluno.respostas.filter(resp => !['A', 'B', 'C', 'D', 'E'].includes(resp));
       if (respostasInvalidas.length > 0) {
-        toast.error('Todas as respostas devem ser A, B, C, D ou E');
+        toast.error(`Todas as respostas devem ser A, B, C, D ou E para o aluno ${aluno.numero} - ${aluno.nome}.`);
         return;
       }
     }
 
     try {
+      console.log(`Salvando respostas para o aluno ${aluno.numero} - ${aluno.nome}`);
       await alunosService.salvarRespostas({
-        alunoId: aluno,
+        alunoId: aluno.id,
         avaliacaoId: avaliacao,
-        compareceu: !ausente,
-        transferido,
-        itens: respostas.map((resposta, index) => ({
-          numero: index + 1,
-          resposta
-        }))
+        compareceu: !aluno.ausente,
+        transferido: aluno.transferido,
+        itens: (!aluno.ausente && !aluno.transferido)
+          ? aluno.respostas.map((resposta, index) => ({
+              numero: index + 1,
+              resposta
+            }))
+          : [],
       });
-      
-      toast.success('Respostas cadastradas com sucesso!');
-      setRespostas(Array(numQuestoes).fill(''));
-      setAusente(false);
-      setTransferido(false);
-      setAluno('');
+      toast.success(`Respostas salvas com sucesso para o aluno ${aluno.numero} - ${aluno.nome}.`);
+      console.log(`Respostas salvas com sucesso para o aluno ${aluno.numero} - ${aluno.nome}`);
     } catch (error) {
-      console.error('Erro ao salvar respostas:', error);
-      toast.error('Erro ao salvar respostas. Tente novamente.');
+      if (error instanceof AxiosError) {
+        const errorMessage = error.response?.data?.error || error.message;
+        console.error(`Erro ao salvar respostas para o aluno ${aluno.numero} - ${aluno.nome}:`, errorMessage);
+        toast.error(`Erro ao salvar respostas para o aluno ${aluno.numero} - ${aluno.nome}: ${errorMessage}`);
+      } else {
+        console.error(`Erro desconhecido ao salvar respostas para o aluno ${aluno.numero} - ${aluno.nome}:`, error);
+        toast.error(`Erro ao salvar respostas para o aluno ${aluno.numero} - ${aluno.nome}.`);
+      }
     }
+  };
+
+  const renderAlunosRespostas = () => {
+    if (!turma || !avaliacao || alunos.length === 0) {
+      return <p>Selecione uma turma e avaliação para visualizar os alunos e registrar respostas.</p>;
+    }
+
+    return (
+      <div className="space-y-6">
+        {alunos.map(aluno => (
+          <Card key={aluno.id} className="border p-4">
+             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center space-x-2">
+                <span className="font-semibold">{aluno.numero} - {aluno.nome}</span>
+              </div>
+              <div className="flex items-center space-x-6">
+                 <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`ausente-${aluno.id}`}
+                      checked={aluno.ausente}
+                      onCheckedChange={(checked: boolean) => handleAusenteChange(aluno.id, checked)}
+                      disabled={aluno.transferido}
+                    />
+                    <Label htmlFor={`ausente-${aluno.id}`} className="cursor-pointer">Aluno ausente</Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`transferido-${aluno.id}`}
+                      checked={aluno.transferido}
+                      onCheckedChange={(checked: boolean) => handleTransferidoChange(aluno.id, checked)}
+                      disabled={aluno.ausente}
+                    />
+                    <Label htmlFor={`transferido-${aluno.id}`} className="cursor-pointer">Aluno transferido</Label>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => handleSalvarRespostaAluno(aluno)}
+                    disabled={aluno.ausente || aluno.transferido ? false : aluno.respostas.some(resp => !resp)}
+                  >
+                     Salvar
+                  </Button>
+              </div>
+            </div>
+
+            {!aluno.ausente && !aluno.transferido && (
+              <div className="mt-4 border rounded-md p-4">
+                <h4 className="text-sm font-medium mb-4">Respostas:</h4>
+                <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-10 gap-2">
+                  {Array.from({ length: numQuestoes }).map((_, questaoIndex) => (
+                    <div key={questaoIndex} className="flex items-center space-x-1">
+                      <span className="font-medium text-sm">Q{questaoIndex + 1}:</span>
+                      <Select
+                        value={aluno.respostas[questaoIndex] || ''}
+                        onValueChange={(value) => handleRespostaChange(aluno.id, questaoIndex, value)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="?" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {alternativas.map(letra => (
+                            <SelectItem key={letra} value={letra}>{letra}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </Card>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -259,84 +351,10 @@ const Respostas: React.FC = () => {
                       </SelectContent>
                     </Select>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="aluno-individual">Aluno</Label>
-                    <Select
-                      value={aluno}
-                      onValueChange={handleAlunoChange}
-                      disabled={!turma || !avaliacao}
-                    >
-                      <SelectTrigger id="aluno-individual">
-                        <SelectValue placeholder="Selecione o aluno" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {alunos.map(al => (
-                          <SelectItem key={al.id} value={al.id}>
-                            {al.numero} - {al.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
 
-                {turma && avaliacao && aluno && (
-                  <>
-                    <div className="flex items-center space-x-6 pt-2">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="ausente"
-                          checked={ausente}
-                          onCheckedChange={handleAusenteChange}
-                          disabled={transferido}
-                        />
-                        <Label htmlFor="ausente" className="cursor-pointer">Aluno ausente</Label>
-                      </div>
+                {renderAlunosRespostas()}
 
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="transferido"
-                          checked={transferido}
-                          onCheckedChange={handleTransferidoChange}
-                          disabled={ausente}
-                        />
-                        <Label htmlFor="transferido" className="cursor-pointer">Aluno transferido</Label>
-                      </div>
-                    </div>
-
-                    {!ausente && !transferido && (
-                      <div className="border rounded-md p-4">
-                        <h3 className="text-sm font-medium mb-4">Respostas do aluno:</h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-                          {respostas.map((resp, index) => (
-                            <div key={index} className="flex items-center space-x-2">
-                              <span className="font-medium w-8">Q{index + 1}:</span>
-                              <Select value={resp} onValueChange={(value) => handleRespostaChange(index, value)}>
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="?" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {alternativas.map(letra => (
-                                    <SelectItem key={letra} value={letra}>{letra}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <Button
-                      onClick={handleSalvarRespostas}
-                      className="w-full"
-                      disabled={!turma || !avaliacao || !aluno || (!ausente && !transferido && respostas.some(resp => resp === ''))}
-                    >
-                      Salvar Respostas
-                    </Button>
-                  </>
-                )}
               </CardContent>
             </Card>
           </TabsContent>

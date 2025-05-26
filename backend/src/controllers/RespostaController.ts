@@ -11,6 +11,8 @@ export class RespostaController {
   async criar(request: Request, response: Response) {
     const { alunoId, avaliacaoId, compareceu, transferido, itens } = request.body;
 
+    console.log('Debugging Save: Received alunoId:', alunoId, 'and avaliacaoId:', avaliacaoId);
+
     // Verificar se o aluno existe
     const aluno = await prisma.aluno.findUnique({
       where: { id: alunoId },
@@ -28,6 +30,8 @@ export class RespostaController {
       },
     });
 
+    console.log('Resultado da busca por aluno:', aluno ? 'Encontrado - ID: ' + aluno.id : 'Não encontrado');
+
     if (!aluno) {
       return response.status(400).json({ error: 'Aluno não encontrado' });
     }
@@ -35,21 +39,21 @@ export class RespostaController {
     // Verificar se a avaliação existe
     const avaliacao = await prisma.avaliacao.findUnique({
       where: { id: avaliacaoId },
-      include: {
-        escola: {
-          select: {
-            id: true,
-          },
-        },
+      select: {
+        id: true,
+        nome: true,
+        escolaId: true,
       },
     });
+
+    console.log('Resultado da busca por avaliação:', avaliacao ? 'Encontrada - ID: ' + avaliacao.id : 'Não encontrada');
 
     if (!avaliacao) {
       return response.status(400).json({ error: 'Avaliação não encontrada' });
     }
 
     // Se for um usuário da escola, só pode criar respostas para avaliações da própria escola
-    if (request.usuario.role === 'escola' && avaliacao.escola.id !== request.usuario.escolaId) {
+    if (request.usuario.role === 'escola' && avaliacao.escolaId !== request.usuario.escolaId) {
       return response.status(403).json({ error: 'Acesso negado' });
     }
 
@@ -142,6 +146,13 @@ export class RespostaController {
                   ano: true,
                 },
               },
+            },
+          },
+          avaliacao: {
+            select: {
+              id: true,
+              nome: true,
+              escolaId: true,
             },
           },
           itens: true,
