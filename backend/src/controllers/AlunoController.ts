@@ -12,7 +12,7 @@ interface AlunoRow {
   nome?: string;
   Nome?: string;
   matricula?: string;
-  dataNascimento?: string | null | undefined;
+  dataNascimento?: string | Date | null | undefined;
 }
 
 export class AlunoController {
@@ -376,7 +376,11 @@ export class AlunoController {
 
     try {
       console.log('Tentando ler o arquivo:', request.file.path);
-      const workbook = XLSX.readFile(request.file.path);
+      const workbook = XLSX.readFile(request.file.path, {
+        cellDates: true, // Força a leitura de células como datas
+        cellNF: false, // Não formata números
+        cellText: false // Não converte para texto
+      });
       console.log('Arquivo lido com sucesso');
       
       const sheetName = workbook.SheetNames[0];
@@ -385,14 +389,15 @@ export class AlunoController {
       const worksheet = workbook.Sheets[sheetName];
       console.log('Conteúdo bruto da planilha:', JSON.stringify(worksheet, null, 2));
       
-      // Configurar opções de leitura para aceitar datas
+      // Configurar opções de leitura
       const data = XLSX.utils.sheet_to_json<AlunoRow>(worksheet, {
-        raw: true, // Mantém os tipos originais (incluindo datas)
+        raw: true, // Mantém os tipos originais
         defval: null, // Valor padrão para células vazias
         header: ['nome', 'matricula', 'dataNascimento'], // Força os nomes das colunas
-        range: 1 // Pula a primeira linha (cabeçalho)
+        range: 1, // Pula a primeira linha (cabeçalho)
+        dateNF: 'dd/mm/yyyy' // Formato de data esperado
       });
-      console.log('Dados lidos da planilha:', JSON.stringify(data, null, 2));
+      console.log('Dados lidos da planilha (raw):', JSON.stringify(data, null, 2));
 
       if (data.length === 0) {
         throw new Error('O arquivo está vazio ou não contém dados válidos');
@@ -400,6 +405,13 @@ export class AlunoController {
 
       // Validar se todos os dados necessários estão presentes
       data.forEach((row, index) => {
+        console.log(`\nValidando linha ${index + 2}:`, {
+          nome: row.nome,
+          matricula: row.matricula,
+          dataNascimento: row.dataNascimento,
+          tipoDataNascimento: row.dataNascimento ? typeof row.dataNascimento : 'undefined'
+        });
+
         if (!row.nome) {
           throw new Error(`Linha ${index + 2}: Nome é obrigatório`);
         }
@@ -410,7 +422,13 @@ export class AlunoController {
 
       const alunos = await Promise.all(
         data.map(async (row, index) => {
-          console.log(`\nProcessando linha ${index + 2}:`, JSON.stringify(row, null, 2));
+          console.log(`\nProcessando linha ${index + 2}:`, {
+            nome: row.nome,
+            matricula: row.matricula,
+            dataNascimento: row.dataNascimento,
+            tipoDataNascimento: row.dataNascimento ? typeof row.dataNascimento : 'undefined'
+          });
+
           const matricula = row.matricula || uuidv4().slice(0, 8);
           
           // Tratamento da data de nascimento
@@ -419,19 +437,28 @@ export class AlunoController {
             // Se já for uma data, usa diretamente
             if (row.dataNascimento instanceof Date) {
               dataNascimento = row.dataNascimento;
+              console.log(`Data já é um objeto Date:`, dataNascimento);
             } else {
               // Se for string, tenta converter
               const dataStr = String(row.dataNascimento).trim();
-              console.log(`Data original (linha ${index + 2}):`, dataStr, 'Tipo:', typeof dataStr);
+              console.log(`Tentando converter string para data:`, dataStr);
               
-              // Tenta converter a data
-              const dataConvertida = new Date(dataStr);
-              if (isNaN(dataConvertida.getTime())) {
-                throw new Error(`Linha ${index + 2}: Data de nascimento inválida para o aluno ${row.nome}. Use uma data válida`);
+              // Tenta converter a data usando o formato brasileiro
+              const [dia, mes, ano] = dataStr.split('/').map(Number);
+              if (dia && mes && ano) {
+                dataNascimento = new Date(ano, mes - 1, dia);
+                console.log(`Data convertida do formato brasileiro:`, dataNascimento);
+              } else {
+                // Se não conseguir no formato brasileiro, tenta o formato padrão
+                dataNascimento = new Date(dataStr);
+                console.log(`Data convertida do formato padrão:`, dataNascimento);
               }
-              dataNascimento = dataConvertida;
+              
+              if (isNaN(dataNascimento.getTime())) {
+                throw new Error(`Linha ${index + 2}: Data de nascimento inválida para o aluno ${row.nome}. Use uma data válida no formato DD/MM/AAAA`);
+              }
             }
-            console.log(`Data processada (linha ${index + 2}):`, dataNascimento);
+            console.log(`Data final processada:`, dataNascimento);
           }
 
           const nome = row.nome;
@@ -441,20 +468,16 @@ export class AlunoController {
             throw new Error(`Linha ${index + 2}: Nome é obrigatório`);
           }
 
-          console.log(`Dados finais para criação (linha ${index + 2}):`, {
-            nome,
+          const dadosFinais = {
+            nome: nome,
             matricula,
             dataNascimento,
-            turmaId
-          });
+            turmaId,
+          };
+          console.log(`Dados finais para criação (linha ${index + 2}):`, dadosFinais);
 
           return prisma.aluno.create({
-            data: {
-              nome: nome,
-              matricula,
-              dataNascimento,
-              turmaId,
-            },
+            data: dadosFinais,
           });
         })
       );
