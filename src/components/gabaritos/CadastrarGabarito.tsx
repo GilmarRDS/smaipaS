@@ -25,8 +25,8 @@ interface CadastrarGabaritoProps {
   setNumQuestoes: (value: string) => void;
   gabarito: string[];
   setGabarito: (value: string[]) => void;
-  turno: string;
-  setTurno: (value: string) => void;
+  turno: 'matutino' | 'vespertino' | 'noturno' | 'integral';
+  setTurno: (value: 'matutino' | 'vespertino' | 'noturno' | 'integral') => void;
 }
 
 const alternativas = ['A', 'B', 'C', 'D', 'E'];

@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import api from '@/lib/api';
 import { User } from '@/types/auth';
 import { AuthContext } from './AuthContext';
+import { AxiosError } from 'axios';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -56,6 +57,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return userData;
     } catch (error) {
       console.error('Login error:', error);
+      
+      if (error instanceof AxiosError) {
+        const errorMessage = error.response?.data?.message || error.response?.data?.error;
+        
+        if (error.response?.status === 401) {
+          toast.error('Credenciais inválidas', {
+            description: errorMessage || 'Email ou senha incorretos. Por favor, verifique suas credenciais e tente novamente.'
+          });
+        } else if (error.response?.status === 404) {
+          toast.error('Usuário não encontrado', {
+            description: errorMessage || 'Não foi encontrado um usuário com este email.'
+          });
+        } else {
+          toast.error('Erro ao fazer login', {
+            description: errorMessage || 'Ocorreu um erro ao tentar fazer login. Por favor, tente novamente mais tarde.'
+          });
+        }
+      } else {
+        toast.error('Erro ao fazer login', {
+          description: 'Ocorreu um erro ao tentar fazer login. Por favor, tente novamente mais tarde.'
+        });
+      }
+      
       throw error;
     }
   };
