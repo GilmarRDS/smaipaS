@@ -20,21 +20,21 @@ export const gabaritosService = {
   },
 
   async listarTodos(): Promise<Gabarito[]> {
-    const response = await api.get('/api/gabaritos');
+    const response = await api.get('/gabaritos');
     return response.data;
   },
 
   async buscarPorId(id: string): Promise<Gabarito> {
-    const response = await api.get(`/api/gabaritos/${id}`);
+    const response = await api.get(`/gabaritos/${id}`);
     return response.data;
   },
 
   async atualizar(id: string, params: Partial<CriarGabaritoParams>): Promise<Gabarito> {
-    const response = await api.put(`/api/gabaritos/${id}`, params);
+    const response = await api.put(`/gabaritos/${id}`, params);
     return response.data;
   },
 
   async deletar(id: string): Promise<void> {
-    await api.delete(`/api/gabaritos/${id}`);
+    await api.delete(`/gabaritos/${id}`);
   }
 };

@@ -69,7 +69,7 @@ export const avaliacoesService = {
 
   async deletar(id: string): Promise<void> {
     try {
-      await api.delete(`/api/avaliacoes/${id}`);
+      await api.delete(`/avaliacoes/${id}`);
     } catch (error) {
       console.error('Erro ao deletar avaliação:', error);
       throw error;
