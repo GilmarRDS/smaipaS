@@ -35,6 +35,7 @@ export const RespostaCard: React.FC<RespostaCardProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [respostas, setRespostas] = useState<string[]>(aluno.respostas);
   const [isSaving, setIsSaving] = useState(false);
+  const [statusChanged, setStatusChanged] = useState(false);
 
   // Verifica se o aluno já tem respostas registradas
   const temRespostasRegistradas = aluno.respostas.some(resposta => resposta !== '');
@@ -48,6 +49,7 @@ export const RespostaCard: React.FC<RespostaCardProps> = ({
       }
     });
     setRespostas(novasRespostas);
+    setStatusChanged(false);
   }, [aluno.respostas, numQuestoes]);
 
   const handleRespostaChange = (questaoIndex: number, value: string) => {
@@ -63,6 +65,7 @@ export const RespostaCard: React.FC<RespostaCardProps> = ({
       if (temRespostasRegistradas) {
         setIsEditing(false);
       }
+      setStatusChanged(false);
     } catch (error) {
       console.error('Erro ao salvar respostas:', error);
     } finally {
@@ -79,6 +82,17 @@ export const RespostaCard: React.FC<RespostaCardProps> = ({
     });
     setRespostas(novasRespostas);
     setIsEditing(false);
+    setStatusChanged(false);
+  };
+
+  const handleAusenteChange = (checked: boolean) => {
+    onAusenteChange(aluno.id, checked);
+    setStatusChanged(true);
+  };
+
+  const handleTransferidoChange = (checked: boolean) => {
+    onTransferidoChange(aluno.id, checked);
+    setStatusChanged(true);
   };
 
   // Função para determinar a cor da resposta
@@ -100,7 +114,7 @@ export const RespostaCard: React.FC<RespostaCardProps> = ({
             <Checkbox
               id={`ausente-${aluno.id}`}
               checked={aluno.ausente}
-              onCheckedChange={(checked: boolean) => onAusenteChange(aluno.id, checked)}
+              onCheckedChange={handleAusenteChange}
               disabled={aluno.transferido}
             />
             <Label htmlFor={`ausente-${aluno.id}`} className="cursor-pointer">Aluno ausente</Label>
@@ -110,58 +124,68 @@ export const RespostaCard: React.FC<RespostaCardProps> = ({
             <Checkbox
               id={`transferido-${aluno.id}`}
               checked={aluno.transferido}
-              onCheckedChange={(checked: boolean) => onTransferidoChange(aluno.id, checked)}
+              onCheckedChange={handleTransferidoChange}
               disabled={aluno.ausente}
             />
             <Label htmlFor={`transferido-${aluno.id}`} className="cursor-pointer">Aluno transferido</Label>
           </div>
 
-          {!aluno.ausente && !aluno.transferido && (
-            temRespostasRegistradas ? (
-              !isEditing ? (
+          {statusChanged && (
+            <Button
+              size="sm"
+              onClick={handleSave}
+              className="flex items-center gap-2"
+              disabled={isSaving}
+            >
+              <Check className="h-4 w-4" />
+              Salvar Status
+            </Button>
+          )}
+
+          {temRespostasRegistradas ? (
+            !isEditing ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditing(true)}
+                className="flex items-center gap-2"
+              >
+                <Pencil className="h-4 w-4" />
+                Editar Respostas
+              </Button>
+            ) : (
+              <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setIsEditing(true)}
+                  onClick={handleCancel}
                   className="flex items-center gap-2"
+                  disabled={isSaving}
                 >
-                  <Pencil className="h-4 w-4" />
-                  Editar Respostas
+                  <X className="h-4 w-4" />
+                  Cancelar
                 </Button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCancel}
-                    className="flex items-center gap-2"
-                    disabled={isSaving}
-                  >
-                    <X className="h-4 w-4" />
-                    Cancelar
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleSave}
-                    className="flex items-center gap-2"
-                    disabled={isSaving}
-                  >
-                    <Check className="h-4 w-4" />
-                    Salvar Todas
-                  </Button>
-                </div>
-              )
-            ) : (
-              <Button
-                size="sm"
-                onClick={handleSave}
-                className="flex items-center gap-2"
-                disabled={isSaving}
-              >
-                <Check className="h-4 w-4" />
-                Salvar Respostas
-              </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                  className="flex items-center gap-2"
+                  disabled={isSaving}
+                >
+                  <Check className="h-4 w-4" />
+                  Salvar Todas
+                </Button>
+              </div>
             )
+          ) : (
+            <Button
+              size="sm"
+              onClick={handleSave}
+              className="flex items-center gap-2"
+              disabled={isSaving}
+            >
+              <Check className="h-4 w-4" />
+              Salvar Respostas
+            </Button>
           )}
         </div>
       </div>
