@@ -16,13 +16,12 @@ export interface RespostaAluno {
   id: string;
   alunoId: string;
   avaliacaoId: string;
-  presente: boolean;
+  compareceu: boolean;
   transferido: boolean;
-  nota: number;
-  respostas: Array<{
+  itens: {
     numero: number;
     resposta: string;
-  }>;
+  }[];
   createdAt: string;
   updatedAt: string;
   aluno?: Aluno;

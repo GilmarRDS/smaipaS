@@ -20,6 +20,7 @@ import { Escola } from '@/types/escolas';
 import { Turma } from '@/types/turmas';
 import { Avaliacao } from '@/types/avaliacoes';
 import { Aluno, RespostaAluno } from '@/types/alunos';
+import { RespostaCard } from '@/components/respostas/RespostaCard';
 
 const alternativas = ['A', 'B', 'C', 'D', 'E'];
 
@@ -71,12 +72,41 @@ const Respostas: React.FC = () => {
   useEffect(() => {
     if (turma) {
       alunosService.listarPorTurma(turma)
-        .then(data => {
-          const alunosComRespostas = data.map((aluno: Aluno) => ({
-            ...aluno,
-            respostas: Array(numQuestoes).fill(''),
-            ausente: false,
-            transferido: false,
+        .then(async data => {
+          const alunosComRespostas = await Promise.all(data.map(async (aluno: Aluno) => {
+            let respostas = Array(numQuestoes).fill('');
+            let ausente = false;
+            let transferido = false;
+            
+            // Se tiver avaliação selecionada, busca as respostas existentes
+            if (avaliacao) {
+              try {
+                const respostaAluno = await alunosService.obterRespostas(aluno.id, avaliacao);
+                if (respostaAluno) {
+                  ausente = !respostaAluno.compareceu && !respostaAluno.transferido;
+                  transferido = respostaAluno.transferido;
+                  if (respostaAluno.itens && respostaAluno.itens.length > 0) {
+                    // Garante que o array de respostas tenha o tamanho correto
+                    const novasRespostas = Array(numQuestoes).fill('');
+                    respostaAluno.itens.forEach(item => {
+                      if (item.numero <= numQuestoes) {
+                        novasRespostas[item.numero - 1] = item.resposta;
+                      }
+                    });
+                    respostas = novasRespostas;
+                  }
+                }
+              } catch (error) {
+                console.error(`Erro ao carregar respostas do aluno ${aluno.nome}:`, error);
+              }
+            }
+
+            return {
+              ...aluno,
+              respostas,
+              ausente,
+              transferido,
+            };
           }));
           setAlunos(alunosComRespostas);
         })
@@ -84,7 +114,7 @@ const Respostas: React.FC = () => {
     } else {
       setAlunos([]);
     }
-  }, [turma, numQuestoes]);
+  }, [turma, numQuestoes, avaliacao]);
 
   useEffect(() => {
     if (turma) {
@@ -212,67 +242,39 @@ const Respostas: React.FC = () => {
     return (
       <div className="space-y-6">
         {alunos.map(aluno => (
-          <Card key={aluno.id} className="border p-4">
-             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex items-center space-x-2">
-                <span className="font-semibold">{aluno.numero} - {aluno.nome}</span>
-              </div>
-              <div className="flex items-center space-x-6">
-                 <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`ausente-${aluno.id}`}
-                      checked={aluno.ausente}
-                      onCheckedChange={(checked: boolean) => handleAusenteChange(aluno.id, checked)}
-                      disabled={aluno.transferido}
-                    />
-                    <Label htmlFor={`ausente-${aluno.id}`} className="cursor-pointer">Aluno ausente</Label>
-                  </div>
+          <RespostaCard
+            key={aluno.id}
+            aluno={aluno}
+            numQuestoes={numQuestoes}
+            onSave={async (alunoId, respostas, ausente, transferido) => {
+              const alunoToSave = alunos.find(a => a.id === alunoId);
+              if (!alunoToSave) return;
 
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`transferido-${aluno.id}`}
-                      checked={aluno.transferido}
-                      onCheckedChange={(checked: boolean) => handleTransferidoChange(aluno.id, checked)}
-                      disabled={aluno.ausente}
-                    />
-                    <Label htmlFor={`transferido-${aluno.id}`} className="cursor-pointer">Aluno transferido</Label>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => handleSalvarRespostaAluno(aluno)}
-                    disabled={aluno.ausente || aluno.transferido ? false : aluno.respostas.some(resp => !resp)}
-                  >
-                     Salvar
-                  </Button>
-              </div>
-            </div>
+              await alunosService.salvarRespostas({
+                alunoId,
+                avaliacaoId: avaliacao,
+                compareceu: !ausente && !transferido,
+                transferido,
+                itens: (!ausente && !transferido)
+                  ? respostas.map((resposta, index) => ({
+                      numero: index + 1,
+                      resposta
+                    }))
+                  : [],
+              });
 
-            {!aluno.ausente && !aluno.transferido && (
-              <div className="mt-4 border rounded-md p-4">
-                <h4 className="text-sm font-medium mb-4">Respostas:</h4>
-                <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-10 gap-2">
-                  {Array.from({ length: numQuestoes }).map((_, questaoIndex) => (
-                    <div key={questaoIndex} className="flex items-center space-x-1">
-                      <span className="font-medium text-sm">Q{questaoIndex + 1}:</span>
-                      <Select
-                        value={aluno.respostas[questaoIndex] || ''}
-                        onValueChange={(value) => handleRespostaChange(aluno.id, questaoIndex, value)}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="?" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {alternativas.map(letra => (
-                            <SelectItem key={letra} value={letra}>{letra}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </Card>
+              // Update local state
+              setAlunos(prevAlunos =>
+                prevAlunos.map(a =>
+                  a.id === alunoId
+                    ? { ...a, respostas, ausente, transferido }
+                    : a
+                )
+              );
+            }}
+            onAusenteChange={handleAusenteChange}
+            onTransferidoChange={handleTransferidoChange}
+          />
         ))}
       </div>
     );

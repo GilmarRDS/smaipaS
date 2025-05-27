@@ -68,8 +68,17 @@ export const alunosService = {
 
   async obterRespostas(alunoId: string, avaliacaoId: string) {
     try {
-      const response = await api.get<RespostaAluno>(`/alunos/${alunoId}/avaliacoes/${avaliacaoId}/respostas`);
-      return response.data;
+      const response = await api.get<RespostaAluno[]>(`/respostas?alunoId=${alunoId}&avaliacaoId=${avaliacaoId}`);
+      const resposta = response.data[0];
+      if (resposta) {
+        return {
+          ...resposta,
+          compareceu: resposta.compareceu,
+          transferido: resposta.transferido,
+          itens: resposta.itens || []
+        };
+      }
+      return null;
     } catch (error) {
       console.error('Erro ao obter respostas do aluno:', error);
       throw error;
@@ -118,8 +127,23 @@ export const alunosService = {
     }>;
   }): Promise<RespostaAluno> {
     try {
-      const response = await api.post<RespostaAluno>('/respostas', params);
-      return response.data;
+      // Primeiro, verifica se já existe uma resposta
+      const respostas = await api.get<RespostaAluno[]>(`/respostas?alunoId=${params.alunoId}&avaliacaoId=${params.avaliacaoId}`);
+      const respostaExistente = respostas.data[0];
+
+      if (respostaExistente) {
+        // Se existe, atualiza
+        const response = await api.put<RespostaAluno>(`/respostas/${respostaExistente.id}`, {
+          compareceu: params.compareceu,
+          transferido: params.transferido,
+          itens: params.itens
+        });
+        return response.data;
+      } else {
+        // Se não existe, cria nova
+        const response = await api.post<RespostaAluno>('/respostas', params);
+        return response.data;
+      }
     } catch (error) {
       console.error('Erro ao salvar respostas:', error);
       throw error;
