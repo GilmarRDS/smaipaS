@@ -74,7 +74,7 @@ const Respostas: React.FC = () => {
     if (turma) {
       alunosService.listarPorTurma(turma)
         .then(async data => {
-          const alunosComRespostas = await Promise.all(data.map(async (aluno: Aluno) => {
+          const alunosComRespostas = await Promise.all(data.map(async (aluno: Aluno, index: number) => {
             let respostas = Array(numQuestoes).fill('');
             let ausente = false;
             let transferido = false;
@@ -104,6 +104,7 @@ const Respostas: React.FC = () => {
 
             return {
               ...aluno,
+              numero: index + 1,
               respostas,
               ausente,
               transferido,
@@ -316,9 +317,10 @@ const Respostas: React.FC = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="individual">Registro Individual</TabsTrigger>
             <TabsTrigger value="importar">Importar Respostas</TabsTrigger>
+            <TabsTrigger value="quantitativo">Análise Quantitativa</TabsTrigger>
           </TabsList>
 
           <TabsContent value="individual" className="space-y-4">
@@ -504,6 +506,126 @@ const Respostas: React.FC = () => {
                       ))}
                     </TableBody>
                   </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="quantitativo" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Análise Quantitativa de Respostas</CardTitle>
+                <CardDescription>
+                  Visualize o quantitativo de respostas corretas por aluno
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {user?.role === 'secretaria' && (
+                      <div className="space-y-2">
+                        <Label htmlFor="escola-quantitativo">Escola</Label>
+                        <Select value={escola} onValueChange={setEscola}>
+                          <SelectTrigger id="escola-quantitativo">
+                            <SelectValue placeholder="Selecione a escola" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {escolas.map(esc => (
+                              <SelectItem key={esc.id} value={esc.id}>
+                                {esc.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label htmlFor="turma-quantitativo">Turma</Label>
+                      <Select value={turma} onValueChange={setTurma}>
+                        <SelectTrigger id="turma-quantitativo">
+                          <SelectValue placeholder="Selecione a turma" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {turmas.map(t => (
+                            <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="avaliacao-quantitativo">Avaliação</Label>
+                      <Select value={avaliacao} onValueChange={setAvaliacao}>
+                        <SelectTrigger id="avaliacao-quantitativo">
+                          <SelectValue placeholder="Selecione a avaliação" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {avaliacoes.map(av => (
+                            <SelectItem key={av.id} value={av.id}>{av.nome}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {turma && avaliacao && alunos.length > 0 && (
+                    <div className="mt-6">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Número</TableHead>
+                            <TableHead>Nome do Aluno</TableHead>
+                            <TableHead className="text-right">Total de Questões</TableHead>
+                            <TableHead className="text-right">Acertos</TableHead>
+                            <TableHead className="text-right">Percentual</TableHead>
+                            <TableHead className="text-right">Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {alunos.map(aluno => {
+                            const acertos = aluno.respostas.filter((resposta, index) => 
+                              resposta === gabarito[index]
+                            ).length;
+                            const percentual = (acertos / numQuestoes) * 100;
+                            const status = aluno.ausente ? 'Ausente' : 
+                                         aluno.transferido ? 'Transferido' :
+                                         `${acertos}/${numQuestoes}`;
+
+                            return (
+                              <TableRow key={aluno.id}>
+                                <TableCell>{aluno.numero}</TableCell>
+                                <TableCell>{aluno.nome}</TableCell>
+                                <TableCell className="text-right">{numQuestoes}</TableCell>
+                                <TableCell className="text-right">{acertos}</TableCell>
+                                <TableCell className="text-right">
+                                  <span className={`px-2 py-1 rounded-full ${
+                                    aluno.ausente || aluno.transferido ? 'bg-gray-100 text-gray-800' :
+                                    percentual >= 70 ? 'bg-green-100 text-green-800' :
+                                    percentual >= 50 ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-red-100 text-red-800'
+                                  }`}>
+                                    {aluno.ausente || aluno.transferido ? '-' : `${percentual.toFixed(1)}%`}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <span className={`px-2 py-1 rounded-full ${
+                                    aluno.ausente ? 'bg-gray-100 text-gray-800' :
+                                    aluno.transferido ? 'bg-blue-100 text-blue-800' :
+                                    percentual >= 70 ? 'bg-green-100 text-green-800' :
+                                    percentual >= 50 ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-red-100 text-red-800'
+                                  }`}>
+                                    {status}
+                                  </span>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
