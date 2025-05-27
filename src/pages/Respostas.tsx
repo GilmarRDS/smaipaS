@@ -43,6 +43,7 @@ const Respostas: React.FC = () => {
   const [avaliacoes, setAvaliacoes] = useState([]);
   const [turmas, setTurmas] = useState([]);
   const [escolas, setEscolas] = useState<Escola[]>([]);
+  const [gabarito, setGabarito] = useState<string[]>([]);
 
   const { user } = useAuth();
 
@@ -125,6 +126,29 @@ const Respostas: React.FC = () => {
       setAvaliacoes([]);
     }
   }, [turma]);
+
+  useEffect(() => {
+    if (avaliacao) {
+      avaliacoesService.obterGabarito(avaliacao)
+        .then(data => {
+          if (data && data.itens) {
+            const respostasCorretas = Array(numQuestoes).fill('');
+            data.itens.forEach(item => {
+              if (item.numero <= numQuestoes) {
+                respostasCorretas[item.numero - 1] = item.resposta;
+              }
+            });
+            setGabarito(respostasCorretas);
+          }
+        })
+        .catch(error => {
+          console.error('Erro ao carregar gabarito:', error);
+          toast.error('Erro ao carregar gabarito');
+        });
+    } else {
+      setGabarito([]);
+    }
+  }, [avaliacao, numQuestoes]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -246,6 +270,7 @@ const Respostas: React.FC = () => {
             key={aluno.id}
             aluno={aluno}
             numQuestoes={numQuestoes}
+            gabarito={gabarito}
             onSave={async (alunoId, respostas, ausente, transferido) => {
               const alunoToSave = alunos.find(a => a.id === alunoId);
               if (!alunoToSave) return;

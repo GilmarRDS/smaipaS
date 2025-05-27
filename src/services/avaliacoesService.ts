@@ -59,7 +59,7 @@ export const avaliacoesService = {
 
   async obterGabarito(avaliacaoId: string) {
     try {
-      const response = await api.get(`/avaliacoes/gabarito/${avaliacaoId}`);
+      const response = await api.get(`/avaliacoes/${avaliacaoId}/gabarito`);
       return response.data;
     } catch (error) {
       console.error('Erro ao obter gabarito:', error);

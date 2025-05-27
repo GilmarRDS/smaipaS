@@ -86,14 +86,12 @@ export class AvaliacaoController {
 
   // Novo método para obter gabarito por avaliacaoId
   async obterGabarito(request: CustomRequest, response: Response) {
-    const { avaliacaoId } = request.params;
-
-    if (!avaliacaoId) {
-      return response.status(400).json({ error: 'avaliacaoId é obrigatório' });
+    const { id } = request.params;
+    if (!id) {
+      return response.status(400).json({ error: 'id é obrigatório' });
     }
-
     const gabarito = await prisma.gabarito.findFirst({
-      where: { avaliacaoId },
+      where: { avaliacaoId: id },
       include: {
         itens: {
           include: {
@@ -102,11 +100,9 @@ export class AvaliacaoController {
         },
       },
     });
-
     if (!gabarito) {
       return response.status(404).json({ error: 'Gabarito não encontrado para a avaliação' });
     }
-
     return response.json(gabarito);
   }
 

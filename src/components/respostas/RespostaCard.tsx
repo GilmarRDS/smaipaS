@@ -16,6 +16,7 @@ interface RespostaCardProps {
     transferido: boolean;
   };
   numQuestoes: number;
+  gabarito?: string[]; // Array com as respostas corretas
   onSave: (alunoId: string, respostas: string[], ausente: boolean, transferido: boolean) => Promise<void>;
   onAusenteChange: (alunoId: string, checked: boolean) => void;
   onTransferidoChange: (alunoId: string, checked: boolean) => void;
@@ -25,7 +26,8 @@ const alternativas = ['A', 'B', 'C', 'D', 'E'];
 
 export const RespostaCard: React.FC<RespostaCardProps> = ({ 
   aluno, 
-  numQuestoes, 
+  numQuestoes,
+  gabarito = [], // Valor padrão é array vazio
   onSave,
   onAusenteChange,
   onTransferidoChange
@@ -77,6 +79,14 @@ export const RespostaCard: React.FC<RespostaCardProps> = ({
     });
     setRespostas(novasRespostas);
     setIsEditing(false);
+  };
+
+  // Função para determinar a cor da resposta
+  const getRespostaColor = (resposta: string, questaoIndex: number) => {
+    if (!resposta || !gabarito[questaoIndex]) return 'bg-primary/10 text-primary';
+    return resposta === gabarito[questaoIndex] 
+      ? 'bg-green-100 text-green-700 border border-green-300' 
+      : 'bg-red-100 text-red-700 border border-red-300';
   };
 
   return (
@@ -178,7 +188,7 @@ export const RespostaCard: React.FC<RespostaCardProps> = ({
                     </SelectContent>
                   </Select>
                 ) : (
-                  <span className="px-2 py-1 bg-primary/10 text-primary rounded">
+                  <span className={`px-2 py-1 rounded ${getRespostaColor(respostas[questaoIndex], questaoIndex)}`}>
                     {respostas[questaoIndex] || '-'}
                   </span>
                 )}
