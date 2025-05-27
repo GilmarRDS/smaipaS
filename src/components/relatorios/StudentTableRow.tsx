@@ -1,8 +1,7 @@
-
 import React from 'react';
-import { ActionButton } from '@/components/ui/action-button';
+import { Button } from '@/components/ui/button';
+import { Eye } from 'lucide-react';
 import StatusBadge from './StatusBadge';
-import ScoreBadge from './ScoreBadge';
 
 interface Student {
   id: string;
@@ -28,36 +27,54 @@ interface Student {
 
 interface StudentTableRowProps {
   student: Student;
-  onViewStudentDetails: (student: Student) => void;
+  onViewDetails: () => void;
 }
 
-const StudentTableRow: React.FC<StudentTableRowProps> = ({ student, onViewStudentDetails }) => {
+const StudentTableRow: React.FC<StudentTableRowProps> = ({ student, onViewDetails }) => {
   const getStatus = (): 'presente' | 'ausente' | 'transferida' => {
     if (student.transferida) return 'transferida';
     return student.presente ? 'presente' : 'ausente';
   };
 
+  const formatGrade = (grade: number | null) => {
+    if (grade === null) return '-';
+    return `${grade.toFixed(1)}%`;
+  };
+
+  const getGradeColor = (grade: number | null) => {
+    if (grade === null) return 'text-muted-foreground';
+    if (grade >= 70) return 'text-green-600';
+    if (grade >= 60) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
   return (
-    <tr key={student.id} className="border-b">
-      <td className="p-2 font-medium">{student.nome}</td>
-      <td className="p-2 text-center">
-        <StatusBadge status={getStatus()} />
+    <tr className="border-b transition-colors hover:bg-muted/50">
+      <td className="p-4">
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{student.nome}</span>
+          <StatusBadge status={getStatus()} />
+        </div>
       </td>
-      <td className="p-2 text-center">
-        <ScoreBadge score={student.portugues} />
+      <td className={`p-4 ${getGradeColor(student.portugues)}`}>
+        {formatGrade(student.portugues)}
       </td>
-      <td className="p-2 text-center">
-        <ScoreBadge score={student.matematica} />
+      <td className={`p-4 ${getGradeColor(student.matematica)}`}>
+        {formatGrade(student.matematica)}
       </td>
-      <td className="p-2 text-center">
-        <ScoreBadge score={student.media} />
+      <td className={`p-4 ${getGradeColor(student.media)}`}>
+        {formatGrade(student.media)}
       </td>
-      <td className="p-2 text-right">
-        <ActionButton 
-          action="view" 
-          onClick={() => onViewStudentDetails(student)}
-          disabled={!student.presente}
-        />
+      <td className="p-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onViewDetails}
+          className="flex items-center gap-2"
+        >
+          <Eye className="h-4 w-4" />
+          <span>Detalhes</span>
+        </Button>
       </td>
     </tr>
   );

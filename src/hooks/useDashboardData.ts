@@ -27,24 +27,6 @@ interface DashboardData {
   }>;
 }
 
-interface TurmaData {
-  turma: string;
-  portugues: number;
-  matematica: number;
-  presentes?: number;
-  ausentes?: number;
-}
-
-interface DescritorData {
-  alunoId: string;
-  aluno: string;
-  turmaId: string;
-  turmaNome: string;
-  codigo: string;
-  nome: string;
-  percentual: number;
-}
-
 interface FilterState {
   escolaId?: string;
   turmaId?: string;
@@ -57,8 +39,15 @@ interface ApiResponse {
     portugues: number;
     matematica: number;
   }>;
-  desempenhoTurmas: TurmaData[];
-  desempenhoDescritores: DescritorData[];
+  desempenhoHabilidades: Array<{
+    nome: string;
+    percentual: number;
+  }>;
+  desempenhoDescritores: Array<{
+    codigo: string;
+    nome: string;
+    percentual: number;
+  }>;
 }
 
 export function useDashboardData() {
@@ -90,56 +79,67 @@ export function useDashboardData() {
           throw new Error('ID da escola não encontrado');
         }
 
+        console.log('Buscando dados com filtros:', {
+          escolaId,
+          turmaId: selectedFilters.turmaId,
+          componente: selectedFilters.periodo
+        });
+
         // Buscar dados dos relatórios
-        const response = await api.get<ApiResponse>(`/api/relatorios/dados?escolaId=${escolaId}`);
+        const response = await api.get<ApiResponse>(`/avaliacoes/relatorios/dados`, {
+          params: {
+            escolaId,
+            turmaId: selectedFilters.turmaId,
+            componente: selectedFilters.periodo
+          }
+        });
+
+        console.log('Resposta completa da API:', JSON.stringify(response.data, null, 2));
         const dadosRelatorios = response.data;
 
-        console.log('Dados brutos da API:', dadosRelatorios);
+        // Verificar se os dados necessários existem
+        if (!dadosRelatorios) {
+          console.error('Dados da API estão vazios ou undefined');
+          throw new Error('Dados da API estão vazios ou undefined');
+        }
 
-        // Processar dados de desempenho
+        // Mapear dados de desempenho
         const performance = dadosRelatorios.evolucaoDesempenho || [];
+        console.log('Dados de desempenho mapeados:', JSON.stringify(performance, null, 2));
+        console.log('Tipo dos dados de desempenho:', typeof performance);
+        console.log('É array?', Array.isArray(performance));
+        console.log('Número de itens:', performance.length);
 
-        // Processar dados de presença
-        const presenca = dadosRelatorios.desempenhoTurmas?.map((turma: TurmaData) => ({
-          turma: turma.turma,
-          presentes: turma.presentes || 0,
-          ausentes: turma.ausentes || 0
+        // Mapear dados de presença (usando dados de habilidades como exemplo)
+        const presenca = dadosRelatorios.desempenhoHabilidades?.map(habilidade => ({
+          turma: habilidade.nome,
+          presentes: habilidade.percentual,
+          ausentes: 100 - habilidade.percentual
         })) || [];
+        console.log('Dados de presença mapeados:', JSON.stringify(presenca, null, 2));
+        console.log('Tipo dos dados de presença:', typeof presenca);
+        console.log('É array?', Array.isArray(presenca));
+        console.log('Número de itens:', presenca.length);
 
-        // Processar dados de descritores por aluno
-        const descritoresPorAluno = dadosRelatorios.desempenhoDescritores?.reduce((acc: Array<{
-          alunoId: string;
-          aluno: string;
-          turmaId: string;
-          turmaNome: string;
-          descritores: Array<{
-            codigo: string;
-            nome: string;
-            percentual: number;
-          }>;
-        }>, desc: DescritorData) => {
-          const alunoIndex = acc.findIndex(a => a.alunoId === desc.alunoId);
-          if (alunoIndex === -1) {
-            acc.push({
-              alunoId: desc.alunoId,
-              aluno: desc.aluno,
-              turmaId: desc.turmaId,
-              turmaNome: desc.turmaNome,
-              descritores: [{
-                codigo: desc.codigo,
-                nome: desc.nome,
-                percentual: desc.percentual
-              }]
-            });
-          } else {
-            acc[alunoIndex].descritores.push({
-              codigo: desc.codigo,
-              nome: desc.nome,
-              percentual: desc.percentual
-            });
-          }
-          return acc;
-        }, []) || [];
+        // Mapear dados de descritores por aluno
+        const descritoresPorAluno = dadosRelatorios.desempenhoDescritores?.map(desc => ({
+          alunoId: desc.codigo,
+          aluno: desc.nome,
+          turmaId: 'default',
+          turmaNome: 'Turma Padrão',
+          descritores: [{
+            codigo: desc.codigo,
+            nome: desc.nome,
+            percentual: desc.percentual
+          }]
+        })) || [];
+        console.log('Dados de descritores mapeados:', JSON.stringify(descritoresPorAluno, null, 2));
+        console.log('Número de itens:', descritoresPorAluno.length);
+
+        // Verificar se os dados estão vazios
+        if (!performance.length && !presenca.length && !descritoresPorAluno.length) {
+          console.warn('Todos os dados estão vazios após o mapeamento');
+        }
 
         const processedData = {
           performance,
@@ -147,7 +147,13 @@ export function useDashboardData() {
           descritoresPorAluno
         };
 
-        console.log('Dados processados:', processedData);
+        console.log('Dados processados finais:', JSON.stringify(processedData, null, 2));
+        console.log('Tipo dos dados processados:', {
+          performance: typeof processedData.performance,
+          presenca: typeof processedData.presenca,
+          descritoresPorAluno: typeof processedData.descritoresPorAluno
+        });
+
         setData(processedData);
       } catch (err) {
         console.error('Erro ao carregar dados do dashboard:', err);

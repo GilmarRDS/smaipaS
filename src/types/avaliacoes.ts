@@ -1,17 +1,29 @@
 export interface Avaliacao {
   id: string;
   nome: string;
-  descricao: string;
-  dataInicio: string;
-  dataFim: string;
-  componente: 'portugues' | 'matematica';
+  tipo: 'DIAGNOSTICA_INICIAL' | 'DIAGNOSTICA_FINAL';
   disciplina: 'PORTUGUES' | 'MATEMATICA';
-  tipo: 'PROVA' | 'SIMULADO';
-  ano: '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
-  numQuestoes: number;
-  status: 'agendada' | 'em-andamento' | 'concluida' | 'cancelada';
-  turmaId: string;
-  escolaId: string;
+  ano: string;
+  dataAplicacao: string;
+  dataCriacao: string;
+  dataAtualizacao: string;
+  respostas?: {
+    id: string;
+    alunoId: string;
+    compareceu: boolean;
+    transferido: boolean;
+    itens: Array<{
+      id: string;
+      numero: number;
+      resposta: string;
+      correta?: boolean;
+      descritor?: {
+        id: string;
+        codigo: string;
+        descricao: string;
+      };
+    }>;
+  }[];
   gabarito?: {
     id: string;
     itens: Array<{
@@ -25,17 +37,6 @@ export interface Avaliacao {
       };
     }>;
   };
-  turma?: {
-    id: string;
-    nome: string;
-  };
-  escola?: {
-    id: string;
-    nome: string;
-  };
-  dataAplicacao: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface ListarTodasParams {
@@ -46,7 +47,7 @@ export interface ListarTodasParams {
 }
 
 // Helper function to get status badge color
-export const getStatusColor = (status: Avaliacao['status']) => {
+export const getStatusColor = (status: string) => {
   switch (status) {
     case 'agendada':
       return 'bg-blue-100 text-blue-800';
@@ -60,7 +61,7 @@ export const getStatusColor = (status: Avaliacao['status']) => {
 };
 
 // Helper function to format status for display
-export const formatStatus = (status: Avaliacao['status']) => {
+export const formatStatus = (status: string) => {
   switch (status) {
     case 'agendada':
       return 'Agendada';

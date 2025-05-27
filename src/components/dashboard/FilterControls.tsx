@@ -75,7 +75,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({ onFilterChange, selecte
     };
 
     carregarDados();
-  }, [user, isSecretaria, selectedFilters]);
+  }, [user, isSecretaria, selectedFilters.escola, selectedFilters.turma]);
 
   // Get unique turnos from turmas
   const turnos = Array.isArray(turmas) ? [...new Set(turmas.map(turma => turma.turno))] : [];
@@ -85,10 +85,26 @@ const FilterControls: React.FC<FilterControlsProps> = ({ onFilterChange, selecte
     ? turmas.filter(turma => turma.escolaId === selectedFilters.escola)
     : turmas || [];
 
-  // Filter avaliacoes based on selected componente
-  const filteredAvaliacoes = Array.isArray(avaliacoes) && selectedFilters.componente !== 'all_componentes'
-    ? avaliacoes.filter(avaliacao => avaliacao.componente === selectedFilters.componente)
-    : avaliacoes || [];
+  // Filter avaliacoes based on selected componente and turma
+  const filteredAvaliacoes = Array.isArray(avaliacoes)
+    ? avaliacoes.filter(avaliacao => {
+        if (!avaliacao) return false;
+        
+        // Se não houver componente selecionado, mostrar todas as avaliações
+        if (selectedFilters.componente === 'all_componentes') {
+          return true;
+        }
+        
+        // Verificar se avaliacao.disciplina existe e é uma string
+        if (typeof avaliacao.disciplina !== 'string') {
+          console.warn('Disciplina inválida:', avaliacao.disciplina);
+          return false;
+        }
+        
+        // Filtrar pelo componente selecionado
+        return avaliacao.disciplina.toLowerCase() === selectedFilters.componente.toLowerCase();
+      })
+    : [];
 
   const handleSelectChange = (filterType: string, value: string) => {
     onFilterChange(filterType, value);

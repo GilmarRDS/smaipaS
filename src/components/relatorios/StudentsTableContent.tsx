@@ -1,4 +1,3 @@
-
 import React from 'react';
 import StudentTableRow from './StudentTableRow';
 
@@ -31,24 +30,23 @@ interface StudentsTableContentProps {
 
 const StudentsTableContent: React.FC<StudentsTableContentProps> = ({ students, onViewStudentDetails }) => {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse">
+    <div className="rounded-md border">
+      <table className="w-full">
         <thead>
-          <tr className="bg-muted">
-            <th className="p-2 text-left">Aluno</th>
-            <th className="p-2 text-center">Situação</th>
-            <th className="p-2 text-center">Português</th>
-            <th className="p-2 text-center">Matemática</th>
-            <th className="p-2 text-center">Média Geral</th>
-            <th className="p-2 text-right">Detalhes</th>
+          <tr className="border-b bg-muted/50">
+            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Nome do Aluno</th>
+            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Português</th>
+            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Matemática</th>
+            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Média</th>
+            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Ações</th>
           </tr>
         </thead>
         <tbody>
           {students.map((student) => (
-            <StudentTableRow 
-              key={student.id} 
-              student={student} 
-              onViewStudentDetails={onViewStudentDetails} 
+            <StudentTableRow
+              key={student.id}
+              student={student}
+              onViewDetails={() => onViewStudentDetails(student)}
             />
           ))}
         </tbody>

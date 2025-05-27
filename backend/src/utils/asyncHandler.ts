@@ -1,9 +1,25 @@
-import { Request, Response, NextFunction, RequestHandler } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { RequestWithUsuario } from '../types/express';
 
-type AsyncFunction = (req: RequestWithUsuario, res: Response, next: NextFunction) => Promise<void>;
+// Extend Express Request type to include usuario
+// declare module 'express' {
+//   interface Request {
+//     usuario?: {
+//       id: number;
+//       nome: string;
+//       email: string;
+//       tipo: string;
+//     };
+//   }
+// }
 
-export const asyncHandler = (fn: AsyncFunction): RequestHandler => (
+type AsyncFunction = (
+  req: RequestWithUsuario,
+  res: Response,
+  next: NextFunction
+) => Promise<Response | void>;
+
+export const asyncHandler = (fn: AsyncFunction) => (
   req: Request,
   res: Response,
   next: NextFunction

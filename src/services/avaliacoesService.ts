@@ -49,7 +49,7 @@ export const avaliacoesService = {
 
   async obterDadosRelatorios(params: { escolaId?: string; turmaId?: string; componente?: string }) {
     try {
-      const response = await api.get('/relatorios/dados', { params });
+      const response = await api.get('/avaliacoes/relatorios/dados', { params });
       return response.data;
     } catch (error) {
       console.error('Erro ao obter dados dos relatórios:', error);
