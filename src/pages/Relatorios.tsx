@@ -74,27 +74,7 @@ interface DadosRelatorios {
     mediaPortugues: number;
     mediaMatematica: number;
     totalAlunos: number;
-    alunos: Array<{
-      id: string;
-      nome: string;
-      presente: boolean;
-      transferida: boolean;
-      portugues: number | null;
-      matematica: number | null;
-      media: number | null;
-      descritores: {
-        portugues: Array<{
-          codigo: string;
-          nome: string;
-          percentual: number;
-        }> | null;
-        matematica: Array<{
-          codigo: string;
-          nome: string;
-          percentual: number;
-        }> | null;
-      } | null;
-    }>;
+    alunos: AlunoDesempenho[];
   }>;
   evolucaoDesempenho: Array<{
     avaliacao: string;
@@ -237,9 +217,9 @@ const Relatorios: React.FC = () => {
         nome: aluno.nome,
         presente: aluno.presente,
         transferida: aluno.transferida,
-        portugues: aluno.portugues,
-        matematica: aluno.matematica,
-        media: aluno.media,
+        portugues: aluno.desempenho?.portugues ?? null,
+        matematica: aluno.desempenho?.matematica ?? null,
+        media: aluno.desempenho?.media ?? null,
         descritores: aluno.descritores
       })) || []
     : [];

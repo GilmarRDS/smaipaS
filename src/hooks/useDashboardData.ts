@@ -33,7 +33,37 @@ interface FilterState {
   periodo?: string;
 }
 
+interface Descritor {
+  codigo: string;
+  nome: string;
+  percentual: number;
+}
+
+interface Aluno {
+  id: string;
+  nome: string;
+  presente: boolean;
+  transferida: boolean;
+  portugues: number | null;
+  matematica: number | null;
+  media: number | null;
+  descritores: {
+    portugues: Descritor[];
+    matematica: Descritor[];
+  };
+}
+
+interface DesempenhoTurma {
+  turmaId: string;
+  nomeTurma: string;
+  mediaPortugues: number;
+  mediaMatematica: number;
+  totalAlunos: number;
+  alunos: Aluno[];
+}
+
 interface ApiResponse {
+  desempenhoTurmas: DesempenhoTurma[];
   evolucaoDesempenho: Array<{
     avaliacao: string;
     portugues: number;
@@ -74,8 +104,14 @@ export function useDashboardData() {
         setError(null);
 
         // Determinar o ID da escola a ser usado
-        const escolaId = selectedFilters.escolaId || user?.schoolId;
-        if (!escolaId) {
+        let escolaId = selectedFilters.escolaId || user?.schoolId;
+
+        // Se o usuário não for do tipo 'escola' e escolaId estiver vazio, permitir undefined para evitar erro
+        if (!escolaId && user?.role !== 'escola') {
+          escolaId = undefined;
+        }
+
+        if (!escolaId && user?.role === 'escola') {
           throw new Error('ID da escola não encontrado');
         }
 
@@ -104,35 +140,44 @@ export function useDashboardData() {
         }
 
         // Mapear dados de desempenho
-        const performance = dadosRelatorios.evolucaoDesempenho || [];
-        console.log('Dados de desempenho mapeados:', JSON.stringify(performance, null, 2));
-        console.log('Tipo dos dados de desempenho:', typeof performance);
-        console.log('É array?', Array.isArray(performance));
-        console.log('Número de itens:', performance.length);
+        const desempenhoTurmas = dadosRelatorios.desempenhoTurmas || [];
+        console.log('Dados de desempenhoTurmas mapeados:', JSON.stringify(desempenhoTurmas, null, 2));
 
-        // Mapear dados de presença (usando dados de habilidades como exemplo)
-        const presenca = dadosRelatorios.desempenhoHabilidades?.map(habilidade => ({
-          turma: habilidade.nome,
-          presentes: habilidade.percentual,
-          ausentes: 100 - habilidade.percentual
-        })) || [];
-        console.log('Dados de presença mapeados:', JSON.stringify(presenca, null, 2));
-        console.log('Tipo dos dados de presença:', typeof presenca);
-        console.log('É array?', Array.isArray(presenca));
-        console.log('Número de itens:', presenca.length);
+        // Mapear dados de desempenho para performance e presenca
+        const performance = desempenhoTurmas.map(turma => ({
+          avaliacao: turma.nomeTurma,
+          portugues: turma.mediaPortugues,
+          matematica: turma.mediaMatematica
+        }));
+
+        const presenca = desempenhoTurmas.map(turma => ({
+          turma: turma.nomeTurma,
+          presentes: turma.alunos.filter(a => a.presente).length,
+          ausentes: turma.alunos.filter(a => !a.presente).length
+        }));
 
         // Mapear dados de descritores por aluno
-        const descritoresPorAluno = dadosRelatorios.desempenhoDescritores?.map(desc => ({
-          alunoId: desc.codigo,
-          aluno: desc.nome,
-          turmaId: 'default',
-          turmaNome: 'Turma Padrão',
-          descritores: [{
-            codigo: desc.codigo,
-            nome: desc.nome,
-            percentual: desc.percentual
-          }]
-        })) || [];
+        const descritoresPorAluno = desempenhoTurmas.flatMap(turma =>
+          turma.alunos.map(aluno => ({
+            alunoId: aluno.id,
+            aluno: aluno.nome,
+            turmaId: turma.turmaId,
+            turmaNome: turma.nomeTurma,
+            descritores: [
+          ...aluno.descritores.portugues.map((d: Descritor) => ({
+            codigo: d.codigo,
+            nome: d.nome,
+            percentual: d.percentual
+          })),
+          ...aluno.descritores.matematica.map((d: Descritor) => ({
+            codigo: d.codigo,
+            nome: d.nome,
+            percentual: d.percentual
+          }))
+            ]
+          }))
+        );
+
         console.log('Dados de descritores mapeados:', JSON.stringify(descritoresPorAluno, null, 2));
         console.log('Número de itens:', descritoresPorAluno.length);
 
@@ -165,7 +210,7 @@ export function useDashboardData() {
     };
 
     fetchData();
-  }, [user?.schoolId, selectedFilters]);
+  }, [user?.schoolId, selectedFilters, user?.role]);
 
   // Atualizar habilidades do aluno selecionado
   useEffect(() => {
