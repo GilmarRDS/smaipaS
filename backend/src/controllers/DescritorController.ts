@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { prisma } from '../lib/prisma';
+import { prisma, Prisma } from '../lib/prisma';
 import { RequestWithUsuario } from '../middlewares/auth';
 
 export class DescritorController {
@@ -68,7 +68,7 @@ export class DescritorController {
       }
 
       // Verificar se o descritor já existe pelo código
-      const descritorExistente = await prisma.descritor.findUnique({
+      const descritorExistente = await prisma.descritor.findFirst({
         where: { codigo }
       });
 
@@ -76,12 +76,28 @@ export class DescritorController {
         return response.status(400).json({ error: 'Descritor com este código já cadastrado' });
       }
 
+      // Mapear o valor do tipo para o enum TipoAvaliacao
+      const tipoMap: { [key: string]: Prisma.TipoAvaliacao } = {
+        'DIAGNOSTICA_INICIAL': Prisma.TipoAvaliacao.DIAGNOSTICA_INICIAL,
+        'DIAGNOSTICA_FINAL': Prisma.TipoAvaliacao.DIAGNOSTICA_FINAL,
+        'CONCEITO': Prisma.TipoAvaliacao.DIAGNOSTICA_INICIAL // Mapeamento padrão para valores inválidos
+      };
+
+      const tipoEnum: Prisma.TipoAvaliacao = tipoMap[tipo.toUpperCase()] || Prisma.TipoAvaliacao.DIAGNOSTICA_INICIAL;
+
+      // Função para remover acentos e normalizar string
+      function normalizeString(str: string): string {
+        return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+      }
+
+      const disciplinaEnum: Prisma.Disciplina = normalizeString(disciplina) as Prisma.Disciplina;
+
       const descritor = await prisma.descritor.create({
         data: {
           codigo,
           descricao,
-          disciplina,
-          tipo
+          disciplina: disciplinaEnum,
+          tipo: tipoEnum
         }
       });
 
@@ -123,7 +139,7 @@ export class DescritorController {
 
       // Verificar se o código já está em uso por outro descritor
       if (codigo !== descritorExistente.codigo) {
-        const codigoEmUso = await prisma.descritor.findUnique({
+        const codigoEmUso = await prisma.descritor.findFirst({
           where: { codigo }
         });
 
@@ -132,12 +148,14 @@ export class DescritorController {
         }
       }
 
+      const disciplinaEnum: Prisma.Disciplina = normalizeString(disciplina) as Prisma.Disciplina;
+
       const descritor = await prisma.descritor.update({
         where: { id },
         data: {
           codigo,
           descricao,
-          disciplina,
+          disciplina: disciplinaEnum,
           tipo
         }
       });
@@ -182,4 +200,77 @@ export class DescritorController {
       return response.status(500).json({ error: 'Erro interno do servidor' });
     }
   }
-} 
+
+  // Função para remover acentos e normalizar string
+  private normalizeString(str: string): string {
+    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+  }
+
+  async atualizar(request: Request, response: Response) {
+    try {
+      const req = request as RequestWithUsuario;
+      const { id } = request.params;
+      const { codigo, descricao, disciplina, tipo } = request.body;
+
+      if (!req.usuario) {
+        return response.status(401).json({ error: 'Usuário não autenticado' });
+      }
+
+      // Apenas usuários da secretaria podem atualizar descritores
+      if (req.usuario.role !== 'secretaria') {
+        return response.status(403).json({ error: 'Acesso negado' });
+      }
+
+      // Validação básica dos campos obrigatórios
+      if (!codigo || !descricao || !disciplina || !tipo) {
+        return response.status(400).json({ error: 'Todos os campos são obrigatórios' });
+      }
+
+      // Verificar se o descritor existe
+      const descritorExistente = await prisma.descritor.findUnique({
+        where: { id }
+      });
+
+      if (!descritorExistente) {
+        return response.status(404).json({ error: 'Descritor não encontrado' });
+      }
+
+      // Verificar se o código já está em uso por outro descritor
+      if (codigo !== descritorExistente.codigo) {
+        const codigoEmUso = await prisma.descritor.findFirst({
+          where: { codigo }
+        });
+
+        if (codigoEmUso) {
+          return response.status(400).json({ error: 'Código já cadastrado' });
+        }
+      }
+
+      const disciplinaEnum: Prisma.Disciplina = this.normalizeString(disciplina) as Prisma.Disciplina;
+
+      // Mapear o valor do tipo para o enum TipoAvaliacao
+      const tipoMap: { [key: string]: Prisma.TipoAvaliacao } = {
+        'DIAGNOSTICA_INICIAL': Prisma.TipoAvaliacao.DIAGNOSTICA_INICIAL,
+        'DIAGNOSTICA_FINAL': Prisma.TipoAvaliacao.DIAGNOSTICA_FINAL,
+        'CONCEITO': Prisma.TipoAvaliacao.DIAGNOSTICA_INICIAL // Mapeamento padrão para valores inválidos
+      };
+
+      const tipoEnum: Prisma.TipoAvaliacao = tipoMap[tipo.toUpperCase()] || Prisma.TipoAvaliacao.DIAGNOSTICA_INICIAL;
+
+      const descritor = await prisma.descritor.update({
+        where: { id },
+        data: {
+          codigo,
+          descricao,
+          disciplina: disciplinaEnum,
+          tipo: tipoEnum
+        }
+      });
+
+      return response.json(descritor);
+    } catch (error) {
+      console.error('Erro ao atualizar descritor:', error);
+      return response.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  }
+}
