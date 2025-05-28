@@ -409,15 +409,47 @@ export class AvaliacaoController {
         };
       });
 
+      // Calcular desempenho por descritor
+      const desempenhoDescritoresMap = new Map<string, { acertos: number; total: number; nome: string; componente: string }>();
+
+      for (const avaliacao of avaliacoes) {
+        for (const resposta of avaliacao.respostas) {
+          for (const item of resposta.itens) {
+            if (item.descritor) {
+              const key = `${item.descritor.codigo}-${avaliacao.disciplina}`;
+              if (!desempenhoDescritoresMap.has(key)) {
+                desempenhoDescritoresMap.set(key, {
+                  acertos: 0,
+                  total: 0,
+                  nome: item.descritor.descricao,
+                  componente: avaliacao.disciplina.toLowerCase()
+                });
+              }
+              const desc = desempenhoDescritoresMap.get(key)!;
+              desc.total++;
+              if (item.correta) desc.acertos++;
+            }
+          }
+        }
+      }
+
+      const desempenhoDescritores = Array.from(desempenhoDescritoresMap.entries()).map(([key, { acertos, total, nome, componente }]) => ({
+        codigo: key.split('-')[0],
+        nome,
+        percentual: total > 0 ? (acertos / total) * 100 : 0,
+        componente
+      }));
+
       const responseData = {
         desempenhoTurmas,
         evolucaoDesempenho: [], // Implementar conforme necessário
         desempenhoHabilidades: [], // Implementar conforme necessário
-        desempenhoDescritores: [], // Implementar conforme necessário
+        desempenhoDescritores
       };
 
       console.log('Relatorios API: Dados retornados para frontend:', {
         totalTurmasInResponse: desempenhoTurmas.length,
+        totalDescritoresInResponse: desempenhoDescritores.length,
         ...(turmaId && desempenhoTurmas.length > 0 ? {
           turmaRetornada: desempenhoTurmas[0].nomeTurma,
           alunosNaTurmaRetornada: desempenhoTurmas[0].alunos.length

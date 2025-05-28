@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import RadarChartComponent from '@/components/charts/RadarChart';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface StudentDescriptor {
   codigo: string;
@@ -8,96 +9,74 @@ interface StudentDescriptor {
   acertos: number;
 }
 
-interface StudentData {
-  aluno: string;
-  alunoId: string;
-  turmaId: string;
-  turmaNome: string;
-  descritores: StudentDescriptor[];
-}
-
 interface StudentDescriptorAnalysisProps {
-  studentData: StudentData[];
+  studentData: Array<{
+    id: string;
+    nome: string;
+    descritores: StudentDescriptor[];
+  }>;
   selectedStudent: string;
-  onStudentChange: (student: string) => void;
-  studentSkills: Array<{ descritor: string; percentual: number }>;
+  onStudentChange: (studentId: string) => void;
+  studentSkills: Array<{
+    nome: string;
+    valor: number;
+  }>;
 }
 
-const StudentDescriptorAnalysis: React.FC<StudentDescriptorAnalysisProps> = ({ 
-  studentData, 
-  selectedStudent, 
+const StudentDescriptorAnalysis: React.FC<StudentDescriptorAnalysisProps> = ({
+  studentData,
+  selectedStudent,
   onStudentChange,
   studentSkills
 }) => {
+  const colors = ['#1E88E5', '#26A69A', '#66BB6A', '#FFA726', '#EF5350'];
+
+  const handleStudentChange = (value: string) => {
+    onStudentChange(value);
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Descritores Problemáticos por Aluno</CardTitle>
+        <CardTitle>Análise de Descritores por Aluno</CardTitle>
         <CardDescription>
-          Análise das dificuldades individuais dos alunos
+          Visualize o desempenho individual dos alunos em cada descritor
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-4">
-          <div className="space-y-2">
-            <label htmlFor="aluno-select" className="text-sm font-medium">Selecione um aluno:</label>
-            <select 
-              id="aluno-select" 
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              value={selectedStudent}
-              onChange={(e) => onStudentChange(e.target.value)}
-            >
-              {studentData.map(aluno => (
-                <option key={aluno.alunoId} value={aluno.aluno}>
-                  {aluno.aluno} - {aluno.turmaNome}
-                </option>
-              ))}
-            </select>
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <label className="text-sm font-medium">Selecione o Aluno:</label>
+            <Select value={selectedStudent} onValueChange={handleStudentChange}>
+              <SelectTrigger className="w-[300px]">
+                <SelectValue placeholder="Selecione um aluno" />
+              </SelectTrigger>
+              <SelectContent>
+                {studentData.map((student) => (
+                  <SelectItem key={student.id} value={student.id}>
+                    {student.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          
-          <div className="pt-2">
-            <h4 className="text-sm font-medium mb-2">Desempenho nos Descritores:</h4>
-            
-            {/* Radar Chart for student skills */}
-            <div className="h-60">
-              <RadarChartComponent 
+
+          {selectedStudent && studentSkills.length > 0 && (
+            <div className="mt-6">
+              <RadarChartComponent
                 data={studentSkills}
-                dataKey="percentual"
-                nameKey="descritor"
-                colors={["#7C3AED", "#8B5CF6"]}
+                dataKey="valor"
+                nameKey="nome"
+                colors={colors}
               />
             </div>
-            
-            {/* Table of descriptors */}
-            <div className="mt-4">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left pb-2">Descritor</th>
-                    <th className="text-left pb-2">Componente</th>
-                    <th className="text-right pb-2">% Acertos</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {studentData.find(a => a.aluno === selectedStudent)?.descritores.map(descritor => (
-                    <tr key={descritor.codigo} className="border-b">
-                      <td className="py-2">{descritor.codigo}</td>
-                      <td className="py-2">{descritor.componente}</td>
-                      <td className="py-2 text-right">
-                        <span className={`px-2 py-0.5 rounded-full ${
-                          descritor.acertos < 30 ? 'bg-red-100 text-red-800' : 
-                          descritor.acertos < 50 ? 'bg-orange-100 text-orange-800' : 
-                          'bg-green-100 text-green-800'
-                        }`}>
-                          {descritor.acertos}%
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          )}
+
+          {!selectedStudent && (
+            <div className="text-center text-muted-foreground py-8">
+              Selecione um aluno para visualizar sua análise de desempenho
             </div>
-          </div>
+          )}
         </div>
       </CardContent>
     </Card>

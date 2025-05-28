@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import { Card, CardContent } from '../components/ui/card';
@@ -12,6 +11,7 @@ import PerformanceCharts from '../components/relatorios/PerformanceCharts';
 import DescriptorsCharts from '../components/relatorios/DescriptorsCharts';
 import StudentsTable from '../components/relatorios/StudentsTable';
 import { avaliacoesService } from '../services/avaliacoesService';
+import type { Descriptor } from '@/components/relatorios/DescriptorsCharts';
 
 interface Student {
   id: string;
@@ -84,7 +84,11 @@ interface DadosRelatorios {
     matematica: number;
   }>;
   desempenhoHabilidades: Array<{ nome: string; percentual: number }>;
-  desempenhoDescritores: Array<{ descritor: string; nome: string; percentual: number }>;
+  desempenhoDescritores: Array<{ 
+    codigo: string;
+    nome: string; 
+    percentual: number;
+  }>;
 }
 
 const Relatorios: React.FC = () => {
@@ -97,16 +101,15 @@ const Relatorios: React.FC = () => {
     avaliacao: 'all_avaliacoes'
   });
   
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [showStudentDetails, setShowStudentDetails] = useState(false);
-
-  const [loadingStudents, setLoadingStudents] = useState(false);
-  const [errorStudents, setErrorStudents] = useState<string | null>(null);
-
   const [desempenhoTurmas, setDesempenhoTurmas] = useState<DadosRelatorios['desempenhoTurmas']>([]);
   const [evolucaoDesempenho, setEvolucaoDesempenho] = useState<DadosRelatorios['evolucaoDesempenho']>([]);
   const [desempenhoHabilidades, setDesempenhoHabilidades] = useState<DadosRelatorios['desempenhoHabilidades']>([]);
-  const [desempenhoDescritores, setDesempenhoDescritores] = useState<DadosRelatorios['desempenhoDescritores']>([]);
+  const [desempenhoDescritores, setDesempenhoDescritores] = useState<Descriptor[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [showStudentDetails, setShowStudentDetails] = useState(false);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [errorStudents, setErrorStudents] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState('geral');
 
   const handleFilterChange = (filterType: string, value: string) => {
     setSelectedFilters(prev => {
@@ -167,11 +170,15 @@ const Relatorios: React.FC = () => {
         console.log('Dados recebidos:', dados);
 
         // Mapear dados para o formato esperado pelos gráficos de descritores
-        const desempenhoDescritoresMapped = (dados.desempenhoDescritores || []).map((d: any) => ({
+        const desempenhoDescritoresMapped: Descriptor[] = (dados.desempenhoDescritores || []).map((d) => ({
           descritor: d.codigo,
           nome: d.nome,
-          percentual: d.percentual
+          percentual: d.percentual,
+          componente: d.componente
         }));
+
+        // Se o componente for 'all_componentes', não precisamos duplicar os descritores
+        // pois agora eles já vêm com o componente correto do backend
 
         // Verificar se há dados antes de atualizar o estado
         const hasData = dados.desempenhoTurmas?.length > 0 || 
@@ -243,7 +250,7 @@ const Relatorios: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="geral" className="space-y-4">
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-4">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="geral">Visão Geral</TabsTrigger>
             <TabsTrigger value="descritores">Por Descritores</TabsTrigger>
@@ -265,7 +272,6 @@ const Relatorios: React.FC = () => {
                     meta: 100
                   })),
                   desempenho: desempenhoTurmas.map(item => {
-                    // Add defensive checks for item and its properties
                     const mediaPortugues = item?.mediaPortugues ?? 0;
                     const mediaMatematica = item?.mediaMatematica ?? 0;
 
