@@ -160,12 +160,17 @@ export class AvaliacaoController {
   // Método para dados agregados dos relatórios
   async obterDadosRelatorios(request: CustomRequest, response: Response) {
     try {
-      const { escolaId, turmaId, componente } = request.query;
+      const { escolaId, turmaId, componente, avaliacaoId } = request.query;
 
-      console.log('Relatorios API: Parâmetros recebidos:', { escolaId, turmaId, componente });
+      console.log('Relatorios API: Parâmetros recebidos:', { escolaId, turmaId, componente, avaliacaoId });
 
       // Construir o objeto de filtro principal para a query de Avaliacao
       const avaliacaoWhere: Prisma.AvaliacaoWhereInput = {};
+
+      // Filtrar por avaliação específica se fornecida
+      if (avaliacaoId) {
+        avaliacaoWhere.id = avaliacaoId as string;
+      }
 
       // Filtrar por componente (disciplina) se fornecido
       if (componente) {
@@ -240,13 +245,37 @@ export class AvaliacaoController {
             include: {
               itens: {
                 include: {
-                  descritor: true,
-                },
+                  descritor: true
+                }
               },
             },
           },
         },
       });
+
+      // Processar as respostas e marcar itens como corretos/incorretos
+      for (const avaliacao of avaliacoes) {
+        if (!avaliacao.gabarito) continue;
+        
+        const gabaritoMap = new Map(
+          avaliacao.gabarito.itens.map(item => [item.numero, item.resposta])
+        );
+
+        for (const resposta of avaliacao.respostas) {
+          for (const item of resposta.itens) {
+            const respostaCorreta = gabaritoMap.get(item.numero);
+            item.correta = respostaCorreta === item.resposta;
+            
+            // Se o item não tem descritor, tentar pegar do gabarito
+            if (!item.descritor) {
+              const itemGabarito = avaliacao.gabarito.itens.find(i => i.numero === item.numero);
+              if (itemGabarito?.descritor) {
+                item.descritor = itemGabarito.descritor;
+              }
+            }
+          }
+        }
+      }
 
       console.log('Relatorios API: Avaliações encontradas:', avaliacoes.length);
 
@@ -412,10 +441,14 @@ export class AvaliacaoController {
       // Calcular desempenho por descritor
       const desempenhoDescritoresMap = new Map<string, { acertos: number; total: number; nome: string; componente: string }>();
 
+      console.log('Relatorios API: Processando descritores...');
       for (const avaliacao of avaliacoes) {
+        console.log(`Relatorios API: Processando avaliação ${avaliacao.nome}`);
         for (const resposta of avaliacao.respostas) {
+          console.log(`Relatorios API: Processando resposta do aluno ${resposta.aluno.nome}`);
           for (const item of resposta.itens) {
             if (item.descritor) {
+              console.log(`Relatorios API: Item com descritor encontrado: ${item.descritor.codigo} - ${item.descritor.descricao}`);
               const key = `${item.descritor.codigo}-${avaliacao.disciplina}`;
               if (!desempenhoDescritoresMap.has(key)) {
                 desempenhoDescritoresMap.set(key, {
@@ -428,22 +461,90 @@ export class AvaliacaoController {
               const desc = desempenhoDescritoresMap.get(key)!;
               desc.total++;
               if (item.correta) desc.acertos++;
+            } else {
+              console.log('Relatorios API: Item sem descritor encontrado');
             }
           }
         }
       }
 
+      console.log('Relatorios API: Total de descritores processados:', desempenhoDescritoresMap.size);
+
       const desempenhoDescritores = Array.from(desempenhoDescritoresMap.entries()).map(([key, { acertos, total, nome, componente }]) => ({
-        codigo: key.split('-')[0],
+        descritor: key.split('-')[0],
         nome,
         percentual: total > 0 ? (acertos / total) * 100 : 0,
-        componente
+        componente: componente.toLowerCase()
       }));
+
+      // Calcular evolução do desempenho
+      const evolucaoDesempenho = avaliacoes.map(avaliacao => {
+        const respostas = avaliacao.respostas;
+        const totalRespostas = respostas.length;
+        
+        if (totalRespostas === 0) return null;
+
+        const acertos = respostas.reduce((acc, resposta) => {
+          return acc + resposta.itens.filter(item => item.correta).length;
+        }, 0);
+
+        const totalItens = respostas.reduce((acc, resposta) => {
+          return acc + resposta.itens.length;
+        }, 0);
+
+        const media = totalItens > 0 ? (acertos / totalItens) * 100 : 0;
+
+        return {
+          avaliacao: avaliacao.id,
+          nomeAvaliacao: avaliacao.nome,
+          media,
+          portugues: avaliacao.disciplina === 'PORTUGUES' ? media : 0,
+          matematica: avaliacao.disciplina === 'MATEMATICA' ? media : 0
+        };
+      }).filter(Boolean);
+
+      // Calcular desempenho por habilidades
+      const desempenhoHabilidades = avaliacoes.reduce((acc, avaliacao) => {
+        const respostas = avaliacao.respostas;
+        
+        respostas.forEach(resposta => {
+          resposta.itens.forEach(item => {
+            if (item.descritor) {
+              const codigo = item.descritor.codigo;
+              let habilidade = '';
+
+              if (codigo.startsWith('LP')) {
+                if (codigo.includes('leitura')) habilidade = 'Leitura';
+                else if (codigo.includes('escrita')) habilidade = 'Escrita';
+                else if (codigo.includes('interpretacao')) habilidade = 'Interpretação';
+              } else if (codigo.startsWith('MA')) {
+                if (codigo.includes('calculo')) habilidade = 'Cálculo';
+                else if (codigo.includes('raciocinio')) habilidade = 'Raciocínio';
+                else if (codigo.includes('resolucao')) habilidade = 'Resolução de Problemas';
+              }
+
+              if (habilidade) {
+                const existingHabilidade = acc.find(h => h.nome === habilidade);
+                if (existingHabilidade) {
+                  existingHabilidade.percentual = (existingHabilidade.percentual + (item.correta ? 100 : 0)) / 2;
+                } else {
+                  acc.push({
+                    nome: habilidade,
+                    percentual: item.correta ? 100 : 0
+                  });
+                }
+              }
+            }
+          });
+        });
+
+        return acc;
+      }, [] as Array<{ nome: string; percentual: number }>);
 
       const responseData = {
         desempenhoTurmas,
-        evolucaoDesempenho: [], // Implementar conforme necessário
-        desempenhoHabilidades: [], // Implementar conforme necessário
+        evolucaoDesempenho,
+        desempenhoHabilidades,
         desempenhoDescritores
       };
 

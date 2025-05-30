@@ -12,6 +12,7 @@ import DescriptorsCharts from '../components/relatorios/DescriptorsCharts';
 import StudentsTable from '../components/relatorios/StudentsTable';
 import { avaliacoesService } from '../services/avaliacoesService';
 import type { Descriptor } from '@/components/relatorios/DescriptorsCharts';
+import { toast } from 'sonner';
 
 interface Student {
   id: string;
@@ -113,18 +114,23 @@ const Relatorios: React.FC = () => {
 
   const handleFilterChange = (filterType: string, value: string) => {
     setSelectedFilters(prev => {
-      if (filterType === 'turma') {
-        return {
-          ...prev,
-          [filterType]: value,
-          avaliacao: 'all_avaliacoes'
-        };
-      }
-
-      return {
+      const newFilters = {
         ...prev,
         [filterType]: value
       };
+
+      // Se mudar a turma, resetar a avaliação
+      if (filterType === 'turma') {
+        newFilters.avaliacao = 'all_avaliacoes';
+      }
+
+      // Se mudar a escola, resetar turma e avaliação
+      if (filterType === 'escola') {
+        newFilters.turma = 'all_turmas';
+        newFilters.avaliacao = 'all_avaliacoes';
+      }
+
+      return newFilters;
     });
   };
 
@@ -165,20 +171,26 @@ const Relatorios: React.FC = () => {
           escolaId: selectedFilters.escola !== 'all_escolas' ? selectedFilters.escola : undefined,
           turmaId: selectedFilters.turma !== 'all_turmas' ? selectedFilters.turma : undefined,
           componente: selectedFilters.componente !== 'all_componentes' ? selectedFilters.componente : undefined,
+          avaliacaoId: selectedFilters.avaliacao !== 'all_avaliacoes' ? selectedFilters.avaliacao : undefined
         });
 
         console.log('Dados recebidos:', dados);
 
         // Mapear dados para o formato esperado pelos gráficos de descritores
-        const desempenhoDescritoresMapped: Descriptor[] = (dados.desempenhoDescritores || []).map((d) => ({
-          descritor: d.codigo,
-          nome: d.nome,
-          percentual: d.percentual,
-          componente: d.componente
-        }));
+        const desempenhoDescritoresMapped: Descriptor[] = (dados.desempenhoDescritores || []).map((d) => {
+          console.log('Mapeando descritor:', d);
+          return {
+            descritor: d.codigo || d.descritor,
+            nome: d.nome,
+            percentual: d.percentual,
+            componente: d.componente
+          };
+        });
 
-        // Se o componente for 'all_componentes', não precisamos duplicar os descritores
-        // pois agora eles já vêm com o componente correto do backend
+        console.log('Dados mapeados dos descritores:', {
+          original: dados.desempenhoDescritores,
+          mapeado: desempenhoDescritoresMapped
+        });
 
         // Verificar se há dados antes de atualizar o estado
         const hasData = dados.desempenhoTurmas?.length > 0 || 
@@ -191,7 +203,31 @@ const Relatorios: React.FC = () => {
           desempenhoTurmas: dados.desempenhoTurmas?.length || 0,
           evolucaoDesempenho: dados.evolucaoDesempenho?.length || 0,
           desempenhoHabilidades: dados.desempenhoHabilidades?.length || 0,
-          desempenhoDescritores: desempenhoDescritoresMapped.length
+          desempenhoDescritores: desempenhoDescritoresMapped.length,
+          detalhes: {
+            desempenhoTurmas: dados.desempenhoTurmas?.map(t => ({
+              turma: t.nomeTurma,
+              alunos: t.alunos?.length || 0,
+              mediaPortugues: t.mediaPortugues,
+              mediaMatematica: t.mediaMatematica
+            })),
+            evolucaoDesempenho: dados.evolucaoDesempenho?.map(e => ({
+              avaliacao: e.nomeAvaliacao,
+              media: e.media,
+              portugues: e.portugues,
+              matematica: e.matematica
+            })),
+            desempenhoHabilidades: dados.desempenhoHabilidades?.map(h => ({
+              nome: h.nome,
+              percentual: h.percentual
+            })),
+            desempenhoDescritores: desempenhoDescritoresMapped.map(d => ({
+              descritor: d.descritor,
+              nome: d.nome,
+              percentual: d.percentual,
+              componente: d.componente
+            }))
+          }
         });
 
         if (hasData) {
@@ -208,6 +244,7 @@ const Relatorios: React.FC = () => {
         }
       } catch (error) {
         console.error('Erro ao buscar dados dos relatórios:', error);
+        toast.error('Erro ao carregar dados dos relatórios. Por favor, tente novamente.');
         setDesempenhoTurmas([]);
         setEvolucaoDesempenho([]);
         setDesempenhoHabilidades([]);

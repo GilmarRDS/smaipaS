@@ -47,7 +47,12 @@ export const avaliacoesService = {
     }
   },
 
-  async obterDadosRelatorios(params: { escolaId?: string; turmaId?: string; componente?: string }) {
+  async obterDadosRelatorios(params: { 
+    escolaId?: string; 
+    turmaId?: string; 
+    componente?: string;
+    avaliacaoId?: string;
+  }) {
     try {
       const response = await api.get('/avaliacoes/relatorios/dados', { params });
       return response.data;
