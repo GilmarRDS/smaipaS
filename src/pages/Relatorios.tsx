@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import StudentDetailsView from '../components/relatorios/StudentDetailsView';
 import PerformanceCharts from '../components/relatorios/PerformanceCharts';
 import DescriptorsCharts from '../components/relatorios/DescriptorsCharts';
+import DescriptorsAnalysis from '@/components/relatorios/DescriptorsAnalysis';
 import StudentsTable from '../components/relatorios/StudentsTable';
 import { avaliacoesService } from '../services/avaliacoesService';
 import type { Descriptor } from '@/components/relatorios/DescriptorsCharts';
@@ -326,10 +327,18 @@ const Relatorios: React.FC = () => {
             {desempenhoDescritores.length === 0 ? (
               <p className="text-center text-muted-foreground">Nenhum dado disponível para os filtros selecionados.</p>
             ) : (
-              <DescriptorsCharts 
-                desempenhoDescritores={desempenhoDescritores}
-                componente={selectedFilters.componente}
-              />
+              <>
+                <DescriptorsCharts
+                  desempenhoDescritores={desempenhoDescritores}
+                  componente={selectedFilters.componente}
+                />
+                <div className="mt-6">
+                  <DescriptorsAnalysis
+                    desempenhoDescritores={desempenhoDescritores}
+                    componente={selectedFilters.componente}
+                  />
+                </div>
+              </>
             )}
           </TabsContent>
 
