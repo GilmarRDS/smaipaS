@@ -92,13 +92,13 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({ isSecretaria }) => {
                   
                   if (resposta) {
                     // Calcular nota baseada nas respostas corretas
-                    const nota = resposta.respostas.reduce((total, item) => {
+                    const nota = resposta.itens.reduce((total, item) => {
                       const itemGabarito = avaliacao.gabarito?.itens.find(i => i.numero === item.numero);
                       if (itemGabarito && item.resposta === itemGabarito.resposta) {
                         return total + 1;
                       }
                       return total;
-                    }, 0) / resposta.respostas.length * 10;
+                    }, 0) / resposta.itens.length * 10;
 
                     if (avaliacao.disciplina === 'PORTUGUES') {
                       totalNotaPortugues += nota;
@@ -108,7 +108,7 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({ isSecretaria }) => {
                       totalRespostasMatematica++;
                     }
                     
-                    if (resposta.presente) {
+                    if (resposta.compareceu) {
                       totalPresentes++;
                     }
                   }
@@ -156,13 +156,13 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({ isSecretaria }) => {
                     
                     if (resposta) {
                       // Calcular nota baseada nas respostas corretas
-                      const nota = resposta.respostas.reduce((total, item) => {
+                      const nota = resposta.itens.reduce((total, item) => {
                       const itemGabarito = avaliacao.gabarito?.itens.find(i => i.numero === item.numero);
                       if (itemGabarito && item.resposta === itemGabarito.resposta) {
                         return total + 1;
                       }
                         return total;
-                      }, 0) / resposta.respostas.length * 10;
+                      }, 0) / resposta.itens.length * 10;
 
                       if (avaliacao.disciplina === 'PORTUGUES') {
                         mediaPortuguesAnterior += nota;

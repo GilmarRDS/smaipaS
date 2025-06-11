@@ -7,11 +7,14 @@ export interface Avaliacao {
   dataAplicacao: string;
   dataCriacao: string;
   dataAtualizacao: string;
+  status?: string; // propriedade adicionada como opcional
+  dataInicio?: string; // propriedade adicionada como opcional
   respostas?: {
     id: string;
     alunoId: string;
     compareceu: boolean;
     transferido: boolean;
+    presente?: boolean; // propriedade adicionada como opcional
     itens: Array<{
       id: string;
       numero: number;
@@ -23,6 +26,14 @@ export interface Avaliacao {
         descricao: string;
       };
     }>;
+    avaliacaoId?: string; // adicionado para compatibilidade com uso no componente
+    createdAt?: string; // adicionado para compatibilidade
+    updatedAt?: string; // adicionado para compatibilidade
+    aluno?: {
+      id: string;
+      nome: string;
+      // outras propriedades do aluno podem ser adicionadas conforme necessário
+    };
   }[];
   gabarito?: {
     id: string;
