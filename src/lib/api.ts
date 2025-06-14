@@ -23,10 +23,14 @@
 // export default api;
 
 
-import axios from 'axios';
+import axios, { AxiosHeaders } from 'axios';
 
 const api = axios.create({
   baseURL: 'http://localhost:3000/api',
+  headers: {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json'
+  }
 });
 
 // Lista de rotas que não precisam de autenticação
@@ -56,11 +60,17 @@ api.interceptors.request.use((config) => {
     if (!isPublicRoute && typeof window !== 'undefined' && window.localStorage) {
       const token = localStorage.getItem('smaipa_token');
       if (token) {
-        config.headers = config.headers || {};
-        config.headers['Authorization'] = `Bearer ${token.trim()}`;
+        if (!config.headers) {
+          config.headers = new AxiosHeaders();
+        }
+        config.headers.set('Authorization', `Bearer ${token.trim()}`);
         console.log('Token adicionado:', token);
       } else {
         console.log('Token não encontrado no localStorage');
+        // Redireciona para o login se não houver token em rotas não públicas
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
       }
     }
   } catch (error) {

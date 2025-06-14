@@ -12,7 +12,7 @@ function asyncHandler(fn: (req: RequestWithUsuario, res: Response, next: NextFun
   };
 }
 
-// respostaRoutes.use(ensureAuthenticated);
+respostaRoutes.use(ensureAuthenticated);
 
 respostaRoutes.post('/', asyncHandler((req, res) => respostaController.criar(req, res)));
 respostaRoutes.get('/', asyncHandler((req, res) => respostaController.listarTodas(req, res)));

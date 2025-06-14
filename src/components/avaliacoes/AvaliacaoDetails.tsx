@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -6,7 +5,7 @@ import { Avaliacao, formatStatus, getStatusColor } from '@/types/avaliacoes';
 import { format } from 'date-fns';
 import { FileText, ListFilter, Users } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '@/contexts/AuthContext';
+import useAuth from '@/hooks/useAuth';
 
 interface AvaliacaoDetailsProps {
   open: boolean;

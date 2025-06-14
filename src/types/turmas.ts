@@ -8,8 +8,8 @@ export interface Turma {
     id: string;
     nome: string;
   };
-  createdAt: string;
-  updatedAt: string;
+  dataCriacao?: string;
+  dataAtualizacao?: string;
 }
 
 export interface Escola {

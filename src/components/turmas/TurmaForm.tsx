@@ -20,15 +20,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Turma } from '@/types/turmas';
-import { useAuth } from '@/contexts/AuthContext';
+import useAuth from '@/hooks/useAuth';
 import { escolasService } from '@/services/escolasService';
-import { Escola } from '@/types/turmas';
+import { Escola } from '@/types/escolas';
 
 const formSchema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório'),
   ano: z.string().min(1, 'Ano é obrigatório'),
   turno: z.enum(['matutino', 'vespertino', 'noturno', 'integral']),
-  escolaId: z.string().optional(),
+  escolaId: z.string().min(1, 'Escola é obrigatória'),
 });
 
 interface TurmaFormProps {

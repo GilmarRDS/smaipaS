@@ -31,9 +31,17 @@ import { prisma } from '../lib/prisma';
 
 export const sendPasswordRecoveryEmail = async (email: string, token: string) => {
   try {
+    console.log('Iniciando envio de email de recuperação para:', email);
+    console.log('Configurações de email:', {
+      host: config.email.host,
+      port: config.email.port,
+      user: config.email.user,
+      secure: config.email.port === 465
+    });
+
     // Usar a URL do frontend da configuração
     const resetUrl = `${config.frontend.url}/redefinir-senha?token=${token}`;
-    console.log('URL de redefinição de senha:', resetUrl); // Debug log
+    console.log('URL de redefinição de senha:', resetUrl);
 
     const mailOptions = {
       from: `"SMAIPA" <${config.email.user}>`,
@@ -77,6 +85,12 @@ export const sendPasswordRecoveryEmail = async (email: string, token: string) =>
         </div>
       `,
     };
+
+    console.log('Enviando email com as opções:', {
+      from: mailOptions.from,
+      to: mailOptions.to,
+      subject: mailOptions.subject
+    });
 
     const info = await transporter.sendMail(mailOptions);
     console.log('Email de recuperação de senha enviado:', info.messageId);

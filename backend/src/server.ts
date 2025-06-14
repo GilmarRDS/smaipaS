@@ -1,9 +1,11 @@
 import 'express-async-errors';
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { config } from 'dotenv';
 import { router } from './routes/index';
 import path from 'path';
+import { authMiddleware } from './middlewares/auth';
+import { uploadsDir } from './config/multer';
 
 config();
 
@@ -12,10 +14,15 @@ const app = express();
 // Configurar CORS para permitir requisições do frontend
 app.use(cors({
   origin: ['http://localhost:8080', 'http://127.0.0.1:8080'],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
 
 app.use(express.json());
+
+// Aplicar middleware de autenticação em todas as rotas da API
+// app.use('/api', authMiddleware as express.RequestHandler);
 
 // Rotas da API
 app.use('/api', router);
@@ -38,9 +45,20 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const HOST = '0.0.0.0'; // Escutar em todas as interfaces de rede
 
 app.listen(PORT, HOST, () => {
   console.log(`Servidor rodando em http://${HOST}:${PORT}`);
+  console.log('Diretório de uploads:', uploadsDir);
+  console.log('CORS configurado para:', ['http://localhost:8080', 'http://127.0.0.1:8080']);
+});
+
+// Adicionar handler de erros não capturados
+process.on('uncaughtException', (error) => {
+  console.error('Erro não capturado:', error);
+});
+
+process.on('unhandledRejection', (error) => {
+  console.error('Promessa rejeitada não tratada:', error);
 });

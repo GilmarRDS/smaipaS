@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
-import { useAuth } from '@/contexts/AuthContext';
+import useAuth from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { User, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { usuariosService, Usuario } from '@/services/usuariosService';
-import { escolasService, Escola } from '@/services/escolasService';
+import { escolasService } from '@/services/escolasService';
+import { Escola } from '@/types/escolas';
 import UsuarioForm from '@/components/usuarios/UsuarioForm';
 import UsuariosList from '@/components/usuarios/UsuariosList';
 import { useToast } from '@/components/ui/use-toast';

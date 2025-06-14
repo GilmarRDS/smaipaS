@@ -11,7 +11,7 @@ interface TokenPayload {
 
 // Declare a interface para estender o Request
 export interface RequestWithUsuario extends Request {
-  usuario?: {
+  usuario: {
     id: string;
     role: string;
     escolaId?: string;
@@ -20,11 +20,11 @@ export interface RequestWithUsuario extends Request {
 
 // Lista de rotas públicas que não precisam de autenticação
 const publicRoutes = [
-  '/api/usuarios/login',
-  '/api/usuarios/recuperar-senha',
-  '/api/usuarios/resetar-senha',
-  '/api/usuarios/validar-token',
-  '/api/redefinir-senha',
+  '/usuarios/login',
+  '/usuarios/recuperar-senha',
+  '/usuarios/resetar-senha',
+  '/usuarios/validar-token',
+  '/redefinir-senha',
   '/favicon.ico'
 ];
 
@@ -41,7 +41,7 @@ export const authMiddleware = async (
   console.log('Headers recebidos:', req.headers);
 
   // Verifica se a rota é pública
-  const isPublicRoute = publicRoutes.some(route => req.originalUrl === route);
+  const isPublicRoute = publicRoutes.some(route => req.originalUrl.includes(route));
   if (isPublicRoute) {
     console.log('Rota pública detectada, permitindo acesso');
     return next();
@@ -83,8 +83,11 @@ export const authMiddleware = async (
     req.usuario = {
       id: usuario.id,
       role: usuario.role,
-      escolaId: usuario.escolaId,
+      escolaId: usuario.escolaId ?? undefined,
     };
+
+    // Log para debug do objeto usuario no request
+    console.log('Objeto usuario no request:', req.usuario);
 
     console.log('Autenticação bem-sucedida para usuário:', {
       id: usuario.id,

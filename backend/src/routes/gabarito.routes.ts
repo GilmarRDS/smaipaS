@@ -13,6 +13,7 @@ function asyncHandler(fn: (req: RequestWithUsuario, res: Response, next: NextFun
 
 gabaritoRoutes.post('/', asyncHandler((req, res) => gabaritoController.criar(req, res)));
 gabaritoRoutes.get('/', asyncHandler((req, res) => gabaritoController.listarTodos(req, res)));
+gabaritoRoutes.get('/avaliacao/:avaliacaoId', asyncHandler((req, res) => gabaritoController.listarPorAvaliacao(req, res)));
 gabaritoRoutes.get('/:id', asyncHandler((req, res) => gabaritoController.buscarPorId(req, res)));
 gabaritoRoutes.put('/:id', asyncHandler((req, res) => gabaritoController.atualizar(req, res)));
 gabaritoRoutes.delete('/:id', asyncHandler((req, res) => gabaritoController.deletar(req, res)));

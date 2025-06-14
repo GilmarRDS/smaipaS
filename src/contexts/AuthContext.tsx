@@ -1,9 +1,8 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import api from '@/lib/api';
-import { User, AuthContextType } from '@/types/auth';
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import api from '../lib/api';
+import { User } from '../types/auth';
+import { AuthContext } from './AuthContext';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -13,33 +12,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        console.log('Verificando autenticação...');
         const storedUser = localStorage.getItem('smaipa_user');
         const token = localStorage.getItem('smaipa_token');
         
-        console.log('Dados armazenados:', { storedUser, token });
-        
         if (storedUser && token) {
           const userData = JSON.parse(storedUser);
-          console.log('Dados do usuário encontrados:', userData);
           
           try {
-            console.log('Verificando token...');
-            const response = await api.get('/usuarios/me');
-            console.log('Resposta da verificação:', response.data);
-            
+            api.defaults.headers.common['Authorization'] = `Bearer ${token.trim()}`;
+            await api.get('/usuarios/me');
             setUser(userData);
             setIsAuthenticated(true);
-            console.log('Usuário autenticado com sucesso');
           } catch (error) {
-            console.error('Erro ao verificar token:', error);
             if (error.response?.status === 401) {
-              console.log('Token inválido, realizando logout...');
               logout();
             }
           }
-        } else {
-          console.log('Nenhum dado de autenticação encontrado');
         }
       } catch (error) {
         console.error('Erro ao verificar autenticação:', error);
@@ -89,6 +77,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('smaipa_token', token);
       localStorage.setItem('smaipa_user', JSON.stringify(userData));
       
+      api.defaults.headers.common['Authorization'] = `Bearer ${token.trim()}`;
+      
       setUser(userData);
       setIsAuthenticated(true);
       toast.success(`Bem-vindo(a), ${userData.name}!`);
@@ -107,27 +97,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAuthenticated(false);
     localStorage.removeItem('smaipa_user');
     localStorage.removeItem('smaipa_token');
+    delete api.defaults.headers.common['Authorization'];
     toast.info('Sessão encerrada');
     console.log('Logout concluído');
   };
 
   const isSecretaria = user?.role === 'secretaria';
+  const isAdmin = user?.role === 'admin';
 
   if (isLoading) {
     return <div>Carregando...</div>;
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated, isSecretaria }}>
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated, isSecretaria, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth deve ser usado dentro de um AuthProvider');
-  }
-  return context;
 };

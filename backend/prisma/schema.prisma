@@ -17,7 +17,7 @@ model Usuario {
   escolaId        String?
   dataCriacao     DateTime @default(now())
   dataAtualizacao DateTime @updatedAt
-  escola          Escola?  @relation(fields: [escolaId], references: [id])
+  escola          Escola?  @relation(fields: [escolaId], references: [id], onDelete: SetNull)
   
   // Campos para recuperação de senha
   resetToken      String?  @unique
@@ -33,7 +33,6 @@ model Escola {
   diretor         String
   dataCriacao     DateTime    @default(now())
   dataAtualizacao DateTime    @updatedAt
-  avaliacoes      Avaliacao[]
   turmas          Turma[]
   usuarios        Usuario[]
 }
@@ -47,18 +46,18 @@ model Turma {
   dataCriacao     DateTime    @default(now())
   dataAtualizacao DateTime    @updatedAt
   alunos          Aluno[]
-  avaliacoes      Avaliacao[]
-  escola          Escola      @relation(fields: [escolaId], references: [id])
+  escola          Escola      @relation(fields: [escolaId], references: [id], onDelete: Cascade)
 }
 
 model Aluno {
   id              String     @id @default(uuid())
   nome            String
   matricula       String
+  dataNascimento  DateTime?
   turmaId         String
   dataCriacao     DateTime   @default(now())
   dataAtualizacao DateTime   @updatedAt
-  turma           Turma      @relation(fields: [turmaId], references: [id])
+  turma           Turma      @relation(fields: [turmaId], references: [id], onDelete: Cascade)
   respostas       Resposta[]
 }
 
@@ -67,13 +66,10 @@ model Avaliacao {
   nome            String
   tipo            TipoAvaliacao
   disciplina      Disciplina
+  ano             String        // Ano/série da avaliação
   dataAplicacao   DateTime
-  turmaId         String
-  escolaId        String
   dataCriacao     DateTime      @default(now())
   dataAtualizacao DateTime      @updatedAt
-  escola          Escola        @relation(fields: [escolaId], references: [id])
-  turma           Turma         @relation(fields: [turmaId], references: [id])
   gabarito        Gabarito?
   respostas       Resposta[]
 }
@@ -83,7 +79,7 @@ model Gabarito {
   avaliacaoId     String         @unique
   dataCriacao     DateTime       @default(now())
   dataAtualizacao DateTime       @updatedAt
-  avaliacao       Avaliacao      @relation(fields: [avaliacaoId], references: [id])
+  avaliacao       Avaliacao      @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
   itens           ItemGabarito[]
 }
 
@@ -95,8 +91,8 @@ model ItemGabarito {
   gabaritoId      String
   dataCriacao     DateTime   @default(now())
   dataAtualizacao DateTime   @updatedAt
-  descritor       Descritor? @relation(fields: [descritorId], references: [id])
-  gabarito        Gabarito   @relation(fields: [gabaritoId], references: [id])
+  descritor       Descritor? @relation(fields: [descritorId], references: [id], onDelete: SetNull)
+  gabarito        Gabarito   @relation(fields: [gabaritoId], references: [id], onDelete: Cascade)
 }
 
 model Resposta {
@@ -108,8 +104,8 @@ model Resposta {
   dataCriacao     DateTime       @default(now())
   dataAtualizacao DateTime       @updatedAt
   itens           ItemResposta[]
-  aluno           Aluno          @relation(fields: [alunoId], references: [id])
-  avaliacao       Avaliacao      @relation(fields: [avaliacaoId], references: [id])
+  aluno           Aluno          @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  avaliacao       Avaliacao      @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
 }
 
 model ItemResposta {
@@ -121,8 +117,8 @@ model ItemResposta {
   respostaId      String
   dataCriacao     DateTime   @default(now())
   dataAtualizacao DateTime   @updatedAt
-  descritor       Descritor? @relation(fields: [descritorId], references: [id])
-  respostaPai     Resposta   @relation(fields: [respostaId], references: [id])
+  descritor       Descritor? @relation(fields: [descritorId], references: [id], onDelete: SetNull)
+  respostaPai     Resposta   @relation(fields: [respostaId], references: [id], onDelete: Cascade)
 }
 
 model Descritor {
@@ -131,6 +127,7 @@ model Descritor {
   descricao       String
   disciplina      Disciplina
   tipo            TipoAvaliacao
+  ano             String         // Ano/série do descritor (ex: "1º ano", "2º ano", etc)
   dataCriacao     DateTime       @default(now())
   dataAtualizacao DateTime       @updatedAt
   itensGabarito   ItemGabarito[]

@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Usuario } from '@/services/usuariosService';
-import { Escola } from '@/services/escolasService';
+import { Escola } from '@/types/escolas';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -92,6 +93,9 @@ export default function UsuarioForm({
           <DialogTitle>
             {usuario ? 'Editar Usuário' : 'Novo Usuário'}
           </DialogTitle>
+          <DialogDescription>
+            {usuario ? 'Edite as informações do usuário' : 'Preencha as informações para criar um novo usuário'}
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -115,7 +119,7 @@ export default function UsuarioForm({
                 <FormItem>
                   <FormLabel>E-mail</FormLabel>
                   <FormControl>
-                    <Input {...field} type="email" />
+                    <Input {...field} type="email" autoComplete="username" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -128,7 +132,7 @@ export default function UsuarioForm({
                 <FormItem>
                   <FormLabel>Senha</FormLabel>
                   <FormControl>
-                    <Input {...field} type="password" />
+                    <Input {...field} type="password" autoComplete="new-password" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

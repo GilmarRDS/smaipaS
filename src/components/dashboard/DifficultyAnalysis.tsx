@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import useAuth from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { alunosService } from '@/services/alunosService';
 import { avaliacoesService } from '@/services/avaliacoesService';
@@ -43,7 +43,7 @@ const DifficultyAnalysis: React.FC = () => {
         }
         
         // Carregar turmas da escola
-        const turmas = await turmasService.listarPorEscola(user.schoolId);
+        const turmas = await turmasService.listar(user.schoolId);
         
         // Carregar avaliações
         const avaliacoes = await avaliacoesService.listarPorEscola(user.schoolId) as Avaliacao[];

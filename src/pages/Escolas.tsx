@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
-import { useAuth } from '@/contexts/AuthContext';
+import useAuth from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { School, Plus, Loader2 } from 'lucide-react';

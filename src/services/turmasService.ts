@@ -3,42 +3,29 @@ import { Turma } from '@/types/turmas';
 import { AxiosError } from 'axios';
 
 export const turmasService = {
-  async listar(escolaId: string) {
+  async listar(escolaId?: string) {
     try {
       if (!escolaId) {
-        console.error('escolaId não fornecido');
-        return [];
+        // Se não tiver escolaId, lista todas as turmas
+        const response = await api.get('/turmas');
+        return response.data;
       }
-      const response = await api.get<Turma[]>(`/escolas/${escolaId}/turmas`);
-      return response.data;
+      
+      const response = await api.get(`/escolas/${escolaId}/turmas`);
+      const turmas = response.data;
+      const turmasFiltradas = Array.isArray(turmas)
+        ? turmas.filter((turma: Turma) => turma.escolaId === escolaId)
+        : [];
+      return turmasFiltradas;
     } catch (error) {
       console.error('Erro ao listar turmas:', error);
       throw error;
     }
   },
 
-  async listarPorEscola(escolaId: string) {
-    try {
-      if (!escolaId) {
-        console.warn('ID da escola não fornecido');
-        return [];
-      }
-      
-      const response = await api.get<Turma[]>(`/escolas/${escolaId}/turmas`);
-      return response.data;
-    } catch (error) {
-      if (error instanceof AxiosError && error.response?.status === 404) {
-        console.warn(`Nenhuma turma encontrada para a escola ${escolaId}`);
-        return [];
-      }
-      console.error('Erro ao listar turmas da escola:', error);
-      throw error;
-    }
-  },
-
   async obterPorId(id: string) {
     try {
-      const response = await api.get<Turma>(`/turmas/${id}`);
+      const response = await api.get(`/turmas/${id}`);
       return response.data;
     } catch (error) {
       console.error('Erro ao obter turma:', error);
@@ -48,17 +35,26 @@ export const turmasService = {
 
   async criar(turma: Omit<Turma, 'id'>) {
     try {
-      const response = await api.post<Turma>('/turmas', turma);
+      console.log('Enviando dados para criar turma:', turma);
+      const response = await api.post('/turmas', turma);
       return response.data;
     } catch (error) {
-      console.error('Erro ao criar turma:', error);
+      if (error instanceof AxiosError) {
+        console.error('Erro ao criar turma:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      } else {
+        console.error('Erro ao criar turma:', error);
+      }
       throw error;
     }
   },
 
   async atualizar(id: string, turma: Partial<Turma>) {
     try {
-      const response = await api.put<Turma>(`/turmas/${id}`, turma);
+      const response = await api.put(`/turmas/${id}`, turma);
       return response.data;
     } catch (error) {
       console.error('Erro ao atualizar turma:', error);

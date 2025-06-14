@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import { Card, CardContent } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { useAuth } from '../contexts/AuthContext';
+import useAuth from '@/hooks/useAuth';
 import FilterControls from '../components/dashboard/FilterControls';
 import { turmasService } from '../services/turmasService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
@@ -35,9 +35,54 @@ interface Student {
   } | null;
 }
 
+interface AlunoDesempenho {
+  id: string;
+  nome: string;
+  desempenho: {
+    portugues: number;
+    matematica: number;
+    media: number;
+    habilidades: {
+      leitura?: number;
+      escrita?: number;
+      interpretacao?: number;
+      calculo?: number;
+      raciocinio?: number;
+      resolucao?: number;
+    };
+  };
+  presente: boolean;
+  transferida: boolean;
+  descritores: {
+    portugues: Array<{
+      codigo: string;
+      nome: string;
+      percentual: number;
+    }> | null;
+    matematica: Array<{
+      codigo: string;
+      nome: string;
+      percentual: number;
+    }> | null;
+  } | null;
+}
+
 interface DadosRelatorios {
-  desempenhoTurmas: Array<{ turma: string; portugues: number; matematica: number }>;
-  evolucaoDesempenho: Array<{ avaliacao: string; portugues: number; matematica: number }>;
+  desempenhoTurmas: Array<{
+    turmaId: string;
+    nomeTurma: string;
+    mediaPortugues: number;
+    mediaMatematica: number;
+    totalAlunos: number;
+    alunos: AlunoDesempenho[];
+  }>;
+  evolucaoDesempenho: Array<{
+    avaliacao: string;
+    nomeAvaliacao: string;
+    media: number;
+    portugues: number;
+    matematica: number;
+  }>;
   desempenhoHabilidades: Array<{ nome: string; percentual: number }>;
   desempenhoDescritores: Array<{ descritor: string; nome: string; percentual: number }>;
 }
@@ -55,7 +100,6 @@ const Relatorios: React.FC = () => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [showStudentDetails, setShowStudentDetails] = useState(false);
 
-  const [students, setStudents] = useState<Student[]>([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [errorStudents, setErrorStudents] = useState<string | null>(null);
 
@@ -112,61 +156,73 @@ const Relatorios: React.FC = () => {
   useEffect(() => {
     async function fetchRelatorioData() {
       try {
+        console.log('Buscando dados com filtros:', selectedFilters);
+        
         const dados = await avaliacoesService.obterDadosRelatorios({
           escolaId: selectedFilters.escola !== 'all_escolas' ? selectedFilters.escola : undefined,
           turmaId: selectedFilters.turma !== 'all_turmas' ? selectedFilters.turma : undefined,
           componente: selectedFilters.componente !== 'all_componentes' ? selectedFilters.componente : undefined,
         });
 
+        console.log('Dados recebidos:', dados);
+
         // Mapear dados para o formato esperado pelos gráficos de descritores
-        const desempenhoDescritoresMapped = (dados.desempenhoDescritores as any[]).map((d) => ({
+        const desempenhoDescritoresMapped = (dados.desempenhoDescritores || []).map((d: any) => ({
           descritor: d.codigo,
           nome: d.nome,
           percentual: d.percentual
         }));
 
-        setDesempenhoTurmas(dados?.desempenhoTurmas ?? []);
-        setEvolucaoDesempenho(dados?.evolucaoDesempenho ?? []);
-        setDesempenhoHabilidades(dados?.desempenhoHabilidades ?? []);
-        setDesempenhoDescritores(desempenhoDescritoresMapped);
+        // Verificar se há dados antes de atualizar o estado
+        const hasData = dados.desempenhoTurmas?.length > 0 || 
+                       dados.evolucaoDesempenho?.length > 0 || 
+                       dados.desempenhoHabilidades?.length > 0 || 
+                       desempenhoDescritoresMapped.length > 0;
+
+        console.log('Dados processados:', {
+          hasData,
+          desempenhoTurmas: dados.desempenhoTurmas?.length || 0,
+          evolucaoDesempenho: dados.evolucaoDesempenho?.length || 0,
+          desempenhoHabilidades: dados.desempenhoHabilidades?.length || 0,
+          desempenhoDescritores: desempenhoDescritoresMapped.length
+        });
+
+        if (hasData) {
+          setDesempenhoTurmas(dados.desempenhoTurmas || []);
+          setEvolucaoDesempenho(dados.evolucaoDesempenho || []);
+          setDesempenhoHabilidades(dados.desempenhoHabilidades || []);
+          setDesempenhoDescritores(desempenhoDescritoresMapped);
+        } else {
+          console.log('Nenhum dado disponível para os filtros selecionados');
+          setDesempenhoTurmas([]);
+          setEvolucaoDesempenho([]);
+          setDesempenhoHabilidades([]);
+          setDesempenhoDescritores([]);
+        }
       } catch (error) {
         console.error('Erro ao buscar dados dos relatórios:', error);
+        setDesempenhoTurmas([]);
+        setEvolucaoDesempenho([]);
+        setDesempenhoHabilidades([]);
+        setDesempenhoDescritores([]);
       }
     }
     fetchRelatorioData();
   }, [selectedFilters]);
 
-  useEffect(() => {
-    const fetchStudents = async () => {
-      if (selectedFilters.turma === 'all_turmas') {
-        setStudents([]);
-        return;
-      }
-      setLoadingStudents(true);
-      setErrorStudents(null);
-      try {
-        const data = await avaliacoesService.listarPorTurma(selectedFilters.turma);
-        // Mapear dados para o formato esperado
-        const mappedStudents = data.map((aluno: any) => ({
-          id: aluno.id,
-          nome: aluno.nome,
-          presente: false,
-          portugues: null,
-          matematica: null,
-          media: null,
-          descritores: null,
-          transferida: false
-        }));
-        setStudents(mappedStudents);
-      } catch (error) {
-        setErrorStudents('Erro ao carregar alunos');
-      } finally {
-        setLoadingStudents(false);
-      }
-    };
-
-    fetchStudents();
-  }, [selectedFilters.turma]);
+  // Extract students from the selected turma's performance data
+  const studentsForTable = selectedFilters.turma !== 'all_turmas'
+    ? desempenhoTurmas.find(turma => turma.turmaId === selectedFilters.turma)?.alunos.map((aluno: AlunoDesempenho): Student => ({
+        id: aluno.id,
+        nome: aluno.nome,
+        presente: aluno.presente,
+        transferida: aluno.transferida,
+        portugues: aluno.desempenho?.portugues ?? null,
+        matematica: aluno.desempenho?.matematica ?? null,
+        media: aluno.desempenho?.media ?? null,
+        descritores: aluno.descritores
+      })) || []
+    : [];
 
   return (
     <MainLayout>
@@ -195,18 +251,43 @@ const Relatorios: React.FC = () => {
           </TabsList>
 
           <TabsContent value="geral" className="space-y-4">
-            <PerformanceCharts 
-              desempenhoTurmas={desempenhoTurmas}
-              evolucaoDesempenho={evolucaoDesempenho}
-              desempenhoHabilidades={desempenhoHabilidades}
-            />
+            {desempenhoTurmas.length === 0 && 
+             evolucaoDesempenho.length === 0 && 
+             desempenhoHabilidades.length === 0 && 
+             desempenhoDescritores.length === 0 ? (
+              <p className="text-center text-muted-foreground">Nenhum dado disponível para os filtros selecionados.</p>
+            ) : (
+              <PerformanceCharts 
+                dados={{
+                  evolucao: evolucaoDesempenho.map(item => ({
+                    periodo: item.nomeAvaliacao || item.avaliacao,
+                    media: item.media || ((item.portugues || 0) + (item.matematica || 0)) / 2,
+                    meta: 100
+                  })),
+                  desempenho: desempenhoTurmas.map(item => {
+                    // Add defensive checks for item and its properties
+                    const mediaPortugues = item?.mediaPortugues ?? 0;
+                    const mediaMatematica = item?.mediaMatematica ?? 0;
+
+                    return {
+                      categoria: item?.nomeTurma || 'Desconhecida',
+                      quantidade: (mediaPortugues + mediaMatematica) / 2
+                    };
+                  })
+                }}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="descritores" className="space-y-4">
-            <DescriptorsCharts 
-              desempenhoDescritores={desempenhoDescritores}
-              componente={selectedFilters.componente}
-            />
+            {desempenhoDescritores.length === 0 ? (
+              <p className="text-center text-muted-foreground">Nenhum dado disponível para os filtros selecionados.</p>
+            ) : (
+              <DescriptorsCharts 
+                desempenhoDescritores={desempenhoDescritores}
+                componente={selectedFilters.componente}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="alunos" className="space-y-4">
@@ -214,11 +295,14 @@ const Relatorios: React.FC = () => {
             {errorStudents && <p className="text-red-600">{errorStudents}</p>}
             {!loadingStudents && !errorStudents && (
               <StudentsTable 
-                students={students}
+                students={studentsForTable}
                 isTurmaSelected={selectedFilters.turma !== 'all_turmas'}
                 selectedTurma={selectedTurma}
                 onViewStudentDetails={handleViewStudentDetails}
               />
+            )}
+            {!loadingStudents && !errorStudents && selectedFilters.turma !== 'all_turmas' && studentsForTable.length === 0 && (
+               <p className="text-center text-muted-foreground">Nenhum aluno encontrado para a turma selecionada com dados de desempenho.</p>
             )}
           </TabsContent>
         </Tabs>

@@ -8,7 +8,7 @@ import { Turma } from '@/types/turmas';
 import { turmasService } from '@/services/turmasService';
 import TurmasList from '@/components/turmas/TurmasList';
 import TurmaForm from '@/components/turmas/TurmaForm';
-import { useAuth } from '@/contexts/AuthContext';
+import useAuth from '@/hooks/useAuth';
 import { escolasService } from '@/services/escolasService';
 import { Escola } from '@/types/escolas';
 
@@ -25,14 +25,14 @@ const Turmas: React.FC = () => {
     try {
       const data = await escolasService.listar();
       setEscolas(data);
-      if (data.length > 0) {
+      if (data.length > 0 && !selectedEscolaId) {
         setSelectedEscolaId(data[0].id);
       }
     } catch (error) {
       toast.error('Erro ao carregar escolas');
       console.error(error);
     }
-  }, []);
+  }, [selectedEscolaId]);
 
   const loadTurmas = useCallback(async () => {
     if (!user) {
@@ -55,7 +55,7 @@ const Turmas: React.FC = () => {
           setTurmas([]);
           return;
         }
-        const data = await turmasService.listarPorEscola(user.schoolId);
+        const data = await turmasService.listar(user.schoolId);
         setTurmas(data);
       } else {
         toast.error('Papel de usuário não suportado');
@@ -76,8 +76,16 @@ const Turmas: React.FC = () => {
   }, [loadEscolas, user]);
 
   useEffect(() => {
-    loadTurmas();
-  }, [loadTurmas]);
+    if (user?.role === 'escola' && user.schoolId) {
+      setSelectedEscolaId(user.schoolId);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (selectedEscolaId) {
+      loadTurmas();
+    }
+  }, [loadTurmas, selectedEscolaId]);
 
   const handleEdit = (turma: Turma) => {
     setEditingTurma(turma);
@@ -105,23 +113,24 @@ const Turmas: React.FC = () => {
 
     try {
       if (editingTurma) {
+        console.log('Atualizando turma com dados:', turmaData);
         await turmasService.atualizar(editingTurma.id, turmaData);
         toast.success('Turma atualizada com sucesso');
       } else {
-        await turmasService.criar({
+        const dadosTurma = {
           ...turmaData,
           escolaId: escolaIdToUse,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        } as Omit<Turma, 'id'>);
+        };
+        console.log('Criando turma com dados:', dadosTurma);
+        await turmasService.criar(dadosTurma as Omit<Turma, 'id'>);
         toast.success('Turma criada com sucesso');
       }
       setActiveTab('listar');
       setEditingTurma(null);
       loadTurmas();
     } catch (error) {
+      console.error('Erro ao salvar turma:', error);
       toast.error('Erro ao salvar turma');
-      console.error(error);
     }
   };
 

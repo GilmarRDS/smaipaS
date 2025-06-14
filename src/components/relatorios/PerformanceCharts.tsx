@@ -1,132 +1,113 @@
-
 import React from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import RadarChartComponent from '@/components/charts/RadarChart';
-import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
-import { Book, Calculator } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { ChartContainer } from '@/components/ui/chart';
 
 interface PerformanceChartsProps {
-  desempenhoTurmas: Array<{
-    turma: string;
-    portugues: number;
-    matematica: number;
-  }>;
-  evolucaoDesempenho: Array<{
-    avaliacao: string;
-    portugues: number;
-    matematica: number;
-  }>;
-  desempenhoHabilidades: Array<{
-    nome: string;
-    percentual: number;
-  }>;
+  dados: {
+    evolucao: Array<{
+      periodo: string;
+      media: number;
+      meta: number;
+    }>;
+    desempenho: Array<{
+      categoria: string;
+      quantidade: number;
+    }>;
+  };
 }
 
-const PerformanceCharts: React.FC<PerformanceChartsProps> = ({ 
-  desempenhoTurmas, 
-  evolucaoDesempenho, 
-  desempenhoHabilidades 
-}) => {
+const PerformanceCharts: React.FC<PerformanceChartsProps> = ({ dados }) => {
+  console.log('PerformanceCharts - Dados recebidos:', dados);
+
+  if (!dados) {
+    console.log('PerformanceCharts - Nenhum dado recebido');
+    return (
+      <div className="text-center p-4">
+        <p>Nenhum dado disponível para exibição.</p>
+      </div>
+    );
+  }
+
+  const evolucaoData = dados.evolucao || [];
+  const desempenhoData = dados.desempenho || [];
+
+  console.log('PerformanceCharts - Dados processados:', {
+    evolucao: evolucaoData,
+    desempenho: desempenhoData
+  });
+
+  if (evolucaoData.length === 0 && desempenhoData.length === 0) {
+    console.log('PerformanceCharts - Nenhum dado para exibir');
+    return (
+      <div className="text-center p-4">
+        <p>Nenhum dado disponível para exibição.</p>
+      </div>
+    );
+  }
+
   const chartConfig = {
-    portugues: {
-      label: 'Língua Portuguesa',
-      color: 'hsl(214, 89%, 52%)',
-      icon: Book
+    media: {
+      label: 'Média',
+      color: '#8884d8'
     },
-    matematica: {
-      label: 'Matemática',
-      color: 'hsl(160, 84%, 39%)',
-      icon: Calculator
+    meta: {
+      label: 'Meta',
+      color: '#82ca9d'
+    },
+    quantidade: {
+      label: 'Quantidade',
+      color: '#8884d8'
     }
   };
 
   return (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {evolucaoData.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Desempenho por Turma</CardTitle>
-            <CardDescription>
-              Média de acertos por turma nas disciplinas
-            </CardDescription>
+            <CardTitle>Evolução do Desempenho</CardTitle>
           </CardHeader>
-          <CardContent className="h-80">
+          <CardContent>
             <ChartContainer config={chartConfig}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={desempenhoTurmas} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis type="number" domain={[0, 100]} className="text-xs" />
-                  <YAxis dataKey="turma" type="category" className="text-xs" />
-                  <ChartTooltipContent />
-                  <Bar dataKey="portugues" name="Língua Portuguesa" fill={chartConfig.portugues.color} radius={[0, 4, 4, 0]} />
-                  <Bar dataKey="matematica" name="Matemática" fill={chartConfig.matematica.color} radius={[0, 4, 4, 0]} />
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={evolucaoData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="periodo" />
+                  <YAxis domain={[0, 100]} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="media" name="Média" fill={chartConfig.media.color} />
+                  <Bar dataKey="meta" name="Meta" fill={chartConfig.meta.color} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
         </Card>
-        
+      )}
+
+      {desempenhoData.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Evolução do Desempenho</CardTitle>
-            <CardDescription>
-              Comparativo de desempenho nas avaliações diagnósticas
-            </CardDescription>
+            <CardTitle>Distribuição de Desempenho</CardTitle>
           </CardHeader>
-          <CardContent className="h-80">
+          <CardContent>
             <ChartContainer config={chartConfig}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={evolucaoDesempenho}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis 
-                    dataKey="avaliacao" 
-                    className="text-xs"
-                    tick={{ fontSize: 10 }}
-                    angle={-15}
-                    textAnchor="end"
-                    height={60}
-                  />
-                  <YAxis domain={[0, 100]} className="text-xs" />
-                  <ChartTooltipContent />
-                  <Line 
-                    type="monotone" 
-                    dataKey="portugues" 
-                    stroke={chartConfig.portugues.color} 
-                    strokeWidth={3} 
-                    dot={{ r: 5 }} 
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="matematica" 
-                    stroke={chartConfig.matematica.color} 
-                    strokeWidth={3} 
-                    dot={{ r: 5 }} 
-                  />
-                </LineChart>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={desempenhoData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="categoria" />
+                  <YAxis domain={[0, 100]} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="quantidade" name="Quantidade" fill={chartConfig.quantidade.color} />
+                </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
         </Card>
-      </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Mapa de Habilidades</CardTitle>
-          <CardDescription>
-            Desempenho por área de habilidade
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="h-80">
-          <RadarChartComponent 
-            data={desempenhoHabilidades} 
-            dataKey="percentual" 
-            nameKey="nome" 
-            colors={['#7C3AED', '#8B5CF6']}
-          />
-        </CardContent>
-      </Card>
-    </>
+      )}
+    </div>
   );
 };
 

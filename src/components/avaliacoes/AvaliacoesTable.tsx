@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Avaliacao, formatStatus, getStatusColor } from '@/types/avaliacoes';
 import { format } from 'date-fns';
 import { CheckCircle2 } from 'lucide-react';
 import { ActionButton } from '@/components/ui/action-button';
-import { useAuth } from '@/contexts/AuthContext';
+import useAuth from '@/hooks/useAuth';
 
 interface AvaliacoesTableProps {
   avaliacoes: Avaliacao[];

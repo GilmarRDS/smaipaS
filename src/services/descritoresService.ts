@@ -1,15 +1,20 @@
 import api from '@/lib/api';
-import { Descritor } from '@/types/descritores';
+import { Descritor } from '@/types/gabaritos';
 
 export const descritoresService = {
-  async listarDescritores(): Promise<Descritor[]> {
-    try {
-      const response = await api.get('/descritores');
-      return response.data;
-    } catch (error) {
-      console.error('Erro ao listar descritores:', error);
-      throw error;
-    }
+  listarTodos: async (): Promise<Descritor[]> => {
+    const response = await api.get('/descritores');
+    return response.data;
+  },
+
+  listarDescritores: async (): Promise<Descritor[]> => {
+    const response = await api.get('/descritores');
+    return response.data;
+  },
+
+  listarPorComponente: async (componente: string): Promise<Descritor[]> => {
+    const response = await api.get(`/descritores/componente/${componente}`);
+    return response.data;
   },
 
   async obterDescritor(id: string): Promise<Descritor> {

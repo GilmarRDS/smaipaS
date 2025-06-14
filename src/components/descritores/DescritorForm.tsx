@@ -34,6 +34,7 @@ export function DescritorForm({ descritor, onSubmit, onCancel }: DescritorFormPr
   const [tipo, setTipo] = useState<TipoVisual>(
     descritor ? mapTipoBackendParaVisual(descritor.tipo) : 'inicial'
   );
+  const [ano, setAno] = useState(descritor?.ano || '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +44,7 @@ export function DescritorForm({ descritor, onSubmit, onCancel }: DescritorFormPr
       descricao,
       disciplina,
       tipo: mapTipoVisualParaBackend(tipo),
+      ano
     });
   };
 
@@ -57,6 +59,7 @@ export function DescritorForm({ descritor, onSubmit, onCancel }: DescritorFormPr
           value={codigo}
           onChange={(e) => setCodigo(e.target.value)}
           required
+          className="mt-1"
         />
       </div>
 
@@ -69,6 +72,7 @@ export function DescritorForm({ descritor, onSubmit, onCancel }: DescritorFormPr
           value={descricao}
           onChange={(e) => setDescricao(e.target.value)}
           required
+          className="mt-1"
         />
       </div>
 
@@ -77,7 +81,7 @@ export function DescritorForm({ descritor, onSubmit, onCancel }: DescritorFormPr
           Disciplina
         </label>
         <Select value={disciplina} onValueChange={(value: 'PORTUGUES' | 'MATEMATICA') => setDisciplina(value)}>
-          <SelectTrigger>
+          <SelectTrigger className="mt-1">
             <SelectValue placeholder="Selecione a disciplina" />
           </SelectTrigger>
           <SelectContent>
@@ -98,6 +102,28 @@ export function DescritorForm({ descritor, onSubmit, onCancel }: DescritorFormPr
           <SelectContent>
             <SelectItem value="inicial">Diagnóstico Inicial</SelectItem>
             <SelectItem value="final">Diagnóstico Final</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <label htmlFor="ano" className="block text-sm font-medium text-gray-700">
+          Ano/Série
+        </label>
+        <Select value={ano} onValueChange={setAno}>
+          <SelectTrigger className="mt-1">
+            <SelectValue placeholder="Selecione o ano/série" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1º ano">1º ano</SelectItem>
+            <SelectItem value="2º ano">2º ano</SelectItem>
+            <SelectItem value="3º ano">3º ano</SelectItem>
+            <SelectItem value="4º ano">4º ano</SelectItem>
+            <SelectItem value="5º ano">5º ano</SelectItem>
+            <SelectItem value="6º ano">6º ano</SelectItem>
+            <SelectItem value="7º ano">7º ano</SelectItem>
+            <SelectItem value="8º ano">8º ano</SelectItem>
+            <SelectItem value="9º ano">9º ano</SelectItem>
           </SelectContent>
         </Select>
       </div>

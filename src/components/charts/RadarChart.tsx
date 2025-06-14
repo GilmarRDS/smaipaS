@@ -1,46 +1,44 @@
 import React from 'react';
-import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip, Legend } from 'recharts';
-
-interface RadarChartDataItem {
-  [key: string]: string | number;
-}
+import { RadarChart as RechartsRadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
+import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 
 interface RadarChartProps {
-  data: RadarChartDataItem[];
+  data: Array<{
+    name: string;
+    value: number;
+  }>;
   dataKey: string;
   nameKey: string;
-  title?: string;
-  colors?: string[];
+  colors: string[];
 }
 
-const RadarChartComponent: React.FC<RadarChartProps> = ({ 
-  data, 
-  dataKey,
-  nameKey,
-  title,
-  colors = ['#1E88E5', '#26A69A'] 
-}) => {
+const RadarChart: React.FC<RadarChartProps> = ({ data, dataKey, nameKey, colors }) => {
+  const chartConfig = {
+    value: {
+      label: 'Desempenho',
+      color: colors[0]
+    }
+  };
+
   return (
-    <div className="w-full h-full">
-      {title && <h3 className="text-base font-medium mb-2 text-center">{title}</h3>}
-      <ResponsiveContainer width="100%" height={300}>
-        <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
-          <PolarGrid />
-          <PolarAngleAxis dataKey={nameKey} />
-          <PolarRadiusAxis angle={30} domain={[0, 100]} />
-          <Radar 
-            name="Desempenho" 
-            dataKey={dataKey} 
-            stroke={colors[0]} 
-            fill={colors[0]} 
-            fillOpacity={0.6} 
+    <ChartContainer config={chartConfig}>
+      <ResponsiveContainer>
+        <RechartsRadarChart data={data}>
+          <PolarGrid stroke="#374151" />
+          <PolarAngleAxis dataKey={nameKey} tick={{ fill: '#9CA3AF' }} />
+          <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#9CA3AF' }} />
+          <Radar
+            name="Desempenho"
+            dataKey={dataKey}
+            stroke={colors[0]}
+            fill={colors[0]}
+            fillOpacity={0.6}
           />
-          <Tooltip formatter={(value) => [`${value}%`, 'Desempenho']} />
-          <Legend />
-        </RadarChart>
+          <ChartTooltipContent />
+        </RechartsRadarChart>
       </ResponsiveContainer>
-    </div>
+    </ChartContainer>
   );
 };
 
-export default RadarChartComponent;
+export default RadarChart;
