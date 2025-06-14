@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import { Card, CardContent } from '../components/ui/card';
@@ -10,8 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import StudentDetailsView from '../components/relatorios/StudentDetailsView';
 import PerformanceCharts from '../components/relatorios/PerformanceCharts';
 import DescriptorsCharts from '../components/relatorios/DescriptorsCharts';
+import DescriptorsAnalysis from '@/components/relatorios/DescriptorsAnalysis';
 import StudentsTable from '../components/relatorios/StudentsTable';
 import { avaliacoesService } from '../services/avaliacoesService';
+import type { Descriptor } from '@/components/relatorios/DescriptorsCharts';
+import { toast } from 'sonner';
 
 interface Student {
   id: string;
@@ -84,7 +86,11 @@ interface DadosRelatorios {
     matematica: number;
   }>;
   desempenhoHabilidades: Array<{ nome: string; percentual: number }>;
-  desempenhoDescritores: Array<{ descritor: string; nome: string; percentual: number }>;
+  desempenhoDescritores: Array<{ 
+    codigo: string;
+    nome: string; 
+    percentual: number;
+  }>;
 }
 
 const Relatorios: React.FC = () => {
@@ -97,31 +103,35 @@ const Relatorios: React.FC = () => {
     avaliacao: 'all_avaliacoes'
   });
   
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [showStudentDetails, setShowStudentDetails] = useState(false);
-
-  const [loadingStudents, setLoadingStudents] = useState(false);
-  const [errorStudents, setErrorStudents] = useState<string | null>(null);
-
   const [desempenhoTurmas, setDesempenhoTurmas] = useState<DadosRelatorios['desempenhoTurmas']>([]);
   const [evolucaoDesempenho, setEvolucaoDesempenho] = useState<DadosRelatorios['evolucaoDesempenho']>([]);
   const [desempenhoHabilidades, setDesempenhoHabilidades] = useState<DadosRelatorios['desempenhoHabilidades']>([]);
-  const [desempenhoDescritores, setDesempenhoDescritores] = useState<DadosRelatorios['desempenhoDescritores']>([]);
+  const [desempenhoDescritores, setDesempenhoDescritores] = useState<Descriptor[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [showStudentDetails, setShowStudentDetails] = useState(false);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [errorStudents, setErrorStudents] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState('geral');
 
   const handleFilterChange = (filterType: string, value: string) => {
     setSelectedFilters(prev => {
-      if (filterType === 'turma') {
-        return {
-          ...prev,
-          [filterType]: value,
-          avaliacao: 'all_avaliacoes'
-        };
-      }
-
-      return {
+      const newFilters = {
         ...prev,
         [filterType]: value
       };
+
+      // Se mudar a turma, resetar a avaliação
+      if (filterType === 'turma') {
+        newFilters.avaliacao = 'all_avaliacoes';
+      }
+
+      // Se mudar a escola, resetar turma e avaliação
+      if (filterType === 'escola') {
+        newFilters.turma = 'all_turmas';
+        newFilters.avaliacao = 'all_avaliacoes';
+      }
+
+      return newFilters;
     });
   };
 
@@ -162,16 +172,26 @@ const Relatorios: React.FC = () => {
           escolaId: selectedFilters.escola !== 'all_escolas' ? selectedFilters.escola : undefined,
           turmaId: selectedFilters.turma !== 'all_turmas' ? selectedFilters.turma : undefined,
           componente: selectedFilters.componente !== 'all_componentes' ? selectedFilters.componente : undefined,
+          avaliacaoId: selectedFilters.avaliacao !== 'all_avaliacoes' ? selectedFilters.avaliacao : undefined
         });
 
         console.log('Dados recebidos:', dados);
 
         // Mapear dados para o formato esperado pelos gráficos de descritores
-        const desempenhoDescritoresMapped = (dados.desempenhoDescritores || []).map((d: any) => ({
-          descritor: d.codigo,
-          nome: d.nome,
-          percentual: d.percentual
-        }));
+        const desempenhoDescritoresMapped: Descriptor[] = (dados.desempenhoDescritores || []).map((d) => {
+          console.log('Mapeando descritor:', d);
+          return {
+            descritor: d.codigo || d.descritor,
+            nome: d.nome,
+            percentual: d.percentual,
+            componente: d.componente
+          };
+        });
+
+        console.log('Dados mapeados dos descritores:', {
+          original: dados.desempenhoDescritores,
+          mapeado: desempenhoDescritoresMapped
+        });
 
         // Verificar se há dados antes de atualizar o estado
         const hasData = dados.desempenhoTurmas?.length > 0 || 
@@ -184,7 +204,31 @@ const Relatorios: React.FC = () => {
           desempenhoTurmas: dados.desempenhoTurmas?.length || 0,
           evolucaoDesempenho: dados.evolucaoDesempenho?.length || 0,
           desempenhoHabilidades: dados.desempenhoHabilidades?.length || 0,
-          desempenhoDescritores: desempenhoDescritoresMapped.length
+          desempenhoDescritores: desempenhoDescritoresMapped.length,
+          detalhes: {
+            desempenhoTurmas: dados.desempenhoTurmas?.map(t => ({
+              turma: t.nomeTurma,
+              alunos: t.alunos?.length || 0,
+              mediaPortugues: t.mediaPortugues,
+              mediaMatematica: t.mediaMatematica
+            })),
+            evolucaoDesempenho: dados.evolucaoDesempenho?.map(e => ({
+              avaliacao: e.nomeAvaliacao,
+              media: e.media,
+              portugues: e.portugues,
+              matematica: e.matematica
+            })),
+            desempenhoHabilidades: dados.desempenhoHabilidades?.map(h => ({
+              nome: h.nome,
+              percentual: h.percentual
+            })),
+            desempenhoDescritores: desempenhoDescritoresMapped.map(d => ({
+              descritor: d.descritor,
+              nome: d.nome,
+              percentual: d.percentual,
+              componente: d.componente
+            }))
+          }
         });
 
         if (hasData) {
@@ -201,6 +245,7 @@ const Relatorios: React.FC = () => {
         }
       } catch (error) {
         console.error('Erro ao buscar dados dos relatórios:', error);
+        toast.error('Erro ao carregar dados dos relatórios. Por favor, tente novamente.');
         setDesempenhoTurmas([]);
         setEvolucaoDesempenho([]);
         setDesempenhoHabilidades([]);
@@ -243,7 +288,7 @@ const Relatorios: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="geral" className="space-y-4">
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-4">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="geral">Visão Geral</TabsTrigger>
             <TabsTrigger value="descritores">Por Descritores</TabsTrigger>
@@ -265,7 +310,6 @@ const Relatorios: React.FC = () => {
                     meta: 100
                   })),
                   desempenho: desempenhoTurmas.map(item => {
-                    // Add defensive checks for item and its properties
                     const mediaPortugues = item?.mediaPortugues ?? 0;
                     const mediaMatematica = item?.mediaMatematica ?? 0;
 
@@ -283,10 +327,18 @@ const Relatorios: React.FC = () => {
             {desempenhoDescritores.length === 0 ? (
               <p className="text-center text-muted-foreground">Nenhum dado disponível para os filtros selecionados.</p>
             ) : (
-              <DescriptorsCharts 
-                desempenhoDescritores={desempenhoDescritores}
-                componente={selectedFilters.componente}
-              />
+              <>
+                <DescriptorsCharts
+                  desempenhoDescritores={desempenhoDescritores}
+                  componente={selectedFilters.componente}
+                />
+                <div className="mt-6">
+                  <DescriptorsAnalysis
+                    desempenhoDescritores={desempenhoDescritores}
+                    componente={selectedFilters.componente}
+                  />
+                </div>
+              </>
             )}
           </TabsContent>
 

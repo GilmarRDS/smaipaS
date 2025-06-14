@@ -1,144 +1,142 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, PieChart, Pie, ResponsiveContainer } from 'recharts';
-import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, PieChart, Pie, ResponsiveContainer, TooltipProps, Legend } from 'recharts';
 import { BookOpenText, Calculator } from 'lucide-react';
 
-interface DescriptorsChartsProps {
-  desempenhoDescritores: Array<{
-    descritor: string;
-    nome: string;
-    percentual: number;
-  }>;
-  componente: string;
+export interface Descriptor {
+  descritor: string;
+  nome: string;
+  percentual: number;
+  componente?: string;
 }
 
+interface DescriptorsChartsProps {
+  desempenhoDescritores: Descriptor[];
+  componente?: string;
+}
+
+interface CustomTooltipProps extends TooltipProps<number, string> {
+  active?: boolean;
+  payload?: Array<{
+    value: number;
+    name: string;
+    color: string;
+    payload: Descriptor;
+  }>;
+  label?: string;
+}
+
+const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+        <p className="font-bold text-lg">{data.descritor}</p>
+        <p className="text-sm text-gray-600 mb-1">{data.nome}</p>
+        <p className="text-sm font-semibold">
+          Acertos: <span className="text-blue-600">{data.percentual.toFixed(1)}%</span>
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
 const DescriptorsCharts: React.FC<DescriptorsChartsProps> = ({ desempenhoDescritores, componente }) => {
-  const chartConfig = {
-    percentual: {
-      label: 'Percentual de Acerto',
-      color: '#1E88E5'
-    }
+  console.log('DescriptorsCharts - Dados recebidos:', {
+    desempenhoDescritores,
+    componente,
+    totalDescritores: desempenhoDescritores?.length
+  });
+
+  // Processar e ordenar os descritores
+  const processedDescritores = React.useMemo(() => {
+    return desempenhoDescritores
+      .filter(d => d.descritor && d.percentual !== undefined)
+      .map(d => ({
+        ...d,
+        descritor: d.descritor.split('-')[0].trim(), // Garantir que só temos o código
+        percentual: Number(d.percentual.toFixed(1)) // Arredondar para 1 casa decimal
+      }))
+      .sort((a, b) => b.percentual - a.percentual); // Ordenar por percentual decrescente
+  }, [desempenhoDescritores]);
+
+  // Função para formatar o valor do eixo Y
+  const formatYAxis = (value: string) => {
+    return value;
   };
 
-  const getColorForPercentage = (percentual: number) => {
-    if (percentual < 60) return '#EF5350';
-    if (percentual < 70) return '#FFA726';
-    if (percentual < 85) return '#66BB6A';
-    return '#26A69A';
+  // Função para formatar o valor do eixo X
+  const formatXAxis = (value: number) => {
+    return `${value}%`;
   };
 
-  // Filtrar descritores por componente
-  const filteredDescritores = componente === 'all_componentes' 
-    ? desempenhoDescritores 
-    : desempenhoDescritores.filter(d => d.descritor.toLowerCase().includes(componente.toLowerCase()));
+  // Calcular a média geral
+  const mediaGeral = React.useMemo(() => {
+    if (processedDescritores.length === 0) return 0;
+    const soma = processedDescritores.reduce((acc, curr) => acc + curr.percentual, 0);
+    return Number((soma / processedDescritores.length).toFixed(1));
+  }, [processedDescritores]);
 
-  // Calculate performance levels
-  const calculatePerformanceLevels = (descritores: typeof desempenhoDescritores) => {
-    const levels = {
-      critico: 0,
-      basico: 0,
-      adequado: 0,
-      avancado: 0
-    };
-
-    descritores.forEach(desc => {
-      if (desc.percentual < 60) levels.critico++;
-      else if (desc.percentual < 70) levels.basico++;
-      else if (desc.percentual < 85) levels.adequado++;
-      else levels.avancado++;
-    });
-
-    return [
-      { name: 'Crítico (Abaixo de 60%)', value: levels.critico, color: '#EF5350' },
-      { name: 'Básico (60% a 70%)', value: levels.basico, color: '#FFA726' },
-      { name: 'Adequado (70% a 85%)', value: levels.adequado, color: '#66BB6A' },
-      { name: 'Avançado (Acima de 85%)', value: levels.avancado, color: '#26A69A' }
-    ];
-  };
-
-  const performanceData = calculatePerformanceLevels(filteredDescritores);
+  if (processedDescritores.length === 0) {
+    console.log('DescriptorsCharts - Nenhum dado disponível');
+    return (
+      <div className="text-center p-4 text-muted-foreground">
+        Nenhum dado disponível para exibição.
+      </div>
+    );
+  }
 
   return (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Desempenho por Descritor</CardTitle>
-            <CardDescription>
-              Percentual de acerto por descritor
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-80">
-            <ChartContainer config={chartConfig}>
-              <ResponsiveContainer>
-                <BarChart 
-                  data={filteredDescritores} 
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis 
-                    dataKey="descritor" 
-                    className="text-xs"
-                    angle={-45}
-                    textAnchor="end"
-                    height={100}
-                  />
-                  <YAxis domain={[0, 100]} className="text-xs" />
-                  <ChartTooltipContent />
-                  <Bar dataKey="percentual" name="Percentual de Acerto">
-                    {filteredDescritores.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={getColorForPercentage(entry.percentual)}
-                        className="transition-colors duration-300 hover:opacity-80"
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Análise de Descritores</CardTitle>
-            <CardDescription>
-              Distribuição dos descritores por nível de desempenho
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-72">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {['Língua Portuguesa', 'Matemática'].map(subject => (
-                <div key={subject}>
-                  <h3 className="text-base font-medium mb-2 text-center">{subject}</h3>
-                  <ResponsiveContainer>
-                    <PieChart>
-                      <Pie
-                        data={performanceData}
-                        dataKey="value"
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      >
-                        {performanceData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <ChartTooltipContent />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </>
+    <Card className="bg-smaipa-50/50 border-smaipa-100">
+      <CardHeader>
+        <CardTitle className="text-xl font-semibold">
+          Análise de Descritores
+          {componente && <span className="text-sm font-normal ml-2">({componente})</span>}
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Média Geral: {mediaGeral}%
+        </p>
+      </CardHeader>
+      <CardContent>
+        <div className="h-[500px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={processedDescritores}
+              layout="vertical"
+              margin={{ top: 20, right: 30, left: 40, bottom: 20 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+              <XAxis
+                type="number"
+                domain={[0, 100]}
+                tickFormatter={formatXAxis}
+                tick={{ fill: '#666', fontSize: 12 }}
+                axisLine={{ stroke: '#666' }}
+                tickLine={{ stroke: '#666' }}
+              />
+              <YAxis
+                type="category"
+                dataKey="descritor"
+                tickFormatter={formatYAxis}
+                width={80}
+                tick={{ fill: '#666', fontSize: 12 }}
+                axisLine={{ stroke: '#666' }}
+                tickLine={{ stroke: '#666' }}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend />
+              <Bar
+                dataKey="percentual"
+                fill="#3b82f6"
+                radius={[0, 4, 4, 0]}
+                name="Percentual de Acertos"
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

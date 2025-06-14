@@ -144,36 +144,31 @@ export function useDashboardData() {
         console.log('Dados de desempenhoTurmas mapeados:', JSON.stringify(desempenhoTurmas, null, 2));
 
         // Mapear dados de desempenho para performance e presenca
-        const performance = desempenhoTurmas.map(turma => ({
-          avaliacao: turma.nomeTurma,
-          portugues: turma.mediaPortugues,
-          matematica: turma.mediaMatematica
-        }));
-
-        const presenca = desempenhoTurmas.map(turma => ({
+        const performance = dadosRelatorios.evolucaoDesempenho || [];
+        const presenca = dadosRelatorios.desempenhoTurmas.map(turma => ({
           turma: turma.nomeTurma,
           presentes: turma.alunos.filter(a => a.presente).length,
           ausentes: turma.alunos.filter(a => !a.presente).length
         }));
 
         // Mapear dados de descritores por aluno
-        const descritoresPorAluno = desempenhoTurmas.flatMap(turma =>
+        const descritoresPorAluno = dadosRelatorios.desempenhoTurmas.flatMap(turma =>
           turma.alunos.map(aluno => ({
             alunoId: aluno.id,
             aluno: aluno.nome,
             turmaId: turma.turmaId,
             turmaNome: turma.nomeTurma,
             descritores: [
-          ...aluno.descritores.portugues.map((d: Descritor) => ({
-            codigo: d.codigo,
-            nome: d.nome,
-            percentual: d.percentual
-          })),
-          ...aluno.descritores.matematica.map((d: Descritor) => ({
-            codigo: d.codigo,
-            nome: d.nome,
-            percentual: d.percentual
-          }))
+              ...aluno.descritores.portugues.map(d => ({
+                codigo: d.codigo,
+                nome: d.nome,
+                percentual: d.percentual
+              })),
+              ...aluno.descritores.matematica.map(d => ({
+                codigo: d.codigo,
+                nome: d.nome,
+                percentual: d.percentual
+              }))
             ]
           }))
         );
